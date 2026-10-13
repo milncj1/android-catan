@@ -118,6 +118,7 @@ View.OnClickListener {
     protected void onNewMatchRequested() { }
     protected void prepareLocalMatch(LocalGame localGame, GameConfig options) { }
     protected void onLocalMatchLaunched(LocalGame localGame) { }
+    protected final GamePlayer getActiveGuiPlayer() { return guiPlayer; }
 
 
 
