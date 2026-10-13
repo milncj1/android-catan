@@ -85,6 +85,17 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
     private int selectedHexagonId = -1; // currently selected hexagon id
     private ArrayList<Integer> selectedIntersections = new ArrayList<>(); // currently selected intersections
+    // Building is asynchronous: success must come from the authoritative
+    // board update, never from merely queuing an action.
+    private static final int PENDING_NONE = 0;
+    private static final int PENDING_SETTLEMENT = 1;
+    private static final int PENDING_CITY = 2;
+    private static final int PENDING_ROAD = 3;
+    private int pendingBuild = PENDING_NONE;
+    private int pendingIntersection = -1;
+    private int pendingRoadFrom = -1;
+    private int pendingRoadTo = -1;
+
 
     // resourceCard index values: 0 = Brick, 1 = Lumber, 2 = Grain, 3 = Ore, 4 = Wool
     private int[] robberDiscardedResources = new int[]{0, 0, 0, 0, 0};  //How many resources the player would like to discard
@@ -339,6 +350,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         // Road button on the sidebar.
         if (button.getId() == R.id.sidebar_button_road) {
+            if (pendingBuild != PENDING_NONE) {
+                messageTextView.setText("Wait for the previous build to finish.");
+                return;
+            }
             Log.i(TAG, "onClick: " + state.getBoard().toString() + "");
 
             //Player does not have enough resources to build the road
@@ -375,6 +390,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         // Settlement button on the sidebar.
         if (button.getId() == R.id.sidebar_button_settlement) {
+            if (pendingBuild != PENDING_NONE) {
+                messageTextView.setText("Wait for the previous build to finish.");
+                return;
+            }
             Log.d(TAG, "onClick: sidebar_button_settlement listener");
 
             //Make sure an intersection has been selected to build on(Just 1)
@@ -387,21 +406,19 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 shake(messageTextView);
             } else {
                 //Build the settlement
-                if (tryBuildSettlement(selectedIntersections.get(0))) {
-                    this.intersectionOfSettlementSetupTurn = selectedIntersections.get(0);
-                    messageTextView.setText(R.string.built_settlement);
-                    this.selectedIntersections.clear(); // clear the users selected intersections
-                } else {
-                    // tell user location is invalid
-                    messageTextView.setText(R.string.invalid_set_loc);
-                }
+                // A valid local preview only queues a build. The game may
+                // reject it, so do not show "Built" or clear the highlight yet.
+                tryBuildSettlement(selectedIntersections.get(0));
             }
             return;
         }
 
         // City button on the sidebar.
         if (button.getId() == R.id.sidebar_button_city) {
-
+            if (pendingBuild != PENDING_NONE) {
+                messageTextView.setText("Wait for the previous build to finish.");
+                return;
+            }
             //Make sure an intersection has been selected to build on(Just 1)
             if (selectedIntersections.size() != 1) {
                 messageTextView.setText(R.string.select_one_int_for_city);
@@ -413,14 +430,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 Log.e(TAG, "onClick: build city selected intersection: " + selectedIntersections.get(0));
 
                 //Build the city
-                if (tryBuildCity(selectedIntersections.get(0))) {
-                    messageTextView.setText(R.string.built_city);
-                    Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Built a city.", Toast.LENGTH_SHORT);
-                    toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-                } else {
-                    messageTextView.setText(R.string.invalid_city_loc);
-
-                }
+                tryBuildCity(selectedIntersections.get(0));
             }
             return;
         }
@@ -1044,6 +1054,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 }
                 grid.setHighlightedHexagon(-1);
                 selectedHexagonId = -1;
+                if (!selectedIntersections.isEmpty()) {
+                    String chosen = selectedIntersections.size() == 1
+                            ? "Junction " + selectedIntersections.get(0) + " selected"
+                            : "Junctions " + selectedIntersections.get(0) + " and "
+                                    + selectedIntersections.get(1) + " selected";
+                    messageTextView.setText(chosen + " — tap Build to confirm.");
+                }
                 boardSurfaceView.invalidate();
             }
             // if they didn't touch an intersection then check if they touched a hexagon
