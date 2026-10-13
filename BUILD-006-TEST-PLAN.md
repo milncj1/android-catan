@@ -1,6 +1,6 @@
 # Build 006 — playable match information and classic rules
 Date: 13 October 2026
-Status: Development changes prepared, **NOT built or Samsung-tested**.
+Status: **Build compiled, JVM tests passed and permanent-signed APK verified. Samsung acceptance outstanding.**
 Confirmed installed baseline remains Build 005, whose full close/reopen Continue Game was verified by the owner.
 
 ## Why this matters
@@ -51,3 +51,14 @@ are in their hand, what development cards are owned/played, and what the CPUs ar
 ## Outstanding after this release
 - CPU domestic trading/negotiations (a proper part of classic Catan).
 - Rigorous full-match and AI difficulty testing after this visibility release.
+
+## Approved Build 006 result — 13 October 2026
+- Source snapshot: `apk-build/006-gameplay-visibility` at `468d3efd1871398532cda10c5cfbfc9cb491b4e8`.
+- One approved GitHub Actions run: https://github.com/milncj1/android-catan/actions/runs/38411569063 — **success**, first attempt.
+- XML validation, JVM unit tests and APK compilation passed.
+- Signed privately using the permanent Build 004/005 PKCS12 certificate; verified same public SHA-256 fingerprint.
+- Verified APK archive integrity and Android package `edu.up.cs.androidcatan`; Android versionCode **9** vs **8** for Build 005.
+- Signed APK SHA-256: `a77416fc5ffc6da52a2adc937e4896b7d176adbc357df4ccb2bdf8e6fe21c5b5`.
+- User must **install over Build 005**, not uninstall or clear data. Full game/device UI, retained saves and close/reopen behavior still need physical Samsung testing.
+- Source changes made to `dev/android-modernisation` after the immutable build snapshot are not included in this APK.
+
