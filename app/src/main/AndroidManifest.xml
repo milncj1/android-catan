@@ -13,7 +13,8 @@
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar.Fullscreen">
         <activity android:name=".catan.MainActivity"
             android:theme="@style/AppTheme.NoActionBar"
-            android:screenOrientation="sensorLandscape" >
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
