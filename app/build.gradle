@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// Resolve this once, outside Gradle's versionCode DSL method call.
+def catanBuildVersionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '3')
+
 android {
     // Initial compatibility build: modern toolchain, unchanged legacy game code.
     compileSdkVersion 33
@@ -8,7 +11,7 @@ android {
         applicationId "edu.up.cs.androidcatan"
         minSdkVersion 25
         targetSdkVersion 27
-        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '2').toInteger()
+        versionCode catanBuildVersionCode
         versionName "1.1-test"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
