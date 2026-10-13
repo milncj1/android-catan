@@ -2073,37 +2073,65 @@ if(newGame) {
                 "Winning and scoring", "Starting a game", "Building",
                 "Development cards", "Trading", "The robber"
         };
-        final int[] headings = {
-                R.id.winning_help_menu_title_text_view,
-                R.id.set_up_phase_help_menu_title_text_view,
-                R.id.building_help_menu_title_text_view,
-                R.id.development_card_help_menu_title_text_view,
-                R.id.trading_help_menu_title_text_view,
-                R.id.robber_help_menu_title_text_view
-        };
-        final int[] bodies = {
-                R.id.winning_help_menu_text,
-                R.id.set_up_phase_help_menu_text,
-                R.id.building_help_menu_text,
-                R.id.development_card_help_menu_text,
-                R.id.trading_help_menu_text,
-                R.id.robber_help_menu_text
-        };
         new AlertDialog.Builder(myActivity)
                 .setTitle("How to play Catan")
                 .setItems(topics, (dialog, which) -> {
-                    TextView titleView = myActivity.findViewById(headings[which]);
-                    TextView bodyView = myActivity.findViewById(bodies[which]);
-                    CharSequence heading = titleView == null ? topics[which] : titleView.getText();
-                    CharSequence body = bodyView == null ? topics[which] : bodyView.getText();
                     new AlertDialog.Builder(myActivity)
-                            .setTitle(heading)
-                            .setMessage(body)
+                            .setTitle(topics[which])
+                            .setMessage(helpArticle(which))
                             .setPositiveButton("Close", null)
                             .show();
                 })
                 .setNegativeButton("Close", null)
                 .show();
+    }
+
+    /** Short, accurate instructions without the legacy help pages' clipping. */
+    private String helpArticle(int topic) {
+        switch (topic) {
+            case 0:
+                return "Win by reaching 10 victory points on your own turn.\\n\\n"
+                        + "Settlement: 1 point. City: 2 points (replaces a settlement).\\n"
+                        + "Longest Road: 2 points for a continuous road of at least 5 segments.\\n"
+                        + "Largest Army: 2 points once you play at least 3 Knights.\\n"
+                        + "Victory Point development cards contribute hidden points automatically.";
+            case 1:
+                return "Start by choosing a settlement on a free intersection, then build its adjoining road.\\n\\n"
+                        + "Each player places twice, with player order reversed in round two. "
+                        + "You collect starting resources from the three hexes beside your second settlement.\\n\\n"
+                        + "During normal turns you may play a permitted development card before rolling, "
+                        + "then roll, trade, build and end your turn.";
+            case 2:
+                return "Road: 1 brick + 1 lumber. Join a road or settlement you own.\\n\\n"
+                        + "Settlement: 1 brick + 1 lumber + 1 grain + 1 wool. Must connect to your roads "
+                        + "and remain at least two road segments away from any existing settlement or city.\\n\\n"
+                        + "City: 3 ore + 2 grain. Upgrade one of your settlements. "
+                        + "It earns 2 victory points and produces double resources.\\n\\n"
+                        + "Your supplies are limited to 15 roads, 5 settlements and 4 cities.";
+            case 3:
+                return "Purchase a development card with 1 ore + 1 grain + 1 wool.\\n\\n"
+                        + "Knight: move the robber and steal from a player next to its new hex.\\n"
+                        + "Road Building: place two roads without paying resources.\\n"
+                        + "Year of Plenty: take any two resources.\\n"
+                        + "Monopoly: take all cards of one resource from opponents.\\n"
+                        + "Victory Point: counts automatically towards your total.\\n\\n"
+                        + "You cannot use a newly purchased action card until a later turn, "
+                        + "and may play only one ordinary action development card each turn.";
+            case 4:
+                return "Bank trading: exchange 4 of one resource for 1 of another.\\n\\n"
+                        + "General 3:1 port: settle on a port intersection to exchange 3 of one resource for 1.\\n"
+                        + "Special 2:1 port: exchange 2 of its named resource for 1 of another.\\n\\n"
+                        + "For a bank trade, clear your selection and tap Trade. For a port, select "
+                        + "the port settlement first, then tap Trade.\\n\\n"
+                        + "Note: direct negotiations with computer opponents are still under development.";
+            default:
+                return "A roll of 7 starts the robber phase. Any player with more than "
+                        + "7 resource cards must discard half, rounded down.\\n\\n"
+                        + "Move the robber to a different hexagon. That hex stops producing resources "
+                        + "until the robber moves again.\\n\\n"
+                        + "If an opponent has a settlement or city next to the robber, you may steal "
+                        + "one random resource card from that player. The robber can also move to an empty hex.";
+        }
     }
 
     /**
