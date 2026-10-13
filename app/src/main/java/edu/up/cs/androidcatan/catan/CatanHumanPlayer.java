@@ -1164,82 +1164,94 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
      * @return If success.
      */
     public boolean tryBuildRoad(int intersectionA, int intersectionB) {
-        Log.d(TAG, "tryBuildRoad() called with: intersectionA = [" + intersectionA + "], intersectionB = [" + intersectionB + "]");
-        // check if user given intersections are valid
-        if (state.getBoard().validRoadPlacement(state.getCurrentPlayerId(), state.isSetupPhase(), intersectionA, intersectionB,
+        if (pendingBuild != PENDING_NONE) return false;
+        if (state.getCurrentPlayerId() != playerNum || state.isRobberPhase()) {
+            showBuildProblem("Wait for your turn and finish the robber.");
+            return false;
+        }
+        if (!state.getBoard().validRoadPlacement(playerNum, state.isSetupPhase(),
+                intersectionA, intersectionB,
                 state.isSetupPhase() ? state.getCurrentSetupSettlement() : -1)) {
-            Log.i(TAG, "tryBuildRoad: Valid road placement received.");
-        } else {
-            messageTextView.setText(R.string.invalid_road_placement);
-            Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Invalid road placement.", Toast.LENGTH_SHORT);
-            toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-            toast.show();
-            Log.d(TAG, "tryBuildRoad() returned: " + false);
+            showBuildProblem("That road is not a free edge connected to your network.");
             return false;
         }
-        // check if it is the setup phase
-        if (state.isSetupPhase()) {
-            boardSurfaceView.getGrid().clearHighLightedIntersections();
-            selectedIntersections.clear(); // clear the selected intersections
-            this.buildingsBuiltOnThisTurn.add(0);
-            game.sendAction(new CatanBuildRoadAction(this, state.isSetupPhase(), state.getCurrentPlayerId(), intersectionA, intersectionB));
-            messageTextView.setText(R.string.road_built);
-            return true;
-        }
-        // if it is not the setup phase, then check if it is the action phase
-        if (!state.isActionPhase() && state.getFreeRoadsRemaining() == 0) {
-            Log.i(TAG, "tryBuildRoad: Player cannot build road. Not action phase.");
-            messageTextView.setText(R.string.roll_the_dice);
-            shake(messageTextView);
+        boolean free = !state.isSetupPhase() && state.getFreeRoadsRemaining() > 0;
+        if (!state.isSetupPhase() && !state.isActionPhase() && !free) {
+            showBuildProblem("Roll the dice before building a road.");
             return false;
         }
-        // if it is not the setup phase check if the player has enough resources to build a road
-        if (state.getFreeRoadsRemaining() > 0 ||
-                state.getPlayerList().get(state.getCurrentPlayerId()).hasResourceBundle(Road.resourceCost)) {
-            // send build settlement action to the game
-            Log.d(TAG, "tryBuildRoad: Sending a CatanBuildRoadAction to the game.");
-            game.sendAction(new CatanBuildRoadAction(this, state.isSetupPhase(), state.getCurrentPlayerId(), intersectionA, intersectionB));
-            // clear selected intersections
-            boardSurfaceView.getGrid().clearHighLightedIntersections();
-            selectedIntersections.clear(); // clear the selected intersections
-            this.buildingsBuiltOnThisTurn.add(0);
-            Log.d(TAG, "tryBuildRoad() returned: " + true);
-            return true;
+        if (!state.isSetupPhase() && !free
+                && !state.getCurrentPlayer().hasResourceBundle(Road.resourceCost)) {
+            showBuildProblem("Road needs 1 brick and 1 lumber.");
+            return false;
         }
-        Log.i(TAG, "tryBuildRoad: player does not have enough resources to build a road.");
-        messageTextView.setText(R.string.not_enough_for_road);
-        Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Not enough resources to build a road.", Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-        toast.show();
-        Log.d(TAG, "tryBuildRoad() returned: " + false);
-        return false;
+        pendingBuild = PENDING_ROAD;
+        pendingRoadFrom = intersectionA;
+        pendingRoadTo = intersectionB;
+        messageTextView.setText("Building road — checking the game...");
+        game.sendAction(new CatanBuildRoadAction(this, state.isSetupPhase(),
+                playerNum, intersectionA, intersectionB));
+        return true;
     }
 
     /**
      * @param intersection1 IntersectionDrawable at which the player is trying to build a settlement upon.
      * @return If the building location chosen is valid, and if the action was carried out.
      */
-    private boolean tryBuildSettlement(int intersection1) {
-        Log.d(TAG, "tryBuildSettlement() called with: intersection1 = [" + intersection1 + "]");
-        // check if valid settlement location
-        if (state.getBoard().validBuildingLocation(state.getCurrentPlayerId(), state.isSetupPhase(), intersection1)) {
-            Log.d(TAG, "onClick: building location is valid. Sending a BuildSettlementAction to the game.");
-            // send build settlement action to the game
-            Log.d(TAG, "tryBuildSettlement: Sending a CatanBuildSettlementAction to the game.");
-            game.sendAction(new CatanBuildSettlementAction(this, state.isSetupPhase(), state.getCurrentPlayerId(), intersection1));
-            this.buildingsBuiltOnThisTurn.add(1);
+    private String settlementProblem(int point) {
+        if (state == null || playerNum != state.getCurrentPlayerId())
+            return "It is not your turn.";
+        if (state.isRobberPhase())
+            return "Finish the robber action first.";
+        if (!state.isSetupPhase() && !state.isActionPhase())
+            return "Roll the dice before building a settlement.";
+        if (state.isSetupPhase() && state.getCurrentSetupSettlement() >= 0)
+            return "Build the road beside your opening settlement first.";
+        if (!state.isSetupPhase()
+                && !state.getCurrentPlayer().hasResourceBundle(
+                        edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement.resourceCost))
+            return "Settlement needs 1 brick, 1 grain, 1 lumber and 1 wool.";
+        if (point < 0 || point >= state.getBoard().getBuildings().length)
+            return "Select a junction on the island.";
+        if (state.getBoard().getBuildingAtIntersection(point) != null)
+            return "There is already a settlement or city at this junction.";
+        for (Integer neighbour : state.getBoard().getIntersectionAdjacencyList().get(point)) {
+            if (state.getBoard().getBuildingAtIntersection(neighbour) != null)
+                return "Too close to another settlement or city (one empty junction is required).";
+        }
+        if (!state.isSetupPhase() && !state.getBoard().isConnected(playerNum, point))
+            return "Connect this junction to one of your own roads first.";
+        int settlements = 0;
+        for (edu.up.cs.androidcatan.catan.gamestate.buildings.Building building
+                : state.getBoard().getBuildings()) {
+            if (building instanceof edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement
+                    && building.getOwnerId() == playerNum) settlements++;
+        }
+        if (settlements >= 5) return "All five settlements are in use. Upgrade one to a city first.";
+        if (!state.getBoard().validBuildingLocation(playerNum, state.isSetupPhase(), point))
+            return "That junction is not valid under the settlement distance rule.";
+        return null;
+    }
 
-            Log.d(TAG, "tryBuildSettlement() returned: " + true);
-            return true;
-        } else {
-            messageTextView.setText(R.string.invalid_settlement_loc);
-            Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Invalid settlement location.", Toast.LENGTH_SHORT);
-            toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-            toast.show();
-            shake(messageTextView);
-            Log.d(TAG, "tryBuildSettlement: Returning false.");
+    private void showBuildProblem(String reason) {
+        if (messageTextView != null) messageTextView.setText(reason);
+        if (myActivity != null)
+            Toast.makeText(myActivity, reason, Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean tryBuildSettlement(int intersection1) {
+        if (pendingBuild != PENDING_NONE) return false;
+        String problem = settlementProblem(intersection1);
+        if (problem != null) {
+            showBuildProblem(problem);
             return false;
         }
+        pendingBuild = PENDING_SETTLEMENT;
+        pendingIntersection = intersection1;
+        messageTextView.setText("Building settlement — checking the game...");
+        game.sendAction(new CatanBuildSettlementAction(this,
+                state.isSetupPhase(), playerNum, intersection1));
+        return true;
     }
 
     /**
@@ -1247,37 +1259,26 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
      * @return If a city was built at the intersection.
      */
     private boolean tryBuildCity(int intersection) {
-        Log.d(TAG, "tryBuildCity() called with: intersection = [" + intersection + "]");
-        // check if it is the setup phase
-        if (state.isSetupPhase()) {
-            Log.i(TAG, "tryBuildCity: Cannot built city during setup phase. Returning false.");
+        if (pendingBuild != PENDING_NONE) return false;
+        if (state.getCurrentPlayerId() != playerNum || state.isRobberPhase()
+                || state.isSetupPhase() || !state.isActionPhase()) {
+            showBuildProblem("You can upgrade a city only on your normal build turn.");
             return false;
         }
-        // check if the player has enough resources
         if (!state.getCurrentPlayer().hasResourceBundle(City.resourceCost)) {
-            messageTextView.setText(R.string.not_enough_for_city);
-            Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Not enough resources to build a city.", Toast.LENGTH_SHORT);
-            toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-            toast.show();
-            shake(messageTextView);
-            Log.d(TAG, "tryBuildCity() returned: " + false);
+            showBuildProblem("City needs 2 grain and 3 ore.");
             return false;
         }
-        // check if valid location
-        if (state.getBoard().validCityLocation(state.getCurrentPlayerId(), intersection)) {
-            Log.d(TAG, "onClick: building location is valid. Sending a BuildCityAction to the game.");
-            // send CatanBuildCityAction to the game
-            game.sendAction(new CatanBuildCityAction(this, state.isSetupPhase(), state.getCurrentPlayerId(), intersection));
-            this.buildingsBuiltOnThisTurn.add(2);
-            this.selectedIntersections.clear();
-            return true;
+        if (!state.getBoard().validCityLocation(playerNum, intersection)) {
+            showBuildProblem("Select one of your existing settlements to upgrade.");
+            return false;
         }
-        messageTextView.setText(R.string.invalid_city_loc);
-        Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Invaild city location.", Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-        toast.show();
-        shake(messageTextView);
-        return false;
+        pendingBuild = PENDING_CITY;
+        pendingIntersection = intersection;
+        messageTextView.setText("Upgrading city — checking the game...");
+        game.sendAction(new CatanBuildCityAction(this,
+                state.isSetupPhase(), playerNum, intersection));
+        return true;
     }
 
     /**
