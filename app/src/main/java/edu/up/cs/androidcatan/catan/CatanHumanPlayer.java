@@ -732,10 +732,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
                 // victory point card
                 if (developmentCardId == 1) {
-                    game.sendAction(new CatanUseVictoryPointCardAction(this));
-                    if (devCards.size() == 1) {
-                        toggleGroupVisibilityAllowTapping(developmentGroup);
-                    }
+                    messageTextView.setText("Victory Point cards score automatically.");
                     return;
                 }
 
@@ -1111,7 +1108,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             return false;
         }
         // if it is not the setup phase check if the player has enough resources to build a road
-        if (state.getPlayerList().get(state.getCurrentPlayerId()).hasResourceBundle(Road.resourceCost)) {
+        if (state.getFreeRoadsRemaining() > 0 ||
+                state.getPlayerList().get(state.getCurrentPlayerId()).hasResourceBundle(Road.resourceCost)) {
             // send build settlement action to the game
             Log.d(TAG, "tryBuildRoad: Sending a CatanBuildRoadAction to the game.");
             game.sendAction(new CatanBuildRoadAction(this, state.isSetupPhase(), state.getCurrentPlayerId(), intersectionA, intersectionB));
