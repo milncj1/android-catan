@@ -21,6 +21,58 @@ public class MainActivity extends GameMainActivity {
     // the port number that this game will use when playing over the network
     private static final int PORT_NUMBER = 2278;
 
+    private CatanSaveStore.Snapshot pendingResume;
+
+    @Override
+    protected boolean hasSavedMatch() {
+        return CatanSaveStore.load(getApplicationContext()) != null;
+    }
+
+    @Override
+    protected GameConfig savedMatchConfiguration() {
+        CatanSaveStore.Snapshot saved = CatanSaveStore.load(getApplicationContext());
+        pendingResume = null;
+        if (saved == null) return null;
+
+        GameConfig result = createDefaultConfig().copyWithoutPlayers();
+        result.setLocal(true);
+        String[] names = saved.getNames();
+        int[] types = saved.getTypes();
+        for (int index = 0; index < 4; index++) {
+            result.addPlayer(names[index], types[index]);
+        }
+        pendingResume = saved;
+        return result;
+    }
+
+    @Override
+    protected void onNewMatchRequested() {
+        pendingResume = null;
+    }
+
+    @Override
+    protected void prepareLocalMatch(LocalGame localGame, GameConfig options) {
+        if (!(localGame instanceof CatanLocalGame)) return;
+        CatanLocalGame catan = (CatanLocalGame) localGame;
+        int[] types = new int[4];
+        GamePlayerType[] available = options.getAvailTypes();
+        for (int i = 0; i < types.length; i++) {
+            String label = options.getSelType(i).getTypeName();
+            types[i] = -1;
+            for (int choice = 0; choice < available.length; choice++) {
+                if (label.equals(available[choice].getTypeName())) {
+                    types[i] = choice;
+                    break;
+                }
+            }
+        }
+        catan.configureAutosave(getApplicationContext(), types);
+        if (pendingResume != null) {
+            catan.setState(pendingResume.getState());
+            pendingResume = null;
+        }
+    }
+
     // default game configuration
     @Override
     public GameConfig createDefaultConfig() {
