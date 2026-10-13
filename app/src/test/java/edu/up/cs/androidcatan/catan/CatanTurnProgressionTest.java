@@ -29,6 +29,13 @@ public class CatanTurnProgressionTest {
             int player = expectedOrder[step];
             assertTrue("Opening turn " + step + " is still setup", state.isSetupPhase());
             assertEquals("Opening player order", player, state.getCurrentPlayerId());
+            // A human only places one settlement in the first round and
+            // comes back for another at the end of the reverse round.
+            if (step == 7) {
+                assertEquals("Human gets second opening placement", 0, player);
+                assertEquals("Only first human settlement exists so far",
+                        1, state.getPlayerList().get(0).getVictoryPoints());
+            }
             int selected = -1;
             int roadEnd = -1;
             for (int intersection = 0; intersection < board.getBuildings().length; intersection++) {
@@ -53,6 +60,10 @@ public class CatanTurnProgressionTest {
             assertTrue("Road for new settlement",
                     game.makeMove(new CatanBuildRoadAction(null, true, player, selected, roadEnd)));
             assertTrue(state.isSetupRoadBuiltThisTurn());
+            if (step == 0) {
+                assertFalse("Human cannot immediately place both opening settlements",
+                        game.makeMove(new CatanBuildSettlementAction(null, true, 0, selected)));
+            }
             assertTrue(game.makeMove(new CatanEndTurnAction(null)));
         }
 
