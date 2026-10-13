@@ -437,7 +437,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (state.isSetupPhase()) {
 
                 //Make sure player has built enough buildings to end their turn
-                if (!buildingsBuiltOnThisTurn.contains(0) || !buildingsBuiltOnThisTurn.contains(1)) {
+                // State is authoritative and saved; the temporary list is lost
+                // when Android recreates the human player after Continue Game.
+                if (state.getCurrentSetupSettlement() < 0
+                        || !state.isSetupRoadBuiltThisTurn()) {
                     messageTextView.setText(R.string.build_road_and_set);
                     Toast toast = Toast.makeText(myActivity.getApplicationContext(), R.string.build_road_and_set, Toast.LENGTH_SHORT);
                     toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
