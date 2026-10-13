@@ -545,7 +545,22 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             robberChooseHexGroup.setVisibility(View.VISIBLE);
             //robberHexMessage.setText("Please selected an intersection with a building adjacent to the robber");
             messageTextView.setText("Please selected an intersection with a building adjacent to the robber");
+            boolean hasVictim = false;
+            for (Integer adjacent : state.getBoard().getHexToIntIdMap().get(selectedHexagonId)) {
+                edu.up.cs.androidcatan.catan.gamestate.buildings.Building building =
+                        state.getBoard().getBuildingAtIntersection(adjacent);
+                if (building != null && building.getOwnerId() != playerNum) {
+                    hasVictim = true;
+                    break;
+                }
+            }
             game.sendAction(new CatanRobberMoveAction(this, playerNum, selectedHexagonId));
+            if (!hasVictim) {
+                // A victim is optional when no opponent owns an adjacent building.
+                game.sendAction(new CatanRobberStealAction(this, playerNum, -1));
+                robberChooseHexGroup.setVisibility(View.GONE);
+                messageTextView.setText("Robber moved.");
+            }
             return;
         }
 
@@ -1200,49 +1215,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
      * @return Success.
      */
     private boolean tryMoveRobber(int hexId) {
-        //Checks if a hexagon is selected
-        if (selectedHexagonId == -1) {
-            messageTextView.setText("Please select a valid hexagon to place the robber on.");
+        // Classic rules permit any different hexagon, including the desert.
+        if (hexId < 0 || hexId >= state.getBoard().getHexagons().size()
+                || hexId == state.getBoard().getRobber().getHexagonId()) {
+            messageTextView.setText("Select a different hexagon for the robber.");
             shake(messageTextView);
             return false;
         }
-        //Checks if Desert tile is selected
-        if (state.getBoard().getHexagons().get(selectedHexagonId).getResourceId() == 5) {
-            messageTextView.setText("Desert Tile can no longer be selected.");
-            shake(messageTextView);
-            return false;
-        }
-        // make sure they have a hexagon selected
-        if (hexId == -1) {
-            messageTextView.setText(R.string.hex_for_robber);
-            shake(messageTextView);
-            return false;
-        }
-        // make sure they move the robber to a new hexagon
-        if (hexId == state.getBoard().getRobber().getHexagonId()) {
-            messageTextView.setText(R.string.new_hex);
-            Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Robber must be moved to a new hexagon.", Toast.LENGTH_SHORT);
-            toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-            toast.show();
-            shake(messageTextView);
-            return false;
-        }
-        // get a list of adjacent intersections to the hexagon
-        ArrayList<Integer> intersections = state.getBoard().getHexToIntIdMap().get(hexId);
-        for (Integer intersection : intersections) {
-            if (state.getBoard().getBuildings()[intersection] != null) {
-                if (state.getBoard().getBuildings()[intersection].getOwnerId() != playerNum) {
-                    messageTextView.setText(R.string.robber_moved);
-                    return true;
-                }
-            }
-        }
-        messageTextView.setText(R.string.opp_bldg);
-        Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Robber must be moved next to an opponents building.", Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-        toast.show();
-        shake(messageTextView);
-        return false;
+        return true;
     }
 
     /**
