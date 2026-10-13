@@ -62,3 +62,10 @@ are in their hand, what development cards are owned/played, and what the CPUs ar
 - User must **install over Build 005**, not uninstall or clear data. Full game/device UI, retained saves and close/reopen behavior still need physical Samsung testing.
 - Source changes made to `dev/android-modernisation` after the immutable build snapshot are not included in this APK.
 
+
+## Samsung owner acceptance — 13 October 2026
+- **PASS (owner confirmed):** Build 006 installs/updates and Continue Saved Game still restores the existing match.
+- **PASS (owner confirmed):** Enlarged, labelled island resource icons are clearer and look better on the Samsung.
+- **NOT YET CONFIRMED:** All dice rolls and public actions appear correctly; the private hand and development-card totals update; history survives another full restart; CPU turns and complete match gameplay behave correctly.
+- Treat Build 006 as the **current working installed baseline for the confirmed checks**. Preserve the existing signing key, save compatibility and immutable approved build snapshot.
+- No additional APK build authorised or started by this update.
