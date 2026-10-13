@@ -333,6 +333,12 @@ public class Board implements Serializable {
         return getIntersectionOwners(intersectionId).contains(playerId);
     }
 
+    private boolean canExtendRoadThrough(int playerId, int intersection) {
+        Building existing = buildings[intersection];
+        if (existing != null && existing.getOwnerId() != playerId) return false;
+        return isConnected(playerId, intersection);
+    }
+
     /**
      * @param playerId - player building the road
      * @param a - intersection
@@ -342,6 +348,10 @@ public class Board implements Serializable {
     public boolean validRoadPlacement(int playerId, boolean isSetupPhase, int a, int b, int settlementIntersection) {
         Log.d(TAG, "validRoadPlacement() called with: playerId = [" + playerId + "], isSetupPhase = [" + isSetupPhase + "], a = [" + a + "], b = [" + b + "]");
 
+        // Validate indexes before accessing the adjacency list or road matrix.
+        if (playerId < 0 || playerId > 3 || a < 0 || b < 0
+                || a >= intersectionAdjacencyList.size() || b >= intersectionAdjacencyList.size()
+                || a == b) return false;
         // check if intersections are adjacent
         if (!this.intersectionAdjacencyList.get(a).contains(b)) {
             Log.e(TAG, "validRoadPlacement: Invalid road placement. Intersections are not adjacent.");
@@ -349,12 +359,19 @@ public class Board implements Serializable {
             return false;
         }
 
-        // if it is the setup phase make sure the road is connected to the settlement they just built
-        if (isSetupPhase)
+        // During setup, the road must touch THIS turn's new settlement.
+        if (isSetupPhase) {
             if (a != settlementIntersection && b != settlementIntersection) return false;
+            if (settlementIntersection < 0 || settlementIntersection >= buildings.length
+                    || buildings[settlementIntersection] == null
+                    || buildings[settlementIntersection].getOwnerId() != playerId) return false;
+        }
 
-        // check if road is connected to players roads / buildings at either intersection
-        if (isConnected(playerId, a) || isConnected(playerId, b)) {
+        // Opponent buildings block THROUGH movement, but allow a road ending
+        // at their intersection. They cannot be used as a connection point.
+        boolean connected = isSetupPhase
+                || canExtendRoadThrough(playerId, a) || canExtendRoadThrough(playerId, b);
+        if (connected) {
             // check if 3 roads at either intersection
             if (getRoadsAtIntersection(a).size() > 2 || getRoadsAtIntersection(b).size() > 2) {
                 Log.e(TAG, "validRoadPlacement: Invalid road placement. Roads are already built at this intersection.");
