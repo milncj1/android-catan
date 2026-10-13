@@ -1573,6 +1573,17 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             this.sidebarMenuButton.setClickable(true);
         }
 
+        // Clear turn indicator remains visible even when controls collapse.
+        TextView turnChip = myActivity.findViewById(R.id.turn_status_chip);
+        if (turnChip != null) {
+            String who = getAllPlayerNames()[state.getCurrentPlayerId()];
+            String stage = state.isSetupPhase() ? "Placement"
+                    : state.isRobberPhase() ? "Robber"
+                    : state.isActionPhase() ? "Build / trade" : "Roll";
+            turnChip.setText(who + " · " + stage);
+            turnChip.setTextColor(HexagonGrid.playerColors[state.getCurrentPlayerId()]);
+        }
+
         /* ----- update resource value TextViews ----- */
 
         // get the players resources
