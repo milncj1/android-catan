@@ -252,13 +252,11 @@ public class CatanLocalGame extends LocalGame {
         if (action instanceof CatanBuyDevCardAction) {
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
-            //Get the current player who wants the dev card
+            // There are exactly 25 cards in classic Catan. Reject the
+            // purchase before spending resources if none remain.
+            if (!state.hasDevelopmentCardsAvailable()) return false;
             Player player = state.getCurrentPlayer();
-
-            // remove resources from players inventory (also does checks)
             if (!player.removeResourceBundle(DevelopmentCard.resourceCost)) return false;
-
-            // add random dev card to players inventory
             int devCard = state.getRandomDevCard();
             player.getDevelopmentCards().add(devCard);
             player.addDevCardsBuiltThisTurn(devCard);
