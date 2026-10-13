@@ -25,6 +25,8 @@ jobs:
           java-version: '17'
       - name: Cache Gradle dependencies
         uses: gradle/actions/setup-gradle@v4
+      - name: Validate Android XML before compilation
+        run: python3 ci/check_android_xml.py
       - name: Run local JVM unit tests and assemble debug APK
         run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
       - name: Upload one unsigned-for-delivery test artifact
