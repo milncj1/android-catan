@@ -1970,7 +1970,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                     next.getBoard().getBuildingAtIntersection(pendingIntersection);
             if (piece instanceof edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement
                     && piece.getOwnerId() == playerNum)
-                confirmation = "Settlement built at junction " + pendingIntersection + ".";
+                confirmation = next.isSetupPhase()
+                        ? "Opening settlement " + (next.getSetupPhaseTurnCounter() > 3 ? "2" : "1")
+                            + " of 2 placed. Now select the adjoining road."
+                        : "Settlement built at junction " + pendingIntersection + ".";
         } else if (pendingBuild == PENDING_CITY) {
             edu.up.cs.androidcatan.catan.gamestate.buildings.Building piece =
                     next.getBoard().getBuildingAtIntersection(pendingIntersection);
@@ -1983,8 +1986,12 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                                     && road.getIntersectionBId() == pendingRoadTo)
                             || (road.getIntersectionAId() == pendingRoadTo
                                     && road.getIntersectionBId() == pendingRoadFrom))) {
-                    confirmation = "Road built between junctions "
-                            + pendingRoadFrom + " and " + pendingRoadTo + ".";
+                    confirmation = next.isSetupPhase()
+                            ? next.getSetupPhaseTurnCounter() > 3
+                                ? "Second starting pair complete! Tap END TURN to start the match."
+                                : "First starting pair complete! Tap END TURN. The computers place their pairs, then you place your second."
+                            : "Road built between junctions "
+                                + pendingRoadFrom + " and " + pendingRoadTo + ".";
                     break;
                 }
             }
