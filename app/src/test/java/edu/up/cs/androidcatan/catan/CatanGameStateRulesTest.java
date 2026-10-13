@@ -3,6 +3,8 @@ package edu.up.cs.androidcatan.catan;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import edu.up.cs.androidcatan.catan.gamestate.Board;
+import edu.up.cs.androidcatan.catan.gamestate.Hexagon;
+import edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement;
 
 /**
  * Regression checks for classic rules, runnable as local JVM JUnit tests.
@@ -45,6 +47,33 @@ public class CatanGameStateRulesTest {
         assertFalse(board.validRoadPlacement(0, false, 54, 1));
         assertFalse(board.validRoadPlacement(0, false, 1, 1));
         assertFalse(board.validRoadPlacement(-1, false, 0, 1));
+    }
+
+    @Test public void robberBlocksResourceProductionOnOccupiedTile() {
+        CatanGameState original = new CatanGameState();
+        Board board = original.getBoard();
+        Hexagon chosen = null;
+        for (Hexagon tile : board.getHexagons()) {
+            if (tile.getResourceId() >= 0 && tile.getResourceId() < 5
+                    && tile.getChitValue() >= 2 && tile.getChitValue() <= 12
+                    && tile.getHexagonId() != board.getRobber().getHexagonId()) {
+                chosen = tile;
+                break;
+            }
+        }
+        assertNotNull(chosen);
+        int point = board.getHexToIntIdMap().get(chosen.getHexagonId()).get(0);
+        assertTrue(board.addBuilding(point, new Settlement(0)));
+        original.setSetupPhase(false);
+        CatanGameState blocked = new CatanGameState(original);
+        assertTrue(blocked.getBoard().moveRobber(chosen.getHexagonId()));
+        CatanGameState open = new CatanGameState(original);
+
+        blocked.produceResources(chosen.getChitValue());
+        open.produceResources(chosen.getChitValue());
+        int type = chosen.getResourceId();
+        assertTrue(open.getPlayerList().get(0).getResourceCards()[type]
+                > blocked.getPlayerList().get(0).getResourceCards()[type]);
     }
 
     @Test public void openingTurnStateSurvivesDeepCopy() {
