@@ -12,6 +12,11 @@ Do not trigger Actions until owner approves. Use a new immutable `apk-build/004-
 - Resize remaining development card, robber and resource-picker overlays within available screen; preserve tappable elements.
 - Completely redesign the opening screen into an island-themed landscape welcome page with scrollable four-player settings, persistent Start New Game and Save Setup actions, and hidden unused network tab.
 - Prevent stale saved multiplayer settings or an all-CPU setup from opening the 'No GUI' page: enforce one human plus three CPU opponents and always start local/offline.
+- **Autosave every successful game move**, including each setup placement, dice roll, robber step, build and legal trade; first snapshot created after all four players are ready.
+- **Continue saved game** on the opening screen: restore the board, chits, ports, resources, buildings, all player names/types, current turn/phase, private development cards and robber status. Recreate fresh CPU and human player objects and let the game thread resume from the saved turn.
+- Atomic private Android file with schema validation and interrupted-write recovery; bad saves are retained without destructive cleanup.
+- Confirm before starting a new game over an unfinished one; discard the save automatically once a player wins.
+- Four new JVM serialization tests covering resumed turn, game board/ports, resource inventories, configuration and robber discard phase.
 - Preserve randomised tile types, numbers and robber-on-desert at creation. Randomise all nine port trade types (one 2:1 per resource, four 3:1) for each NEW game while keeping coastal locations fixed.
 - Copy the existing board ports unchanged during state updates. Added regression test covering map variety, resource counts, chits and port assignments.
 - Correct two misspelled legacy UI group references.
@@ -20,6 +25,11 @@ Do not trigger Actions until owner approves. Use a new immutable `apk-build/004-
 ## Acceptance checks on Samsung
 
 1. Install **over** Build 003 using same permanent signing certificate and higher Android version code; no data cleared.
+1a. Begin a match; place your opening settlement and road. Send the app to Home, return to it, and ensure nothing moved or disappeared.
+1b. Force-close the app, relaunch, tap **Continue saved game**, and verify the board and current turn match the saved position.
+1c. Progress to CPU turns and reload while one of the CPUs is due to act. Ensure all three CPU players reconnect without repeating opening placements.
+1d. Repeat save/restore mid-game after a city, road, bank trade and during the robber/discard phase.
+1e. Press New Game with an existing save: cancelling must keep Continue Game intact; confirming must generate a fresh island and replace the old snapshot.
 2. Opening page fits in landscape, four slots and type selectors visible, main Start button always reachable; test keyboard on player name.
 3. Start game with Human + 3 Smart CPU players; ensure no 'No GUI player' page appears.
 4. Board is fully visible; score overlay reads correctly; collapse and expand rail and confirm taps place buildings accurately.
@@ -31,10 +41,10 @@ Do not trigger Actions until owner approves. Use a new immutable `apk-build/004-
 10. Complete an opening round and several CPU turns to confirm scoring, ports and controls still work.
 
 ## Known incomplete work
-- Full persistent autosave/resume after Android terminates the app is still missing. The return-to-app fix preserves existing live games where possible, NOT finished match persistence.
+- Autosave/resume is implemented in source but not yet tested on a physical phone. We still need to verify actual process-death restore and all three CPU turn transitions.
 - AI negotiation with CPU players not implemented.
 - Complete CPU strength tuning and all Catan rule edge cases not independently device-tested.
-- Build 004 source has not yet passed GitHub compilation or installed on a device.
+- Build 004 source has not yet passed GitHub compilation or installed on a device. All save tests are written, not executed.
 
 ## Prebuild source checks completed
 - Game board and all five opening/remote backing XML layouts are structurally balanced.
