@@ -218,39 +218,24 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
             //1. Check if this player has discarded
             if (!gs.getRobberPlayerListHasDiscarded()[playerNum]) {
-                Log.i(TAG, "receiveInfo: Computer player " + playerNum + " needs to discard!!!");
-
-                //2a. Check if the player needs to discard cards; if not, send discard action with empty resource list;
-                //   GameState will handle logic.
-                if (!gs.checkIfPlayerHasDiscarded(playerNum)) {
-                    Log.i(TAG, "receiveInfo: Computer " + playerNum + " does not need to discard, but still needs to send action.");
-                    game.sendAction(new CatanRobberDiscardAction(this, playerNum, robberResourcesDiscard));
-                    return;
-                }
-                //2b. Player needs to discard cards; player will randomly choose resources until half of their cards have been discarded
-                else {
-                    robberResourcesDiscard = new int[]{0, 0, 0, 0, 0};
-                    //3. Loop until computer has chosen enough cards to discard
-                    for (int i = 0; i < gs.getPlayerList().get(playerNum).getResourceCards().length; i++) {
-                        for (int j = 0; j < gs.getPlayerList().get(playerNum).getResourceCards()[i]; j++) {
-                            robberResourcesDiscard[i]++;
-                            Log.i(TAG, "receiveInfo: Player " + playerNum + " is discarding resources: Wanted- " + robberResourcesDiscard[i] + ", Actual- " + gs.getPlayerList().get(playerNum).getResourceCards()[i]);
-                            if (gs.validDiscard(playerNum, robberResourcesDiscard)) {
-                                Log.i(TAG, "receiveInfo: Computer is now discarding resources");
-
-                                //4. Send discard action
-                                CatanRobberDiscardAction action = new CatanRobberDiscardAction(this, playerNum, robberResourcesDiscard);
-                                game.sendAction(action);
-                                break;
-                            }
-                        }
-                        if (gs.getRobberPlayerListHasDiscarded()[playerNum]) {
-                            Log.i(TAG, "receiveInfo: Computer discarded cards!");
-                            break;
+                int[] held = gs.getPlayerList().get(playerNum).getResourceCards().clone();
+                int total = 0;
+                for (int count : held) total += count;
+                int required = total > 7 ? total / 2 : 0;
+                int[] discarded = new int[5];
+                // Preserve scarce resource types where possible.
+                for (int n = 0; n < required; n++) {
+                    int mostCommon = -1;
+                    for (int res = 0; res < held.length; res++) {
+                        if (held[res] > 0 && (mostCommon < 0 || held[res] > held[mostCommon])) {
+                            mostCommon = res;
                         }
                     }
+                    if (mostCommon < 0) return;
+                    held[mostCommon]--;
+                    discarded[mostCommon]++;
                 }
-                Log.i(TAG, "receiveInfo: Player is ending the discard phase!");
+                game.sendAction(new CatanRobberDiscardAction(this, playerNum, discarded));
                 return;
             }//End of discard phase
 
