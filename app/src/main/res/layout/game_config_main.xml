@@ -1,48 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Personal offline Catan home: phone-landscape layout, with scrollable options. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical" >
+    android:layout_height="match_parent"
+    android:background="@drawable/start_sea_background"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="18dp"
+    android:paddingEnd="18dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
-    <include
-        android:id="@+id/tabHost"
-        android:layout_width="match_parent"
+    <!-- Simple illustrated title: nothing here blocks starting a game. -->
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        layout="@layout/game_config_tabhost" />
+        android:layout_weight="0.86"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="12dp">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="@dimen/table_row_vert_pad">
-
-        <Button
-            android:id="@+id/saveConfigButton"
-            android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/config_horiz_margin"
-            android:text="@string/save_config_as_default" />
+            android:text="CATAN"
+            android:textSize="48sp"
+            android:fontFamily="sans-serif-black"
+            android:textStyle="bold"
+            android:letterSpacing="0.07"
+            android:textColor="#FFF1CE89"
+            android:shadowColor="#66000000"
+            android:shadowDx="2"
+            android:shadowDy="3"
+            android:shadowRadius="4"
+            android:singleLine="true" />
 
-        <Button
-            android:id="@+id/playGameButton"
-            android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/config_horiz_margin"
-            android:text="@string/start_the_game" />
+            android:layout_marginTop="1dp"
+            android:text="THE ISLAND AWAITS"
+            android:letterSpacing="0.13"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFF6DF" />
 
-        <Button
-            android:id="@+id/backButton2"
-            style="?android:attr/buttonStyleSmall"
+        <LinearLayout
             android:layout_width="wrap_content"
+            android:layout_height="64dp"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/terrain_lumber"
+                android:contentDescription="Forest" />
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/terrain_grain"
+                android:contentDescription="Fields" />
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/terrain_ore"
+                android:contentDescription="Mountains" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_marginLeft="193dp"
-            android:layout_toRightOf="@+id/saveConfigButton"
-            android:onClick="doFinish"
-            android:text="Back" />
+            android:layout_marginTop="12dp"
+            android:text="Build settlements. Trade resources. Outsmart three rivals."
+            android:textSize="13sp"
+            android:textColor="#FFDEF3EF"
+            android:lineSpacingExtra="2dp" />
 
-    </RelativeLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="OFFLINE · SINGLE PLAYER"
+            android:textStyle="bold"
+            android:letterSpacing="0.06"
+            android:textSize="11sp"
+            android:textColor="#FFF1CE89" />
+    </LinearLayout>
 
-</RelativeLayout>
+    <!-- Right side is a card; the player list scrolls separately from actions. -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.14"
+        android:background="@drawable/start_setup_card"
+        android:orientation="vertical"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NEW GAME"
+            android:textSize="23sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.04"
+            android:textColor="#FF254B3F" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="You vs. 3 computer opponents"
+            android:textSize="12sp"
+            android:textColor="#FF655B46"
+            android:layout_marginBottom="4dp" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="false"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="true">
+            <include
+                layout="@layout/game_config_tabhost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="7dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/saveConfigButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="11dp"
+                android:paddingEnd="11dp"
+                android:background="@drawable/start_secondary_button"
+                android:text="Save setup"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:textColor="#FF3F4436" />
+
+            <Button
+                android:id="@+id/playGameButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="9dp"
+                android:background="@drawable/start_play_button"
+                android:text="Start new game  ›"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#FFFFF7E5" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
