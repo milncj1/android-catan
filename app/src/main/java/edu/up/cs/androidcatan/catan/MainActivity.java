@@ -46,9 +46,9 @@ public class MainActivity extends GameMainActivity {
 
         GameConfig defaultConfig = new GameConfig(playerTypes, 4, 4, "Settlers of Catan", PORT_NUMBER);
         defaultConfig.addPlayer("Human", 0); // player 1: a human player
-        defaultConfig.addPlayer("Computer 1", 1); // player 2: a computer player
-        defaultConfig.addPlayer("Computer 2", 1); // player 2: a computer player
-        defaultConfig.addPlayer("Computer 3", 1); // player 2: a computer player
+        defaultConfig.addPlayer("Computer 1", 2); // offline smart computer opponent
+        defaultConfig.addPlayer("Computer 2", 2); // offline smart computer opponent
+        defaultConfig.addPlayer("Computer 3", 2); // offline smart computer opponent
         defaultConfig.setRemoteData("Remote Human Player", "", 0);
 
         return defaultConfig;
