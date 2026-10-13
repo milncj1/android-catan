@@ -150,6 +150,8 @@ public class CatanLocalGame extends LocalGame {
             if (state.isSetupPhase()) this.state.setSetupPhase(this.state.updateSetupPhase());
 
             state.setActionPhase(false); // set action phase to false
+            state.setFreeRoadsRemaining(0); // unused Road Building placements expire at turn end
+            state.setDevelopmentCardPlayedThisTurn(false);
             state.getCurrentPlayer().setDevCardsBuiltThisTurn(new ArrayList<Integer>());
             Log.i(TAG, "makeMove: It is now " + state.getCurrentPlayerId() + "'s turn.");
             return true;
@@ -160,6 +162,13 @@ public class CatanLocalGame extends LocalGame {
         //Player is building a road
         if (action instanceof CatanBuildRoadAction) {
             Log.d(TAG, "makeMove() receiving a CatanBuildRoadAction: " + action.toString());
+            CatanBuildRoadAction roadAction = (CatanBuildRoadAction) action;
+            if (roadAction.getOwnerId() != state.getCurrentPlayerId()) return false;
+            int a = roadAction.getIntAId();
+            int b = roadAction.getIntBid();
+            // Check connectivity, adjacency and occupancy before changing resources.
+            if (!state.getBoard().validRoadPlacement(state.getCurrentPlayerId(),
+                    state.isSetupPhase(), a, b)) return false;
 
             // if it is the setup phase, do not remove resources
             if (((CatanBuildRoadAction) action).isSetupPhase()) {
@@ -169,7 +178,9 @@ public class CatanLocalGame extends LocalGame {
                 return true;
             }
             // if not setup phase, remove the resource cost of a road from the players resource cards
-            if (state.getCurrentPlayer().removeResourceBundle(Road.resourceCost)) {
+            boolean freeRoad = state.getFreeRoadsRemaining() > 0;
+            if (freeRoad || state.getCurrentPlayer().removeResourceBundle(Road.resourceCost)) {
+                if (freeRoad) state.setFreeRoadsRemaining(state.getFreeRoadsRemaining() - 1);
                 // add the road to the board
                 state.getBoard().addRoad(((CatanBuildRoadAction) action).getOwnerId(), ((CatanBuildRoadAction) action).getIntAId(), ((CatanBuildRoadAction) action).getIntBid());
 
@@ -322,12 +333,10 @@ public class CatanLocalGame extends LocalGame {
 
         //Player would like to use the Road Building Dev Card
         if (action instanceof CatanUseRoadBuildingCardAction) {
-            Log.d(TAG, "makeMove() called with: action = [" + action + "]");
-
-            //Add the resources to the player's hand to build two roads then remove the dev card
-            state.getCurrentPlayer().addResourceCard(0, 2);
-            state.getCurrentPlayer().addResourceCard(2, 2);
+            if (!canPlayActionCard(4)) return false;
             state.getCurrentPlayer().removeDevCard(4);
+            state.setFreeRoadsRemaining(2);
+            state.setDevelopmentCardPlayedThisTurn(true);
             return true;
         }
 
@@ -446,6 +455,16 @@ public class CatanLocalGame extends LocalGame {
      * @return a message that tells who has won the game, or null if the
      * game is not over
      */
+    // An action development card can be played only once per turn and never
+    // on the same turn it was purchased. Victory Point cards are different:
+    // they are secret points, rather than action cards.
+    private boolean canPlayActionCard(int cardId) {
+        return !state.isSetupPhase()
+                && !state.isRobberPhase()
+                && !state.hasPlayedDevelopmentCardThisTurn()
+                && state.getCurrentPlayer().getPlayableDevCards().contains(cardId);
+    }
+
     private void updateLongestRoadHolder() {
         state.setCurrentLongestRoadPlayerId(
                 LongestRoadCalculator.findHolder(state.getBoard().getRoads(),
