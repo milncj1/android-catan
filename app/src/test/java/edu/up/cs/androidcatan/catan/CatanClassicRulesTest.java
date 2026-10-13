@@ -118,6 +118,24 @@ public class CatanClassicRulesTest {
         assertFalse(game.makeMove(new CatanBuildCityAction(actingHuman, false, 0, 0)));
     }
 
+    @Test public void resumedSetupCanBuildRoadFromThePersistedSettlement() throws Exception {
+        CatanGameState inProgress = new CatanGameState();
+        int from = 0;
+        int to = inProgress.getBoard().getIntersectionAdjacencyList().get(from).get(0);
+        inProgress.getBoard().addBuilding(from, new Settlement(0));
+        inProgress.setCurrentSetupSettlement(from);
+        inProgress.setSetupRoadBuiltThisTurn(false);
+
+        CatanLocalGame resumed = new CatanLocalGame(inProgress);
+        assertTrue(resumed.makeMove(new edu.up.cs.androidcatan.catan.actions.CatanBuildRoadAction(
+                actingHuman, true, 0, from, to)));
+        java.lang.reflect.Field field = CatanLocalGame.class.getDeclaredField("state");
+        field.setAccessible(true);
+        CatanGameState updated = (CatanGameState) field.get(resumed);
+        assertTrue(updated.isSetupRoadBuiltThisTurn());
+        assertEquals(from, updated.getCurrentSetupSettlement());
+    }
+
     @Test public void robberMustBeResolvedBeforeBuildingSettlement() {
         CatanGameState state = normalTurn();
         state.setRobberPhase(true);
