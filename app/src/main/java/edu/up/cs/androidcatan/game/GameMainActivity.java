@@ -152,6 +152,10 @@ View.OnClickListener {
 					this);
 		}
 		
+		// The personal Catan build is strictly offline; an old saved network
+		// configuration must never reopen the hidden multiplayer tab.
+		this.config.setLocal(true);
+
 		if (this.config.isUserModifiable()) { // normal run: user has chance to modify configuration
 
 			// initialize and show the GUI that allows the user to specify the game's
@@ -389,6 +393,7 @@ View.OnClickListener {
 		
 		// put a row in the table for each player in the config
 		this.playerTable = findViewById(R.id.configTableLayout);
+		this.tableRows.clear(); // Re-inflating the start page must not duplicate old rows.
 		int numPlayers = config.getNumPlayers();
 		for (int i = 0; i < numPlayers; ++i) {
 
@@ -549,6 +554,18 @@ View.OnClickListener {
 
 	private String startGame() {
 		GameConfig finalConfig = scrapeData();
+		if (!finalConfig.isLocal() || finalConfig.getNumPlayers() != 4)
+			return "This offline game needs you and three computer players.";
+		GamePlayerType[] options = finalConfig.getAvailTypes();
+		// Stop configurations without a human GUI from showing the original
+		// blank No GUI screen. Keep the Easy/Smart computer choices available.
+		if (finalConfig.getSelType(0) != options[0])
+			return "Choose Local Human Player for the first player (you).";
+		for (int i = 1; i < 4; i++) {
+			if (finalConfig.getSelType(i) != options[1]
+					&& finalConfig.getSelType(i) != options[2])
+				return "Players 2–4 must be computer opponents.";
+		}
 		return launchGame(finalConfig);
 	}
 
@@ -647,8 +664,8 @@ View.OnClickListener {
 		GameConfig result = config.copyWithoutPlayers();
 
 		// Set remote/local
-		TabHost tabHost = findViewById(R.id.tabHost);
-		result.setLocal(tabHost.getCurrentTab() == 0);
+		// The old network tab is hidden; every game is offline.
+		result.setLocal(true);
 
 		// Retrieve the info for each player and add to the config
 		for (TableRow row : this.tableRows) {
