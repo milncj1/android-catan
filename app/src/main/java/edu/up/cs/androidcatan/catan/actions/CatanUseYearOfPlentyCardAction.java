@@ -19,6 +19,7 @@ public class CatanUseYearOfPlentyCardAction extends GameAction implements Serial
     private static final String TAG = "CatanUseYearOfPlentyCardAction";
     private static final long serialVersionUID = 6394504060565561132L;
     private int chosenResource;
+    private int secondChosenResource;
 
     /**
      * CatanUseYearOfPlentyCardAction constuctor
@@ -29,10 +30,21 @@ public class CatanUseYearOfPlentyCardAction extends GameAction implements Serial
     public CatanUseYearOfPlentyCardAction(GamePlayer player, int chosenResource) {
         super(player);
         this.chosenResource = chosenResource;
+        this.secondChosenResource = chosenResource;
         Log.d(TAG, "CatanUseYearOfPlentyCardAction called");
+    }
+
+    public CatanUseYearOfPlentyCardAction(GamePlayer player, int first, int second) {
+        super(player);
+        this.chosenResource = first;
+        this.secondChosenResource = second;
     }
 
     public int getChosenResource() {
         return chosenResource;
+    }
+
+    public int getSecondChosenResource() {
+        return secondChosenResource;
     }
 }
