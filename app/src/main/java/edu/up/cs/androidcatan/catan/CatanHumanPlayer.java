@@ -1385,7 +1385,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (hudLastRoll != null) {
             String namedRoll = CatanMatchHistory.lastRoll(myActivity);
             if (!namedRoll.isEmpty()) {
-                hudLastRoll.setText(namedRoll);
+                // Keep the compact HUD to the dice; full production remains in History.
+                int detail = namedRoll.indexOf(" — production:");
+                if (detail < 0) detail = namedRoll.indexOf(" — no resources produced");
+                hudLastRoll.setText(detail >= 0 ? namedRoll.substring(0, detail) : namedRoll);
             } else if (state.isSetupPhase()) {
                 hudLastRoll.setText("Dice: opening placements");
             } else if (state.isActionPhase()) {
