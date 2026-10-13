@@ -1468,8 +1468,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         } else if (this.state.isSetupPhase()) { // IF SETUP PHASE
             this.messageTextView.setText(R.string.setup_phase); // set info message
             // get settlement and road count for the current turn
-            int settlements = Collections.frequency(this.buildingsBuiltOnThisTurn, 1);
-            int roads = Collections.frequency(this.buildingsBuiltOnThisTurn, 0);
+            // Setup progress must survive an app restart or Continue Game.
+            // The temporary UI building list is not a reliable source.
+            int settlements = state.getCurrentSetupSettlement() >= 0 ? 1 : 0;
+            int roads = state.isSetupRoadBuiltThisTurn() ? 1 : 0;
 
             // check if they are done with their setup phase turn
             if (settlements == 1 && roads == 1) {
