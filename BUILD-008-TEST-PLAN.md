@@ -1,6 +1,6 @@
 # Build 008 — Development card collection and clear two-round opening
 Date: 13 October 2026
-Status: **Development-only source committed. NOT built, installed or Samsung-tested.**
+Status: **Compiled, unit-tested and permanently signed successfully; awaiting Samsung install and owner testing.**
 Working installed baseline: **Build 007**, owner-confirmed 13 October. Master/default branch untouched.
 
 ## Features requested
@@ -40,3 +40,12 @@ The Development control was buried in an old dropdown. Replace it with an attrac
 
 ## Approval discipline
 No `apk-build/**` branch and no GitHub Actions build without an explicit owner request. Once requested: one workflow run, stop on failure instead of retrying automatically, sign privately with original PKCS12 keystore, check signature/version, share APK for Samsung acceptance. 
+
+## Owner-approved Build 008 — 13 October 2026
+- User explicitly authorised building Build 008; created exactly one snapshot branch `apk-build/008-development-cards` from dev commit `987aa72a54e87147107066e464f548515ffc5c36`.
+- [GitHub Actions run 38461614030](https://github.com/milncj1/android-catan/actions/runs/38461614030), run number **11**: first run SUCCESS. Android XML checks, `:app:testDebugUnitTest`, `:app:assembleDebug` all passed; no reruns.
+- APK locally signed using the SAME permanent PKCS#12 key/certificate as Build 007; `jarsigner -verify` succeeded; ZIP CRC verified.
+- App ID `edu.up.cs.androidcatan`; versionCode **11** (prior Build 007: 10), versionName `1.2-preview`, per `app/build.gradle` reading GitHub Actions run number.
+- Output: `Catan_Build_008_Permanent_Signed.apk`, 27,226,801 bytes, SHA-256 `fe37574aabacfb9fba4a5e34b7df126a80d7923af6597f45ca5ecf7a5cccde7e`.
+- Sign key and plaintext password were materialised privately for signing and erased from local temporary signing workspace afterwards; retained in the secure user's Library.
+- **Not yet device-installed/tested.** Build 007 remains the last confirmed-good installed version. No default-branch merge.
