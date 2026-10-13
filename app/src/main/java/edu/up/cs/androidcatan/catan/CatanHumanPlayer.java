@@ -1849,6 +1849,11 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             this.sidebarMenuButton.setClickable(true);
         }
 
+        // The collection is always inspectable, even during the CPUs' turns
+        // or opening placements. Individual Buy/Play controls enforce rules.
+        this.sidebarOpenDevCardMenuButton.setAlpha(1f);
+        this.sidebarOpenDevCardMenuButton.setClickable(true);
+
         // Clear turn indicator remains visible even when controls collapse.
         TextView turnChip = myActivity.findViewById(R.id.turn_status_chip);
         if (turnChip != null) {
