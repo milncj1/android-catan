@@ -86,6 +86,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private int[] robberDiscardedResources = new int[]{0, 0, 0, 0, 0};  //How many resources the player would like to discard
     private int selectedDevCard = -1;
     private int selectedResourceId = -1;
+    private int firstYearOfPlentyResource = -1;
     private TextView messageTextView = (TextView) null;
 
     private ArrayList<String> devCards = new ArrayList<>();
@@ -664,8 +665,20 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 this.selectedDevCard = -1;
             }
             // send corresponding actions to the game
-            if (selectedDevCard == 2)
-                game.sendAction(new CatanUseYearOfPlentyCardAction(this, this.selectedResourceId));
+            if (selectedDevCard == 2) {
+                if (firstYearOfPlentyResource < 0) {
+                    firstYearOfPlentyResource = selectedResourceId;
+                    selectedResourceId = -1;
+                    for (ImageView selection : monopolySelectionBox) {
+                        selection.setVisibility(View.INVISIBLE);
+                    }
+                    messageTextView.setText("Select your second Year of Plenty resource.");
+                    return;
+                }
+                game.sendAction(new CatanUseYearOfPlentyCardAction(
+                        this, firstYearOfPlentyResource, selectedResourceId));
+                firstYearOfPlentyResource = -1;
+            }
             if (selectedDevCard == 3)
                 game.sendAction(new CatanUseMonopolyCardAction(this, this.selectedResourceId));
             // hide pick resource menu
@@ -690,6 +703,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             int developmentCardId = -1;
             for (int i = 0; i < devCardNames.length; i++) {
                 if (devCardList.getSelectedItem().equals(devCardNames[i])) developmentCardId = i;
+            }
+            if (developmentCardId < 0) {
+                messageTextView.setText("Choose a development card first.");
+                return;
             }
             Log.i(TAG, "onClick: Player is using dev card id: " + developmentCardId + " (" + devCardNames[developmentCardId] + ")");
 
@@ -726,6 +743,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 if (developmentCardId == 2) {
                     toggleGroupVisibilityAllowTapping(pickResourceGroup);
                     selectedDevCard = 2;
+                    firstYearOfPlentyResource = -1;
+                    selectedResourceId = -1;
+                    messageTextView.setText("Select your first Year of Plenty resource.");
                     return;
                 }
 
