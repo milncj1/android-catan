@@ -1,3 +1,20 @@
+## Release audit — 13 October 2026
+
+**BUILD BLOCKED — missing original permanent signing key.**
+The Android signing certificate used to sign Build 002 and Build 003 remains in those APKs, but its PRIVATE key and passphrase are not available in the present project container; no matching backup was found by filename in the connected Dropbox. No code change or newly generated key can update the currently installed Android app unless signed with the same private key. Do not trigger an Actions build expecting a direct update until the old key is recovered, or the owner explicitly accepts one final reinstall with a new securely backed-up key. Never add signing keys or passwords to the public repository.
+
+Pre-build review:
+- All 76 main Java classes scanned for structural issues and all 22 layout XML files structurally checked.
+- Main Android resources, string links, layout references, Gradle automatic versioning and owner-approval-only Actions triggers inspected.
+- Rebuilt independent road matrices in Board copies; previous shallow-copied rows could taint autosaved states.
+- Smart and Easy CPU opening decisions now use saved setup settlement/road flags rather than transient CPU fields, so they can resume halfway through setup.
+- Easy CPU robber/discard loops now bounded and based on state; robber discard state copy corrected.
+- Guard invalid player indices before robber discard arrays are indexed.
+- Two additional JVM regression tests for copied roads and mid-CPU opening saves.
+- **All source-level checks are provisional. Build 004 has not been compiled, unit-tested or run on Samsung.**
+- Classic CPU negotiating trades and other engine features remain out-of-scope.
+
+
 # Build 004 — UI fit, return-to-app and random islands
 
 **Source ready for one owner-approved GitHub Actions build. NOT yet compiled or device-tested.**
