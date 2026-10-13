@@ -49,6 +49,8 @@ public class CatanLocalGame extends LocalGame {
 
     private Context autosaveContext;
     private int[] autosaveTypes;
+    private final boolean resumedFromSave;
+    private boolean restoredBoardDisplayed;
 
     /** Called before starting new/resumed match; never persists UI objects. */
     public void configureAutosave(Context context, int[] playerTypes) {
@@ -66,11 +68,27 @@ public class CatanLocalGame extends LocalGame {
 
     @Override protected void onMatchReady() {
         sessionReady = true;
-        persistMatch();
+        // Do not replace an existing Build 004 save before its board reaches the GUI.
+        if (!resumedFromSave) persistMatch();
     }
 
     @Override protected void onAcceptedMove() {
-        persistMatch();
+        // Resumed CPUs may act before the UI is connected. Keep the original
+        // snapshot intact until the human can see the board again.
+        if (!resumedFromSave || restoredBoardDisplayed) persistMatch();
+    }
+
+    /** Called after the resumed board and score display have been populated. */
+    public void confirmResumeDisplayed() {
+        if (!resumedFromSave) return;
+        postToGameThread(new Runnable() {
+            @Override public void run() {
+                if (restoredBoardDisplayed) return;
+                restoredBoardDisplayed = true;
+                // Persist any CPU actions taken while the restored GUI initialized.
+                persistMatch();
+            }
+        });
     }
 
     @Override protected void onMatchFinished() {
@@ -82,6 +100,7 @@ public class CatanLocalGame extends LocalGame {
      */
     public CatanLocalGame() {
         super();
+        resumedFromSave = false;
         state = new CatanGameState();
     }
 
@@ -93,6 +112,7 @@ public class CatanLocalGame extends LocalGame {
         super();
         if (savedState == null || savedState.getBoard() == null)
             throw new IllegalArgumentException("Cannot restore an empty match");
+        resumedFromSave = true;
         state = new CatanGameState(savedState);
     }
 
