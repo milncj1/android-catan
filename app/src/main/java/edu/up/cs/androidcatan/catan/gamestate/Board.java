@@ -129,21 +129,12 @@ public class Board implements Serializable {
         generateNewIntersectionGraphManually();
         this.setHighlightedHexagonId(b.highlightedHexagonId);
         this.setHighlightedIntersectionId(b.highlightedIntersectionId);
-        this.setRoadGraph(b.roadGraph);
+        // Reconstruct a separate road matrix from the copied roads.
+        // Never share mutable matrices or road objects between game states.
         generateRoadMatrix();
-
-        for (Road road : b.getRoads()) {
-            roads.add(new Road(road.getOwnerId(), road.getIntersectionAId(), road.getIntersectionBId()));
-        }
-        for (int i = 0; i < b.roadMatrix.length; i++) {
-            for (int i1 = 0; i1 < b.roadMatrix[i].length; i1++) {
-                this.roadMatrix[i][i1] = new Road(b.roadMatrix[i][i1].getOwnerId(), b.roadMatrix[i][i1].getIntersectionAId(), b.roadMatrix[i][i1].getIntersectionBId());
-            }
-        }
-
-        System.arraycopy(b.roadMatrix, 0, this.roadMatrix, 0, b.roadMatrix.length);
-        for (int i = 0; i < b.roadMatrix.length; i++) {
-            this.roadMatrix[i] = Arrays.copyOf(b.roadMatrix[i], b.roadMatrix[i].length);
+        for (Road sourceRoad : b.getRoads()) {
+            addRoad(sourceRoad.getOwnerId(), sourceRoad.getIntersectionAId(),
+                    sourceRoad.getIntersectionBId());
         }
 
         synchronized (this) {
@@ -1346,9 +1337,6 @@ public class Board implements Serializable {
 
     /* ----- generic setter methods ----- */
 
-    private void setRoadGraph(ArrayList<ArrayList<Road>> roadGraph) {
-        this.roadGraph = roadGraph;
-    }
 
     /**
      * @param buildings Array of all buildings on the board, indexed by intersection id.
