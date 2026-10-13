@@ -13,6 +13,17 @@
     All groups but the static bottom menu group are set to GONE.
     -->
 
+    <!-- Parchment sidebar, kept behind all game controls. -->
+    <View
+        android:id="@+id/tabletop_sidebar"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/sidebar_panel_bg"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_sidebar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <!-- new sidebar static menu START-->
 
 
@@ -478,6 +489,10 @@
         app:layout_constraintGuide_percent="0.14" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_score"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -492,6 +507,10 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_trade"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -505,6 +524,10 @@
         app:layout_constraintTop_toBottomOf="@+id/sidebar_button_devcards" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_menu"
         style="@android:style/Widget.Material.Light.Button"
         android:layout_width="0dp"
@@ -526,8 +549,8 @@
         android:text="@string/heading_build"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:textColor="#FF43382B"
+        android:textSize="15sp"
         app:layout_constraintEnd_toStartOf="@+id/guideline_right_sidebar"
         app:layout_constraintStart_toStartOf="@+id/guideline_left_0"
         app:layout_constraintTop_toTopOf="@+id/guideline_top_border_dc_layout" />
@@ -541,8 +564,8 @@
         android:text="@string/heading_actions"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:textColor="#FF43382B"
+        android:textSize="15sp"
         app:layout_constraintEnd_toStartOf="@+id/guideline_right_sidebar"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/guideline_left_0"
@@ -557,14 +580,18 @@
         android:text="@string/heading_turn"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:textColor="#FF43382B"
+        android:textSize="15sp"
         app:layout_constraintEnd_toStartOf="@+id/guideline_right_sidebar"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="@+id/guideline_left_0"
         app:layout_constraintTop_toBottomOf="@+id/sidebar_button_trade" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_road"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -578,6 +605,10 @@
         app:layout_constraintTop_toBottomOf="@+id/sidebar_heading_build" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_settlement"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -591,6 +622,10 @@
         app:layout_constraintTop_toBottomOf="@+id/sidebar_button_road" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_city"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -604,6 +639,10 @@
         app:layout_constraintTop_toBottomOf="@+id/sidebar_button_settlement" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_devcards"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -672,6 +711,10 @@
         app:layout_constraintTop_toBottomOf="@+id/wool_icon" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_roll"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
@@ -685,6 +728,10 @@
         app:layout_constraintTop_toBottomOf="@+id/sidebar_heading_build3" />
 
     <Button
+        android:background="@drawable/sidebar_button"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
         android:id="@+id/sidebar_button_endturn"
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
