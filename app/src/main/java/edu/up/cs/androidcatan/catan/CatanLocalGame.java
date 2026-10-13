@@ -96,6 +96,7 @@ public class CatanLocalGame extends LocalGame {
     @Override
     public boolean canMove(int playerIdx) {
         Log.d(TAG, "canMove() called with: playerIdx = [" + playerIdx + "] currentPlayerId(): " + this.state.getCurrentPlayerId());
+        if (playerIdx < 0 || playerIdx >= state.getPlayerList().size()) return false;
 
         // if it is the robber phase
         if (state.isRobberPhase()) {
