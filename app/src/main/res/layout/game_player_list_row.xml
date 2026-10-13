@@ -4,7 +4,6 @@
     android:layout_height="wrap_content"
     android:paddingTop="2dp"
     android:paddingBottom="2dp">
-
     <EditText
         android:id="@+id/playerNameEditText"
         android:layout_width="0dp"
@@ -20,8 +19,7 @@
         android:paddingEnd="7dp"
         android:textSize="14sp"
         android:textColor="#FF2F4039"
-        android:hintTextColor="#FF777567" />
-
+        android:textColorHint="#FF777567" />
     <Spinner
         android:id="@+id/playerTypeSpinner"
         android:layout_width="0dp"
@@ -31,8 +29,6 @@
         android:paddingStart="6dp"
         android:paddingEnd="4dp"
         android:spinnerMode="dropdown" />
-
-    <!-- Fixed four-player game; retain the ID expected by legacy Java. -->
     <FrameLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
