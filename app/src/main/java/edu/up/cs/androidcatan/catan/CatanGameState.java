@@ -303,20 +303,16 @@ public class CatanGameState extends GameState {
      * @return
      */
     public boolean validDiscard(int playerId, int[] resourcesDiscarded) {
+        if (playerId < 0 || playerId >= playerList.size()
+                || resourcesDiscarded == null || resourcesDiscarded.length != 5) return false;
         int totalDiscarded = 0;
-        Log.i(TAG, "discardResources: Amount is " + totalDiscarded + ", Need: " + playerList.get(playerId).getTotalResourceCardCount() / 2);
-
-        //Make sure player has the correct amount of resources; iterate through and add to total
-        for (int i = 0; i < resourcesDiscarded.length; i++) {
-            if (resourcesDiscarded[i] > playerList.get(playerId).getResourceCards()[i]) {
-                Log.i(TAG, "validDiscard: Invalid due to not having enough resources, returning false");
-                return false;
-            }
+        int[] held = playerList.get(playerId).getResourceCards();
+        for (int i = 0; i < 5; i++) {
+            if (resourcesDiscarded[i] < 0 || resourcesDiscarded[i] > held[i]) return false;
             totalDiscarded += resourcesDiscarded[i];
         }
-
-        //Check if total discarded is the required amount (half their resources rounded down)
-        return totalDiscarded == playerList.get(playerId).getTotalResourceCardCount() / 2;
+        int handSize = playerList.get(playerId).getTotalResourceCardCount();
+        return totalDiscarded == (handSize > 7 ? handSize / 2 : 0);
     }
 
     /**
@@ -330,11 +326,9 @@ public class CatanGameState extends GameState {
     public boolean discardResources(int playerId, int[] resourcesDiscarded) {
         Log.w(TAG, "discardResources: " + this.getCurrentPlayer().printResourceCards());
 
-        //If they've already discarded, no need to discard, return true
-        if (robberPlayerListHasDiscarded[playerId]) {
-            Log.i(TAG, "discardResources: Player is not required to discard at this time");
-            return true;
-        }
+        if (!isRobberPhase || playerId < 0 || playerId >= playerList.size()
+                || robberPlayerListHasDiscarded[playerId]
+                || !validDiscard(playerId, resourcesDiscarded)) return false;
 
         //Iterate through and discard specified resources
         Log.i(TAG, "discardResources: Discarded resources");
