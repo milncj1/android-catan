@@ -347,14 +347,14 @@ public class Player implements Serializable {
             return -1;
         }
 
-        Random random = new Random();
-        int randomResourceId;
-        do {
-            randomResourceId = random.nextInt(5); // 0-4
-        } while (!checkResourceCard(randomResourceId, 1));
-
-        Log.d(TAG, "getRandomDevCard() returned: " + randomResourceId);
-        return randomResourceId;
+        // Every individual card must have equal odds, not every RESOURCE TYPE.
+        // Selecting uniformly from 0-4 would unfairly favour scarce types.
+        int chosenCard = new Random().nextInt(getTotalResourceCardCount());
+        for (int resource = 0; resource < resourceCards.length; resource++) {
+            if (chosenCard < resourceCards[resource]) return resource;
+            chosenCard -= resourceCards[resource];
+        }
+        return -1;
     }
 
     public int getVictoryPoints() {
