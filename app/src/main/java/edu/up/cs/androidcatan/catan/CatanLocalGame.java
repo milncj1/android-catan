@@ -134,6 +134,11 @@ public class CatanLocalGame extends LocalGame {
             if (!state.isSetupPhase() && (!state.isActionPhase() || state.isRobberPhase())) return false;
             Log.d(TAG, "makeMove() Player " + state.getCurrentPlayerId() + " is ending their turn.");
 
+            // A purchased development card becomes playable next turn.
+            // Clear the cards bought by the player whose turn is ENDING,
+            // before switching to the next player.
+            state.getCurrentPlayer().setDevCardsBuiltThisTurn(new ArrayList<Integer>());
+
             // if it is still the setup phase
             if (this.state.isSetupPhase()) {
                 // increment setup phase turn counter
@@ -156,7 +161,6 @@ public class CatanLocalGame extends LocalGame {
             state.setFreeRoadsRemaining(0); // free roads expire at turn end
             state.setDevelopmentCardPlayedThisTurn(false);
             state.setCurrentSetupSettlement(-1);
-            state.getCurrentPlayer().setDevCardsBuiltThisTurn(new ArrayList<Integer>());
             Log.i(TAG, "makeMove: It is now " + state.getCurrentPlayerId() + "'s turn.");
             return true;
         }
