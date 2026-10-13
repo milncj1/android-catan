@@ -106,6 +106,7 @@ public class CatanLocalGame extends LocalGame {
 
         //Player is rolling the dice
         if (action instanceof CatanRollDiceAction) {
+            if (state.isSetupPhase() || state.isActionPhase() || state.isRobberPhase()) return false;
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
             //Set the gamestates dice value to what the player rolled
@@ -129,6 +130,7 @@ public class CatanLocalGame extends LocalGame {
 
         //Player is ending their turn
         if (action instanceof CatanEndTurnAction) {
+            if (!state.isSetupPhase() && (!state.isActionPhase() || state.isRobberPhase())) return false;
             Log.d(TAG, "makeMove() Player " + state.getCurrentPlayerId() + " is ending their turn.");
 
             // if it is still the setup phase
@@ -151,6 +153,9 @@ public class CatanLocalGame extends LocalGame {
 
             state.setLastSetupSettlementId(-1);
             state.setActionPhase(false); // set action phase to false
+            state.setFreeRoadsRemaining(0);
+            state.setDevelopmentCardPlayedThisTurn(false);
+            state.setCurrentSetupSettlement(-1);
             state.setFreeRoadsRemaining(0); // unused Road Building placements expire at turn end
             state.setDevelopmentCardPlayedThisTurn(false);
             state.getCurrentPlayer().setDevCardsBuiltThisTurn(new ArrayList<Integer>());
@@ -160,91 +165,64 @@ public class CatanLocalGame extends LocalGame {
 
         /* --------------------------- Build Actions --------------------------------------- */
 
-        //Player is building a road
+
+        // The authoritative game engine enforces placement legality, turn
+        // ownership, costs and finite piece counts, including for CPU moves.
         if (action instanceof CatanBuildRoadAction) {
-            Log.d(TAG, "makeMove() receiving a CatanBuildRoadAction: " + action.toString());
-            CatanBuildRoadAction roadAction = (CatanBuildRoadAction) action;
-            if (roadAction.getOwnerId() != state.getCurrentPlayerId()) return false;
-            int a = roadAction.getIntAId();
-            int b = roadAction.getIntBid();
-            // Check connectivity, adjacency and occupancy before changing resources.
-            if (!state.getBoard().validRoadPlacement(state.getCurrentPlayerId(),
-                    state.isSetupPhase(), a, b, state.getLastSetupSettlementId())) return false;
+            CatanBuildRoadAction build = (CatanBuildRoadAction) action;
+            int owner = build.getOwnerId(), from = build.getIntAId(), to = build.getIntBid();
+            if (owner != state.getCurrentPlayerId() || build.isSetupPhase() != state.isSetupPhase()) return false;
+            if (ownedRoads(owner) >= 15) return false;
+            if (!state.getBoard().validRoadPlacement(owner, state.isSetupPhase(), from, to,
+                    state.getCurrentSetupSettlement())) return false;
+            if (!state.isSetupPhase() && !state.isActionPhase()) return false;
+            boolean free = !state.isSetupPhase() && state.getFreeRoadsRemaining() > 0;
+            if (!free && !state.isSetupPhase()
+                    && !state.getCurrentPlayer().removeResourceBundle(Road.resourceCost)) return false;
 
-            // if it is the setup phase, do not remove resources
-            if (((CatanBuildRoadAction) action).isSetupPhase()) {
-                Log.i(TAG, "makeMove: Setup phase. Not checking for resources.");
-                // add the road to the board
-                state.getBoard().addRoad(((CatanBuildRoadAction) action).getOwnerId(), ((CatanBuildRoadAction) action).getIntAId(), ((CatanBuildRoadAction) action).getIntBid());
-                return true;
-            }
-            // if not setup phase, remove the resource cost of a road from the players resource cards
-            boolean freeRoad = state.getFreeRoadsRemaining() > 0;
-            if (freeRoad || state.getCurrentPlayer().removeResourceBundle(Road.resourceCost)) {
-                if (freeRoad) state.setFreeRoadsRemaining(state.getFreeRoadsRemaining() - 1);
-                // add the road to the board
-                state.getBoard().addRoad(((CatanBuildRoadAction) action).getOwnerId(), ((CatanBuildRoadAction) action).getIntAId(), ((CatanBuildRoadAction) action).getIntBid());
-
-                updateLongestRoadHolder();
-                return true;
-            }
-
-            //removeResourceBundle failed
-            Log.e(TAG, "makeMove: Player sent a CatanBuildRoadAction but removeResourceBundle returned false.");
-            return false;
+            state.getBoard().addRoad(owner, from, to);
+            if (free) state.setFreeRoadsRemaining(state.getFreeRoadsRemaining() - 1);
+            if (!state.isSetupPhase()) updateLongestRoadHolder();
+            return true;
         }
 
-        //Player is building a settlement
         if (action instanceof CatanBuildSettlementAction) {
-            Log.i(TAG, "makeMove: received an CatanBuildSettlementAction.");
+            CatanBuildSettlementAction build = (CatanBuildSettlementAction) action;
+            int owner = build.getOwnerId(), point = build.getIntersectionId();
+            if (owner != state.getCurrentPlayerId() || build.isSetupPhase() != state.isSetupPhase()) return false;
+            if (ownedBuildings(owner, Settlement.class) >= 5) return false;
+            if (!state.getBoard().validBuildingLocation(owner, state.isSetupPhase(), point)) return false;
+            if (!state.isSetupPhase() && !state.isActionPhase()) return false;
+            if (state.isSetupPhase() && state.getCurrentSetupSettlement() >= 0) return false;
+            if (!state.isSetupPhase()
+                    && !state.getCurrentPlayer().removeResourceBundle(Settlement.resourceCost)) return false;
 
-            // if it is the setup phase do not remove resources
-            if (((CatanBuildSettlementAction) action).isSetupPhase()) {
-                Log.i(TAG, "makeMove: Setup phase. Not checking for resources.");
-                // add settlement to the board
-                state.getBoard().addBuilding(((CatanBuildSettlementAction) action).getIntersectionId(), new Settlement(((CatanBuildSettlementAction) action).getOwnerId()));
-                state.setLastSetupSettlementId(((CatanBuildSettlementAction) action).getIntersectionId());
+            state.getBoard().addBuilding(point, new Settlement(owner));
+            if (state.isSetupPhase()) {
+                state.setCurrentSetupSettlement(point);
                 if (state.getSetupPhaseTurnCounter() > 3) {
-                    ArrayList<Integer> adjacentHexagons = this.state.getBoard().getIntToHexIdMap().get(((CatanBuildSettlementAction) action).getIntersectionId());
-                    for (Integer hexagon : adjacentHexagons) {
-                        this.state.getCurrentPlayer().addResourceCard(state.getBoard().getHexagonFromId(hexagon).getResourceId(), 1);
+                    for (Integer hexagon : state.getBoard().getIntToHexIdMap().get(point)) {
+                        state.getCurrentPlayer().addResourceCard(
+                                state.getBoard().getHexagonFromId(hexagon).getResourceId(), 1);
                     }
                 }
-                state.getCurrentPlayer().addVictoryPoints(1);
-                updateLongestRoadHolder();
-                Log.d(TAG, "makeMove() returned: " + true);
-                return true;
-            } else {
-                // remove resources from players inventory (also does checks)
-                if (state.getCurrentPlayer().removeResourceBundle(Settlement.resourceCost)) {
-                    // add settlement to the board
-                    state.getBoard().addBuilding(((CatanBuildSettlementAction) action).getIntersectionId(), new Settlement(((CatanBuildSettlementAction) action).getOwnerId()));
-                    state.getCurrentPlayer().addVictoryPoints(1);
-                    updateLongestRoadHolder(); // new settlement can block another player's road
-                    Log.d(TAG, "makeMove() returned: " + true);
-                    return true;
-                }
-                // if the player does not have enough resources at this point in execution something is WRONG
-                Log.e(TAG, "buildSettlement: Player " + state.getCurrentPlayerId() + " resources: " + state.getCurrentPlayer().printResourceCards() + " makeMove() returned: " + false);
-                return false;
             }
+            state.getCurrentPlayer().addVictoryPoints(1);
+            updateLongestRoadHolder();
+            return true;
         }
 
-        //Player is building a City
         if (action instanceof CatanBuildCityAction) {
-            Log.d(TAG, "makeMove() called with: action = [" + action + "]");
+            CatanBuildCityAction build = (CatanBuildCityAction) action;
+            int owner = build.getOwnerId(), point = build.getIntersectionId();
+            if (owner != state.getCurrentPlayerId() || state.isSetupPhase() || !state.isActionPhase()) return false;
+            if (ownedBuildings(owner, City.class) >= 4) return false;
+            if (!state.getBoard().validCityLocation(owner, point)) return false;
+            if (!state.getCurrentPlayer().removeResourceBundle(City.resourceCost)) return false;
 
-            //Remove resources from player who called the action
-            if (state.getCurrentPlayer().removeResourceBundle(City.resourceCost)) {
-                // add building to the board
-                state.getBoard().addBuilding(((CatanBuildCityAction) action).getIntersectionId(), new City(((CatanBuildCityAction) action).getOwnerId()));
-                state.getCurrentPlayer().addVictoryPoints(1);
-                Log.d(TAG, "makeMove() returned: " + true);
-                return true;
-            }
-            // if the player does not have enough resources at this point in execution something is WRONG
-            Log.e(TAG, "buildCity: Player " + state.getCurrentPlayerId() + " resources: " + state.getCurrentPlayer().printResourceCards() + " makeMove() returned: " + false);
-            return false;
+            state.getBoard().addBuilding(point, new City(owner));
+            state.getCurrentPlayer().addVictoryPoints(1);
+            return true;
         }
 
         /*------------------------------- Development Card Actions -------------------------------*/
@@ -465,6 +443,30 @@ public class CatanLocalGame extends LocalGame {
                 && !state.isRobberPhase()
                 && !state.hasPlayedDevelopmentCardThisTurn()
                 && state.getCurrentPlayer().getPlayableDevCards().contains(cardId);
+    }
+
+
+    private int ownedRoads(int owner) {
+        int count = 0;
+        for (Road road : state.getBoard().getRoads()) {
+            if (road.getOwnerId() == owner) count++;
+        }
+        return count;
+    }
+
+    private int ownedBuildings(int owner, Class<?> type) {
+        int count = 0;
+        for (edu.up.cs.androidcatan.catan.gamestate.buildings.Building building :
+                state.getBoard().getBuildings()) {
+            if (building != null && building.getOwnerId() == owner && type.isInstance(building)) count++;
+        }
+        return count;
+    }
+
+    private boolean canPlayDevelopmentCard(int type) {
+        return !state.isSetupPhase() && state.isActionPhase() && !state.isRobberPhase()
+                && !state.hasPlayedDevelopmentCardThisTurn()
+                && state.getCurrentPlayer().getPlayableDevCards().contains(type);
     }
 
     private void updateLongestRoadHolder() {
