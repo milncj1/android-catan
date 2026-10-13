@@ -71,11 +71,11 @@ public final class CatanStrategy {
     public static double scoreRoadDestination(CatanGameState game, int vertex, int playerId) {
         Board board = game.getBoard();
         double score = 0.0;
-        if (board.validBuildingLocation(playerId, false, vertex)) {
+        if (board.validBuildingLocation(playerId, true, vertex)) {
             score = scoreIntersection(game, vertex, playerId) + 10.0;
         }
         for (Integer neighbour : board.getIntersectionAdjacencyList().get(vertex)) {
-            if (board.validBuildingLocation(playerId, false, neighbour)) {
+            if (board.validBuildingLocation(playerId, true, neighbour)) {
                 score = Math.max(score, scoreIntersection(game, neighbour, playerId) * 0.8);
             }
         }
