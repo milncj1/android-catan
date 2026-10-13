@@ -982,7 +982,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
     // Tap selects one snapped junction; dragging moves the map, pinching zooms.
     // One touch sequence must never both pan and accidentally place a building.
-    private float boardTouchX, boardTouchY, boardPinchSpan;
+    private float boardTouchX, boardTouchY, boardDownX, boardDownY, boardPinchSpan;
     private boolean boardGestureMoved;
     private View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
@@ -990,8 +990,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (boardSurfaceView == null) return false;
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN) {
-                boardTouchX = event.getX();
-                boardTouchY = event.getY();
+                boardTouchX = boardDownX = event.getX();
+                boardTouchY = boardDownY = event.getY();
                 boardGestureMoved = false;
                 boardPinchSpan = 0f;
                 return true;
@@ -1016,7 +1016,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 } else {
                     float dx = event.getX() - boardTouchX;
                     float dy = event.getY() - boardTouchY;
-                    if (boardGestureMoved || dx * dx + dy * dy > 144f) {
+                    float totalDx = event.getX() - boardDownX;
+                    float totalDy = event.getY() - boardDownY;
+                    if (boardGestureMoved || totalDx * totalDx + totalDy * totalDy > 144f) {
                         boardGestureMoved = true;
                         boardSurfaceView.panBy(dx, dy);
                     }
