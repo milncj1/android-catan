@@ -39,6 +39,8 @@ public class CatanGameState extends GameState {
     private boolean isSetupPhase = true; // is it the setup phase
     private boolean isActionPhase = false; // has the current player rolled the dice
     private boolean isRobberPhase = false; // is the robber phase
+    private int freeRoadsRemaining = 0; // Road Building grants two free legal roads
+    private boolean developmentCardPlayedThisTurn = false;
     private int playerStealingFrom = 0; // playerNum of who is getting a resource taken during Robber Steal Phase
 
     //Setup phase variables
@@ -97,6 +99,8 @@ public class CatanGameState extends GameState {
         this.currentLargestArmyPlayerId = cgs.currentLargestArmyPlayerId;
         this.isSetupPhase = cgs.isSetupPhase;
         this.isRobberPhase = cgs.isRobberPhase;
+        this.freeRoadsRemaining = cgs.freeRoadsRemaining;
+        this.developmentCardPlayedThisTurn = cgs.developmentCardPlayedThisTurn;
         System.arraycopy(cgs.robberPlayerListHasDiscarded, 0, this.robberPlayerListHasDiscarded, 0, cgs.robberPlayerListHasDiscarded.length);
         this.developmentCards.addAll(cgs.getDevelopmentCards());
         this.currentPlayerId = cgs.currentPlayerId;
@@ -613,6 +617,22 @@ public class CatanGameState extends GameState {
 
     public boolean isRobberPhase() {
         return isRobberPhase;
+    }
+
+    public int getFreeRoadsRemaining() {
+        return freeRoadsRemaining;
+    }
+
+    public void setFreeRoadsRemaining(int remaining) {
+        this.freeRoadsRemaining = Math.max(0, Math.min(2, remaining));
+    }
+
+    public boolean hasPlayedDevelopmentCardThisTurn() {
+        return developmentCardPlayedThisTurn;
+    }
+
+    public void setDevelopmentCardPlayedThisTurn(boolean played) {
+        this.developmentCardPlayedThisTurn = played;
     }
 
     public boolean getHasMovedRobber() {
