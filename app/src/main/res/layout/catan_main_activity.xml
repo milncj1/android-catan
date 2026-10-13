@@ -379,6 +379,36 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Collapsible match information: keep the island unobstructed by default. -->
+    <Button
+        android:id="@+id/hud_toggle"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="138dp"
+        android:layout_height="34dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/sidebar_button"
+        android:text="Dice &amp; hand ▾"
+        android:textColor="#FFF8F2E1"
+        android:textSize="12sp"
+        android:textAllCaps="false"
+        app:layout_constraintTop_toBottomOf="@+id/turn_status_chip"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/board_reset_view"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="76dp"
+        android:layout_height="34dp"
+        android:layout_marginEnd="4dp"
+        android:background="@drawable/sidebar_button"
+        android:text="Fit map"
+        android:textColor="#FFF8F2E1"
+        android:textSize="11sp"
+        android:textAllCaps="false"
+        app:layout_constraintTop_toTopOf="@+id/hud_toggle"
+        app:layout_constraintEnd_toStartOf="@+id/hud_toggle" />
+
     <!-- Four scores on a parchment-sea overlay instead of a black panel. -->
     <View
         android:id="@+id/score_panel"
@@ -506,6 +536,7 @@
     <!-- Compact always-visible match details (independent of the collapsible sidebar). -->
     <LinearLayout
         android:id="@+id/gameplay_hud"
+        android:visibility="gone"
         android:layout_width="290dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="7dp"
@@ -517,7 +548,7 @@
         android:paddingTop="7dp"
         android:paddingBottom="7dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/turn_status_chip">
+        app:layout_constraintTop_toBottomOf="@+id/hud_toggle">
         <TextView
             android:id="@+id/hud_last_roll"
             android:layout_width="match_parent"
