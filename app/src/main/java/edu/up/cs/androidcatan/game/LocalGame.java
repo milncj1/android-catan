@@ -34,10 +34,10 @@ import edu.up.cs.androidcatan.game.util.Tickable;
 public abstract class LocalGame implements Game, Tickable {
 	
 	// the stage that the game is in
-	private GameStage gameStage = GameStage.BEFORE_GAME;
+	private volatile GameStage gameStage = GameStage.BEFORE_GAME;
 	
 	// the handler for the game's thread
-	private Handler myHandler;
+	private volatile Handler myHandler;
 		
 	// the players in the game, in order of  player number
 	protected GamePlayer[] players;
@@ -47,11 +47,11 @@ public abstract class LocalGame implements Game, Tickable {
 	
 	// the players' names, paralleling the 'players' array
 	public String[] playerNames;
-	private int playerNameCount = 0; // number of players who have told us their name
+	private volatile int playerNameCount = 0; // number of players who have told us their name
 	
 	// the players are ready to start
 	private boolean[] playersReady;
-	private int playerReadyCount = 0; // number of players who are ready to start the game
+	private volatile int playerReadyCount = 0; // number of players who are ready to start the game
 	
 	// the players which have acknowledged that the game is over
 	private boolean[] playersFinished;
@@ -206,7 +206,7 @@ public abstract class LocalGame implements Game, Tickable {
 
 				// mark the given player as being ready
 				int playerIdx = getPlayerIdx(ra.getPlayer());
-				Log.i("LocalGame", "got 'ready' ("+playerNames[playerIdx]+")");
+				Log.i("LocalGame", "got 'ready' ("+(playerIdx < 0 ? "unknown player" : playerNames[playerIdx])+")");
 				if (playerIdx >= 0 && !playersReady[playerIdx]) {
 					playersReady[playerIdx] = true;
 					playerReadyCount++;
@@ -366,9 +366,22 @@ public abstract class LocalGame implements Game, Tickable {
 		// package the action into a message and send it to the handler
 		Message msg = new Message();
 		msg.obj = action;
-		myHandler.dispatchMessage(msg);
+		myHandler.sendMessage(msg);
 	}
 	
+	/** Post a restoration confirmation to the same serialized game loop as moves. */
+	protected final void postToGameThread(Runnable runnable) {
+		Handler handler = myHandler;
+		if (handler != null && runnable != null) handler.post(runnable);
+	}
+
+	/** Stage diagnostic for a failed four-player resume handshake. */
+	public final String describeStartup() {
+		int count = players == null ? 0 : players.length;
+		return gameStage.name() + " (names " + playerNameCount + "/" + count
+				+ ", ready " + playerReadyCount + "/" + count + ")";
+	}
+
 	/**
 	 * sends a timer action to the game
 	 */
