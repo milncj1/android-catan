@@ -80,6 +80,10 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
      */
     public void onDraw(Canvas canvas) {
 
+        // SurfaceView otherwise leaves uncovered areas black; always fill the
+        // entire screen before fitting the original fixed-coordinate island.
+        canvas.drawColor(0xFF175875);
+
         // check if ready
         if (!ready) {
             Log.e(TAG, "onDraw: not ready");
