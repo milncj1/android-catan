@@ -45,6 +45,11 @@ public final class CatanSaveStore {
 
         public boolean isValid() {
             if (format != FORMAT || state == null || state.getBoard() == null
+                    || state.getBoard().getHexagons() == null
+                    || state.getBoard().getHexagons().size() != 19
+                    || state.getBoard().getPortList() == null
+                    || state.getBoard().getPortList().size() != 9
+                    || state.getBoard().getRobber() == null
                     || state.getPlayerList() == null || state.getPlayerList().size() != 4
                     || names == null || names.length != 4 || types == null || types.length != 4
                     || state.getCurrentPlayerId() < 0 || state.getCurrentPlayerId() > 3
@@ -94,9 +99,12 @@ public final class CatanSaveStore {
     public static synchronized Snapshot load(Context context) {
         if (context == null) return null;
         AtomicFile file = atomic(context);
-        // AtomicFile.openRead() also repairs interrupted writes from .bak.
-        // Do not pre-check base.exists(), which would hide recoverable backups.
-        if (file.getBaseFile().length() > MAX_SAVE_BYTES) {
+        // AtomicFile.openRead() recovers interrupted writes from the .bak
+        // fallback. Check for both to avoid logging a warning on first launch.
+        File base = file.getBaseFile();
+        File backup = new File(base.getPath() + ".bak");
+        if (!base.exists() && !backup.exists()) return null;
+        if (base.length() > MAX_SAVE_BYTES || backup.length() > MAX_SAVE_BYTES) {
             Log.w(TAG, "Save file exceeds safe size limit");
             return null;
         }
