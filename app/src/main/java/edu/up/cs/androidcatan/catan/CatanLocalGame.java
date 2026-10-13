@@ -2,6 +2,7 @@ package edu.up.cs.androidcatan.catan;
 
 
 import android.util.Log;
+import android.content.Context;
 
 import java.util.ArrayList;
 
@@ -45,6 +46,35 @@ public class CatanLocalGame extends LocalGame {
     private final static String TAG = "CatanLocalGame";
 
     private CatanGameState state;
+
+    private Context autosaveContext;
+    private int[] autosaveTypes;
+
+    /** Called before starting new/resumed match; never persists UI objects. */
+    public void configureAutosave(Context context, int[] playerTypes) {
+        this.autosaveContext = context == null ? null : context.getApplicationContext();
+        this.autosaveTypes = playerTypes == null ? null : playerTypes.clone();
+    }
+
+    private void persistMatch() {
+        if (autosaveContext != null && autosaveTypes != null && playerNames != null) {
+            if (!CatanSaveStore.save(autosaveContext, state, playerNames, autosaveTypes)) {
+                Log.w(TAG, "Autosave unsuccessful; previous complete save retained");
+            }
+        }
+    }
+
+    @Override protected void onMatchReady() {
+        persistMatch();
+    }
+
+    @Override protected void onAcceptedMove() {
+        persistMatch();
+    }
+
+    @Override protected void onMatchFinished() {
+        if (autosaveContext != null) CatanSaveStore.clear(autosaveContext);
+    }
 
     /**
      * constructor for CatanLocalGame
@@ -543,12 +573,16 @@ public class CatanLocalGame extends LocalGame {
      */
     @Override
     public void start(GamePlayer[] players) {
+        // Restore the saved rules state BEFORE LocalGame starts player threads
+        // and sends their initial BindGameInfo/StartGameInfo messages.
         super.start(players);
-        state = new CatanGameState(state);
     }
 
     public void setState(CatanGameState state) {
-        this.state = state;
+        if (state == null || state.getBoard() == null) {
+            throw new IllegalArgumentException("Cannot resume empty Catan game");
+        }
+        this.state = new CatanGameState(state);
     }
 
 }
