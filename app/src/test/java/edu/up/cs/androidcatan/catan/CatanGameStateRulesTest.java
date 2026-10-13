@@ -10,6 +10,56 @@ import edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement;
  * Regression checks for classic rules, runnable as local JVM JUnit tests.
  */
 public class CatanGameStateRulesTest {
+    @Test public void newBoardsHaveValidRandomClassicIslandAndPorts() {
+        java.util.HashSet<String> layouts = new java.util.HashSet<>();
+        for (int run = 0; run < 5; run++) {
+            Board board = new Board();
+            assertEquals(19, board.getHexagons().size());
+            int[] terrain = new int[6];
+            int[] numbers = new int[13];
+            StringBuilder signature = new StringBuilder();
+            int desertId = -1;
+            for (Hexagon tile : board.getHexagons()) {
+                int type = tile.getResourceId(), chit = tile.getChitValue();
+                assertTrue(type >= 0 && type <= 5);
+                assertTrue(chit >= 0 && chit < numbers.length);
+                terrain[type]++;
+                if (type == 5) {
+                    assertEquals(0, chit);
+                    desertId = tile.getHexagonId();
+                } else numbers[chit]++;
+                signature.append(type).append(':').append(chit).append(',');
+            }
+            assertArrayEquals(new int[]{3, 4, 4, 3, 4, 1}, terrain);
+            assertArrayEquals(new int[]{0, 0, 1, 2, 2, 2, 2, 0, 2, 2, 2, 2, 1}, numbers);
+            assertEquals(desertId, board.getRobber().getHexagonId());
+            assertTrue(board.checkChitRule());
+
+            assertEquals(9, board.getPortList().size());
+            int[] ports = new int[6]; // five distinct 2:1 resource ports + four 3:1
+            for (edu.up.cs.androidcatan.catan.gamestate.Port port : board.getPortList()) {
+                if (port.getResourceId() == -1) {
+                    assertEquals(3, port.getTradeRatio());
+                    ports[5]++;
+                } else {
+                    assertEquals(2, port.getTradeRatio());
+                    ports[port.getResourceId()]++;
+                }
+                signature.append(port.getResourceId()).append(';');
+            }
+            assertArrayEquals(new int[]{1, 1, 1, 1, 1, 4}, ports);
+            Board copy = new Board(board);
+            for (int p = 0; p < 9; p++) {
+                assertEquals(board.getPortList().get(p).getResourceId(),
+                        copy.getPortList().get(p).getResourceId());
+                assertEquals(board.getPortList().get(p).getTradeRatio(),
+                        copy.getPortList().get(p).getTradeRatio());
+            }
+            layouts.add(signature.toString());
+        }
+        assertTrue("Every new game should not reuse the same island", layouts.size() > 1);
+    }
+
     @Test public void developmentDeckHasExactlyTwentyFiveCardsAndNeverRefills() {
         CatanGameState game = new CatanGameState();
         int[] cards = new int[5];
