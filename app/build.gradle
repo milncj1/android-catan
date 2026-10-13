@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 // Resolve this once, outside Gradle's versionCode DSL method call.
-def catanBuildVersionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '3')
+def catanBuildVersionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '5')
 
 android {
     // Initial compatibility build: modern toolchain, unchanged legacy game code.
@@ -12,7 +12,7 @@ android {
         minSdkVersion 25
         targetSdkVersion 27
         versionCode catanBuildVersionCode
-        versionName "1.1-test"
+        versionName "1.2-preview"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
