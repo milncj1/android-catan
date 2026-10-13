@@ -2,34 +2,45 @@
 <TableRow xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="@dimen/table_row_vert_pad" >
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
 
     <EditText
         android:id="@+id/playerNameEditText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="@dimen/table_row_horiz_pad"
-        android:ems="15"
-        android:inputType="text" >
-    </EditText>
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="40dp"
+        android:layout_marginEnd="5dp"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:inputType="textPersonName"
+        android:background="@drawable/start_player_field"
+        android:paddingStart="9dp"
+        android:paddingEnd="7dp"
+        android:textSize="14sp"
+        android:textColor="#FF2F4039"
+        android:hintTextColor="#FF777567" />
 
     <Spinner
         android:id="@+id/playerTypeSpinner"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="@dimen/table_row_horiz_pad" />
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="40dp"
+        android:background="@drawable/start_player_field"
+        android:paddingStart="6dp"
+        android:paddingEnd="4dp"
+        android:spinnerMode="dropdown" />
 
-    <FrameLayout android:layout_height="wrap_content" >
-
+    <!-- Fixed four-player game; retain the ID expected by legacy Java. -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone">
         <ImageButton
             android:id="@+id/delPlayerButton"
-            android:layout_width="@dimen/del_player_button_size"
-            android:layout_height="@dimen/del_player_button_size"
-            android:background="@android:color/transparent"
-            android:contentDescription="@string/remove_player"
-            android:scaleType="centerInside"
-            android:src="@drawable/purple_delete_button" />
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="@string/remove_player" />
     </FrameLayout>
-
 </TableRow>
