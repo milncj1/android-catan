@@ -202,7 +202,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
         /*-------------------------------CPUs Roll Dice Action--------------------------------------*/
 
         //If the player has not yet rolled yet AND it is this players turn, make them roll the dice
-        if (!gs.isSetupPhase() && !gs.isActionPhase() && gs.getCurrentPlayerId() == playerNum) {
+        if (!gs.isSetupPhase() && !gs.isActionPhase() && !gs.isRobberPhase() && gs.getCurrentPlayerId() == playerNum) {
             sleep(300);
             game.sendAction(new CatanRollDiceAction(this));
             sleep(300);
@@ -301,7 +301,17 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
                     //10. Send the action to move the robber; information has been saved to also steal with the robber
 
-                    sleep(500);
+                    // If the leading opponent has no eligible settlement, move
+                    // the robber to another tile rather than repeating an invalid move.
+                    if (!foundBuilding) {
+                        for (Hexagon candidate : gs.getBoard().getHexagons()) {
+                            if (candidate.getHexagonId() != gs.getBoard().getRobber().getHexagonId()) {
+                                hexId = candidate.getHexagonId();
+                                break;
+                            }
+                        }
+                    }
+                    sleep(250);
                     game.sendAction(new CatanRobberMoveAction(this, playerNum, hexId));
                     return;
 
@@ -311,7 +321,18 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
                 //11. Now Steal from the selected intersection
                 sleep(250);
-                game.sendAction(new CatanRobberStealAction(this, playerNum, playerWithMostVPs));
+                int victim = -1;
+                if (gs.isRobberVictim(playerNum, playerWithMostVPs)) {
+                    victim = playerWithMostVPs;
+                } else {
+                    for (int other = 0; other < gs.getPlayerList().size(); other++) {
+                        if (gs.isRobberVictim(playerNum, other)) {
+                            victim = other;
+                            break;
+                        }
+                    }
+                }
+                game.sendAction(new CatanRobberStealAction(this, playerNum, victim));
                 sleep(500);
                 return;
             }//End of Robber Phases after Discard phase
