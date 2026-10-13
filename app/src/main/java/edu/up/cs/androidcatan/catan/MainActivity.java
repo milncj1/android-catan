@@ -22,6 +22,7 @@ public class MainActivity extends GameMainActivity {
     private static final int PORT_NUMBER = 2278;
 
     private CatanSaveStore.Snapshot pendingResume;
+    private boolean resumeSessionPending;
 
     @Override
     protected boolean hasSavedMatch() {
@@ -48,6 +49,7 @@ public class MainActivity extends GameMainActivity {
     @Override
     protected void onNewMatchRequested() {
         pendingResume = null;
+        resumeSessionPending = false;
     }
 
     @Override
@@ -67,10 +69,9 @@ public class MainActivity extends GameMainActivity {
             }
         }
         catan.configureAutosave(getApplicationContext(), types);
-        if (pendingResume != null) {
-            catan.setState(pendingResume.getState());
-            pendingResume = null;
-        }
+        // createLocalGame() has already installed the restored position.
+        resumeSessionPending = pendingResume != null;
+        pendingResume = null;
     }
 
     // default game configuration
@@ -108,6 +109,32 @@ public class MainActivity extends GameMainActivity {
 
     @Override
     public LocalGame createLocalGame() {
-        return new CatanLocalGame();
+        // Never generate an unrelated random board before loading a match.
+        return pendingResume == null
+                ? new CatanLocalGame()
+                : new CatanLocalGame(pendingResume.getState());
+    }
+
+    @Override
+    protected void onLocalMatchLaunched(LocalGame launched) {
+        if (!resumeSessionPending || !(launched instanceof CatanLocalGame)) return;
+        resumeSessionPending = false;
+        final CatanLocalGame resumed = (CatanLocalGame) launched;
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(new Runnable() {
+                    @Override public void run() {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (resumed.isSessionReady()
+                                && findViewById(edu.up.cs.androidcatan.R.id.board) != null)
+                            return;
+                        new android.app.AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Unable to finish restoring")
+                                .setMessage("The saved match is still safe, but the game "
+                                        + "did not reconnect all four players. "
+                                        + "Please close and reopen Catan, then try Continue again.")
+                                .setPositiveButton("OK", null)
+                                .show();
+                    }
+                }, 10000L);
     }
 }
