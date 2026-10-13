@@ -1,7 +1,7 @@
-name: Approved Android APK
+name: Owner-approved Android APK
 
-# Normal development commits NEVER build.
-# Each owner-approved version is snapshotted as a new apk-build/* branch.
+# Source commits never trigger a build. A build only starts when we create
+# an owner-approved apk-build/* snapshot branch.
 on:
   push:
     branches:
@@ -15,41 +15,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      CATAN_SIGNING_PASSWORD: ${{ secrets.CATAN_SIGNING_PASSWORD }}
     steps:
       - name: Check out approved source snapshot
         uses: actions/checkout@v4
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Reuse Gradle dependencies where possible
+      - name: Cache Gradle dependencies
         uses: gradle/actions/setup-gradle@v4
-
-      - name: Restore permanent signing key
-        shell: bash
-        run: |
-          if [[ -z "$CATAN_SIGNING_PASSWORD" ]]; then
-            echo "::error::Set the CATAN_SIGNING_PASSWORD repository Actions secret once before approving the next build."
-            exit 1
-          fi
-          mkdir -p ci/signing
-          base64 -d ci/catan-signing.p12.enc.b64 > "$RUNNER_TEMP/catan-signing.p12.enc"
-          openssl enc -d -aes-256-cbc -salt -pbkdf2 -iter 250000 \
-            -in "$RUNNER_TEMP/catan-signing.p12.enc" \
-            -out ci/signing/catan-signing.p12 -pass env:CATAN_SIGNING_PASSWORD
-
-      - name: Build permanently signed release APK
-        run: bash ./gradlew :app:assembleRelease --no-daemon --stacktrace
-
-      - name: Attach installable update APK
+      - name: Run local JVM unit tests and assemble debug APK
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload one unsigned-for-delivery test artifact
         uses: actions/upload-artifact@v4
         with:
-          name: catan-android-update-${{ github.run_number }}
-          path: app/build/outputs/apk/release/app-release.apk
+          name: catan-build-${{ github.run_number }}-for-permanent-signing
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
