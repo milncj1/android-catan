@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.support.constraint.Group;
+import android.support.constraint.ConstraintLayout;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -276,6 +277,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private GameMainActivity myActivity;  // the android activity that we are running
     public CatanGameState state = null; // game state
     private BoardSurfaceView boardSurfaceView;
+    private boolean controlsCollapsed = false;
+
 
     /*--------------------- Constructors ------------------------*/
 
@@ -2068,9 +2071,71 @@ if(newGame) {
 
         roadTrophyImages = new ImageView[]{activity.findViewById(R.id.longest_road_player0), activity.findViewById(R.id.longest_road_player1), activity.findViewById(R.id.longest_road_player2), activity.findViewById(R.id.longest_road_player3)};
 
+        // Collapse button remains present even with all other actions hidden.
+        Button controlsToggle = activity.findViewById(R.id.toggle_sidebar);
+        if (controlsToggle != null) {
+            controlsToggle.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    controlsCollapsed = !controlsCollapsed;
+                    applyControlRailLayout();
+                }
+            });
+        }
+
         // if we have state update the GUI based on the state
         if (this.state != null) receiveInfo(state);
+        applyControlRailLayout();
     }// setAsGui() END
+
+    /**
+     * The original controls remain functional. Only their visibility and
+     * allocated screen width change when the player collapses the control rail.
+     */
+    private void applyControlRailLayout() {
+        if (myActivity == null) return;
+        View sidebarGuide = myActivity.findViewById(R.id.guideline_right_sidebar);
+        if (sidebarGuide == null) return;
+        ConstraintLayout.LayoutParams layout =
+                (ConstraintLayout.LayoutParams) sidebarGuide.getLayoutParams();
+        layout.guidePercent = controlsCollapsed ? 0.04f : 0.12f;
+        sidebarGuide.setLayoutParams(layout);
+
+        int[] hideable = {
+                R.id.tabletop_sidebar,
+                R.id.sidebar_heading_build,
+                R.id.sidebar_heading_build2,
+                R.id.sidebar_heading_build3,
+                R.id.sidebar_button_road,
+                R.id.sidebar_button_settlement,
+                R.id.sidebar_button_city,
+                R.id.sidebar_button_devcards,
+                R.id.sidebar_button_trade,
+                R.id.sidebar_button_roll,
+                R.id.sidebar_button_endturn,
+                R.id.sidebar_button_score,
+                R.id.sidebar_button_menu,
+                R.id.sidebar_heading_playername,
+                R.id.sidebar_heading_vp,
+                R.id.sidebar_heading_current_turn,
+                R.id.brick_icon, R.id.lumber_icon, R.id.grain_icon,
+                R.id.ore_icon, R.id.wool_icon,
+                R.id.sidebar_value_brick, R.id.sidebar_value_lumber,
+                R.id.sidebar_value_grain, R.id.sidebar_value_ore,
+                R.id.sidebar_value_wool,
+                R.id.diceImageLeft, R.id.diceImageRight
+        };
+        for (int id : hideable) {
+            View view = myActivity.findViewById(id);
+            if (view != null) view.setVisibility(controlsCollapsed ? View.GONE : View.VISIBLE);
+        }
+        Button toggle = myActivity.findViewById(R.id.toggle_sidebar);
+        if (toggle != null) {
+            toggle.setText(controlsCollapsed ? "›" : "‹");
+            toggle.setContentDescription(controlsCollapsed
+                    ? "Expand game controls" : "Collapse game controls");
+        }
+        if (boardSurfaceView != null) boardSurfaceView.invalidate();
+    }
 
     /**
      *
