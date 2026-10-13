@@ -280,6 +280,12 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private GameMainActivity myActivity;  // the android activity that we are running
     public CatanGameState state = null; // game state
     private BoardSurfaceView boardSurfaceView;
+    private TextView diceStatusChip;
+    private TextView lastActionChip;
+    private TextView handStatusChip;
+    private final ArrayList<String> activityLog = new ArrayList<>();
+    private int[] lastOwnResources;
+    private static final String[] HAND_RESOURCES = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
     private volatile boolean initialStateDisplayed;
 
     /** True only once the initial game state has populated the board display. */
@@ -1604,6 +1610,16 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         for (int i = 0; i < resourceCards.length; i++) {
             this.resourceValues[i].setText(String.valueOf(resourceCards[i]));
         }
+        if (handStatusChip != null) {
+            handStatusChip.setText("YOUR HAND  ·  Brick " + resourceCards[0]
+                    + "  ·  Grain " + resourceCards[1]
+                    + "  ·  Lumber " + resourceCards[2]
+                    + "  ·  Ore " + resourceCards[3]
+                    + "  ·  Wool " + resourceCards[4]
+                    + "  ·  Dev "
+                    + state.getPlayerList().get(this.playerNum).getDevelopmentCards().size());
+            handStatusChip.setOnClickListener(v -> showOwnHand());
+        }
 
         /* ----- update scoreboard ----- */
 
@@ -1669,6 +1685,77 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         showLargestArmyTrophy(state.getCurrentLargestArmyPlayerId());
     } // updateTextViews END
 
+    /** Keep the latest sixty public actions; no opponent secrets are logged. */
+    private void addActivityEntry(String entry) {
+        if (entry == null || entry.trim().isEmpty()) return;
+        activityLog.add(0, entry);
+        if (activityLog.size() > 60) activityLog.remove(activityLog.size() - 1);
+        if (lastActionChip != null) lastActionChip.setText(entry);
+    }
+
+    private void captureOwnResourceChanges() {
+        int[] next = state.getPlayerList().get(playerNum).getResourceCards();
+        if (lastOwnResources != null) {
+            StringBuilder change = new StringBuilder();
+            for (int resource = 0; resource < 5; resource++) {
+                int delta = next[resource] - lastOwnResources[resource];
+                if (delta == 0) continue;
+                if (change.length() > 0) change.append(", ");
+                change.append(delta > 0 ? "+" : "").append(delta)
+                        .append(" ").append(HAND_RESOURCES[resource]);
+            }
+            if (change.length() > 0)
+                addActivityEntry("Your resources: " + change);
+        }
+        lastOwnResources = next.clone();
+    }
+
+    private void showActivityHistory() {
+        StringBuilder entries = new StringBuilder();
+        for (String entry : activityLog) {
+            entries.append("• ").append(entry).append("\\n\\n");
+        }
+        if (entries.length() == 0) entries.append("No moves recorded yet.");
+        TextView content = new TextView(myActivity);
+        int pad = (int) (20 * myActivity.getResources().getDisplayMetrics().density);
+        content.setPadding(pad, pad, pad, pad);
+        content.setTextSize(16);
+        content.setText(entries.toString());
+        ScrollView scroll = new ScrollView(myActivity);
+        scroll.addView(content);
+        new AlertDialog.Builder(myActivity)
+                .setTitle("Match activity — newest first")
+                .setView(scroll)
+                .setPositiveButton("Close", null).show();
+    }
+
+    private void showOwnHand() {
+        if (state == null) return;
+        Player self = state.getPlayerList().get(playerNum);
+        int[] cards = self.getResourceCards();
+        StringBuilder detail = new StringBuilder("RESOURCE CARDS\\n");
+        int total = 0;
+        for (int i = 0; i < 5; i++) {
+            detail.append(HAND_RESOURCES[i]).append(": ").append(cards[i]).append("\\n");
+            total += cards[i];
+        }
+        detail.append("Total: ").append(total).append("\\n\\nDEVELOPMENT CARDS\\n");
+        if (self.getDevelopmentCards().isEmpty()) {
+            detail.append("None");
+        } else {
+            String[] types = {"Knight", "Victory Point", "Year of Plenty", "Monopoly", "Road Building"};
+            for (int id : self.getDevelopmentCards()) {
+                if (id >= 0 && id < types.length)
+                    detail.append("• ").append(types[id])
+                            .append(id == 1 ? " (scores automatically)" : "")
+                            .append("\\n");
+            }
+        }
+        new AlertDialog.Builder(myActivity).setTitle("Your hand")
+                .setMessage(detail.toString())
+                .setPositiveButton("Close", null).show();
+    }
+
     /**
      * callback method when we get a message (e.g., from the game)
      *
@@ -1680,6 +1767,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (debugMode)
             Log.i(TAG, "receiveInfo() called with: info: \n" + info.toString() + "----------------------------");
 
+        if (info instanceof CatanPublicEventInfo) {
+            CatanPublicEventInfo event = (CatanPublicEventInfo) info;
+            addActivityEntry(event.getDescription());
+            if (event.isDiceRoll() && diceStatusChip != null)
+                diceStatusChip.setText(event.getDescription());
+            return; // Public notices must NOT erase selected roads or intersections.
+        }
         if (this.boardSurfaceView == null) {
             Log.e(TAG, "receiveInfo: boardSurfaceView is null.");
             return;
@@ -1689,6 +1783,16 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (info instanceof CatanGameState) {
 
             this.state = new CatanGameState((CatanGameState) info);
+            captureOwnResourceChanges();
+            if (activityLog.isEmpty()) {
+                addActivityEntry("Match ready — " + allPlayerNames[state.getCurrentPlayerId()]
+                        + " to play");
+                if (diceStatusChip != null && !state.isSetupPhase() && state.isActionPhase()) {
+                    int[] dice = state.getDice().getDiceValues();
+                    diceStatusChip.setText("Current turn: " + dice[0] + " + "
+                            + dice[1] + " = " + state.getCurrentDiceSum());
+                }
+            }
             // set resource count TextViews to the players resource inventory amounts
             Log.i(TAG, "receiveInfo: player list: " + ((CatanGameState) info).getPlayerList());
             Log.i(TAG, "receiveInfo: info.toString " + state.toString());
@@ -1769,6 +1873,13 @@ if(newGame) {
 
         /* ---------- Surface View for drawing the graphics ----------- */
 
+        diceStatusChip = activity.findViewById(R.id.dice_result_chip);
+        lastActionChip = activity.findViewById(R.id.last_action_chip);
+        handStatusChip = activity.findViewById(R.id.hand_status_chip);
+        Button history = activity.findViewById(R.id.activity_history_button);
+        if (history != null) history.setOnClickListener(v -> showActivityHistory());
+        if (!activityLog.isEmpty() && lastActionChip != null)
+            lastActionChip.setText(activityLog.get(0));
         this.boardSurfaceView = activity.findViewById(R.id.board); // boardSurfaceView board is the custom SurfaceView
         this.boardSurfaceView.setOnClickListener(clickListener);
         this.boardSurfaceView.setOnTouchListener(touchListener);
