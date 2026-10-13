@@ -81,11 +81,22 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
     private void constrainCamera() {
         float contentWidth = BOARD_WIDTH * viewportScale() * userZoom;
         float contentHeight = BOARD_HEIGHT * viewportScale() * userZoom;
-        // Keep the whole viewport covered in whichever dimension is zoomed.
-        float maxX = Math.max(0f, (contentWidth - getWidth()) / 2f);
-        float maxY = Math.max(0f, (contentHeight - getHeight()) / 2f);
-        cameraOffsetX = Math.max(-maxX, Math.min(maxX, cameraOffsetX));
-        cameraOffsetY = Math.max(-maxY, Math.min(maxY, cameraOffsetY));
+        float left = viewportLeft() + cameraOffsetX;
+        float top = viewportTop() + cameraOffsetY;
+        // With zoomed content wider than the screen, cover the screen
+        // without exposing empty space or preventing access to edge tiles.
+        if (contentWidth > getWidth()) {
+            left = Math.max(getWidth() - contentWidth, Math.min(0f, left));
+        } else {
+            left = (getWidth() - contentWidth) * 0.5f;
+        }
+        if (contentHeight > getHeight()) {
+            top = Math.max(getHeight() - contentHeight, Math.min(0f, top));
+        } else {
+            top = (getHeight() - contentHeight) * 0.5f;
+        }
+        cameraOffsetX = left - viewportLeft();
+        cameraOffsetY = top - viewportTop();
     }
 
     private float viewportScale() {
