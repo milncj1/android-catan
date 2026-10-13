@@ -187,18 +187,17 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
             // a tiny 36px symbol that is difficult to recognise after scaling.
             Paint emblem = new Paint(Paint.ANTI_ALIAS_FLAG);
             emblem.setColor(0xEEFFF5DB);
-            canvas.drawRoundRect(x - 69f, y - 164f, x + 69f, y - 13f,
-                    24f, 24f, emblem);
+            // Round emblem stays inside the upper part of the pointy-topped hex.
+            canvas.drawCircle(x, y - 90f, 62f, emblem);
             emblem.setStyle(Paint.Style.STROKE);
             emblem.setStrokeWidth(4f);
             emblem.setColor(0xFF4D3F2F);
-            canvas.drawRoundRect(x - 69f, y - 164f, x + 69f, y - 13f,
-                    24f, 24f, emblem);
+            canvas.drawCircle(x, y - 90f, 62f, emblem);
 
             Drawable resource = context.getDrawable(resourceDrawables[terrain]);
             if (resource != null) {
-                // 100x100 virtual pixels, nearly three times the previous size.
-                resource.setBounds(x - 50, y - 156, x + 50, y - 56);
+                // 88px symbol is more than twice as large as the old 36px one.
+                resource.setBounds(x - 44, y - 134, x + 44, y - 46);
                 resource.draw(canvas);
             }
 
