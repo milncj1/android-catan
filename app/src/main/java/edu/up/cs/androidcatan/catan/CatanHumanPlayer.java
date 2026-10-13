@@ -978,23 +978,71 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
     /* ----------------------- BoardSurfaceView Touch Listeners --------------------------------- */
 
-    // the purpose of the touch listener is just to store the touch X,Y coordinates
+    // Tap selects one snapped junction; dragging moves the map, pinching zooms.
+    // One touch sequence must never both pan and accidentally place a building.
+    private float boardTouchX, boardTouchY, boardPinchSpan;
+    private boolean boardGestureMoved;
     private View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            if (null == state) return false;
-            if (isMenuOpen) return false;
-            if (null == state) return false;
-            if (playerNum != state.getCurrentPlayerId()) return false;
-
-            // save the X,Y coordinates
-            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                lastTouchDownXY[0] = boardSurfaceView.toBoardX(event.getX());
-                lastTouchDownXY[1] = boardSurfaceView.toBoardY(event.getY());
+            if (boardSurfaceView == null) return false;
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                boardTouchX = event.getX();
+                boardTouchY = event.getY();
+                boardGestureMoved = false;
+                boardPinchSpan = 0f;
+                return true;
             }
-
-            // let the touch event pass on to whoever needs it
-            return false;
+            if (action == MotionEvent.ACTION_POINTER_DOWN && event.getPointerCount() >= 2) {
+                boardGestureMoved = true;
+                boardPinchSpan = (float) Math.hypot(
+                        event.getX(0) - event.getX(1), event.getY(0) - event.getY(1));
+                return true;
+            }
+            if (action == MotionEvent.ACTION_MOVE) {
+                if (event.getPointerCount() >= 2) {
+                    float newSpan = (float) Math.hypot(
+                            event.getX(0) - event.getX(1), event.getY(0) - event.getY(1));
+                    if (boardPinchSpan > 0f && newSpan > 0f) {
+                        float cx = (event.getX(0) + event.getX(1)) * 0.5f;
+                        float cy = (event.getY(0) + event.getY(1)) * 0.5f;
+                        boardSurfaceView.zoomBy(newSpan / boardPinchSpan, cx, cy);
+                    }
+                    boardPinchSpan = newSpan;
+                    boardGestureMoved = true;
+                } else {
+                    float dx = event.getX() - boardTouchX;
+                    float dy = event.getY() - boardTouchY;
+                    if (boardGestureMoved || dx * dx + dy * dy > 144f) {
+                        boardGestureMoved = true;
+                        boardSurfaceView.panBy(dx, dy);
+                    }
+                    boardTouchX = event.getX();
+                    boardTouchY = event.getY();
+                }
+                return true;
+            }
+            if (action == MotionEvent.ACTION_POINTER_UP) {
+                int surviving = event.getActionIndex() == 0 ? 1 : 0;
+                if (surviving < event.getPointerCount()) {
+                    boardTouchX = event.getX(surviving);
+                    boardTouchY = event.getY(surviving);
+                }
+                boardPinchSpan = 0f;
+                boardGestureMoved = true;
+                return true;
+            }
+            if (action == MotionEvent.ACTION_UP) {
+                if (!boardGestureMoved && !isMenuOpen && state != null
+                        && playerNum == state.getCurrentPlayerId()) {
+                    lastTouchDownXY[0] = boardSurfaceView.toBoardX(event.getX());
+                    lastTouchDownXY[1] = boardSurfaceView.toBoardY(event.getY());
+                    v.performClick();
+                }
+                return true;
+            }
+            return action != MotionEvent.ACTION_CANCEL;
         }
     }; // touchListener END
 
