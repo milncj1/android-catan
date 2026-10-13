@@ -205,7 +205,18 @@ public class HexagonGrid extends BoardSurfaceView {
                     Log.i(TAG, "drawBuildings: drawing highlighted intersection at " + i);
                     int xPos = this.intersections[i].getXPos();
                     int yPos = this.intersections[i].getYPos();
-                    canvas.drawCircle(xPos, yPos, 30, highlightPaint);
+                    // One bright snap target, large enough to recognise after
+                    // the board has been fitted to a landscape phone screen.
+                    Paint target = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    target.setColor(0x9900DCEE);
+                    canvas.drawCircle(xPos, yPos, 52f, target);
+                    target.setColor(0xFF073B43);
+                    target.setStyle(Paint.Style.STROKE);
+                    target.setStrokeWidth(8f);
+                    canvas.drawCircle(xPos, yPos, 52f, target);
+                    target.setColor(Color.WHITE);
+                    target.setStyle(Paint.Style.FILL);
+                    canvas.drawCircle(xPos, yPos, 12f, target);
                 }
             }
         }
