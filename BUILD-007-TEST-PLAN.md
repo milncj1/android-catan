@@ -1,6 +1,6 @@
 # Build 007 — settlement placement accuracy and movable map
 Date: 13 October 2026
-Status: Source edits staged for review. **Not compiled or installed.** Build 006 remains the confirmed-good installed baseline.
+Status: **Built and permanently signed; awaiting Samsung installation/test.** Build 006 remains the confirmed-good installed baseline.
 
 ## User-reported faults
 - The settlement UI sometimes says "built" without any piece on the map or enough resources.
@@ -44,3 +44,12 @@ Status: Source edits staged for review. **Not compiled or installed.** Build 006
 ## Do not include
 - No unrelated gameplay redesign, CPU trading or signing-key changes in this maintenance patch.
 - Do not merge into the default branch until the owner approves.
+
+## Approved build result (13 October 2026)
+- Owner approved one GitHub Actions run on `apk-build/007-placement-zoom`, immutable commit `49fe9afff9fd79eb140163410d0f3734ab611f25`.
+- Run [38452796131](https://github.com/milncj1/android-catan/actions/runs/38452796131), run number 10: SUCCESS on first attempt, XML verification, JVM unit tests and APK assembly passed.
+- Permanently signed APK verified; signing certificate exactly matches installed Build 006.
+- Package `edu.up.cs.androidcatan`, versionCode **10** (Build 006: 9), versionName `1.2-preview`.
+- SHA-256 of signed APK: `59f9f9bb98221ce1f6378dda70fe4a0dd5cf22b073c1fbc6517f547e5bc8b4e3`.
+- The APK has NOT yet been Samsung-installed/tested. **Install over** Build 006; never uninstall or clear data.
+- No second GitHub build was triggered, and `master` is untouched.
