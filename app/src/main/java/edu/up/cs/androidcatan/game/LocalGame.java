@@ -218,6 +218,7 @@ public abstract class LocalGame implements Game, Tickable {
 					gameStage = GameStage.DURING_GAME;
 					Log.i("LocalGame", "broadcasting initial state");
 					// send each player the initial state of the game
+					onMatchReady();
 					sendAllUpdatedState();
 				}
 			}
@@ -278,16 +279,25 @@ public abstract class LocalGame implements Game, Tickable {
 			return;
 		}
 
-		// The move was a legal one, so presumably the state of the game was
-		// changed. Send all players the updated state. 
+		// Persist the authoritative game state after a successful move,
+		// before the GUI and computer players receive the new position.
+		onAcceptedMove();
+
+		// The move was legal: send all players the updated state.
 		sendAllUpdatedState();
 		
 		// determine whether there is a winner; if so, finish up the game
 		String overMsg = checkIfGameOver();
 		if (overMsg != null) {
 			finishUpGame(overMsg);
+			onMatchFinished();
 		}
 	}
+
+	/** Optional game-specific persistence hooks, called on the game thread. */
+	protected void onMatchReady() { }
+	protected void onAcceptedMove() { }
+	protected void onMatchFinished() { }
 
 	/**
 	 * Tell whether the given player is allowed to make a move at the
