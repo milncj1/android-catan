@@ -184,8 +184,9 @@ public class CatanLocalGame extends LocalGame {
                 return false;
             if (!state.getBoard().validRoadPlacement(owner, state.isSetupPhase(), from, to,
                     state.getCurrentSetupSettlement())) return false;
-            if (!state.isSetupPhase() && !state.isActionPhase()) return false;
             boolean free = !state.isSetupPhase() && state.getFreeRoadsRemaining() > 0;
+            if (!state.isSetupPhase() && (!state.isActionPhase() && !free || state.isRobberPhase()))
+                return false;
             if (!free && !state.isSetupPhase()
                     && !state.getCurrentPlayer().removeResourceBundle(Road.resourceCost)) return false;
 
@@ -350,6 +351,9 @@ public class CatanLocalGame extends LocalGame {
 
         //Player is Moving robber during Move Robber Phase
         if (action instanceof CatanRobberMoveAction) {
+            if (!state.isRobberPhase() || !state.allPlayersHaveDiscarded()
+                    || ((CatanRobberMoveAction) action).getPlayerId() != state.getCurrentPlayerId())
+                return false;
             Log.d(TAG, "makeMove() called with: action = [" + action + "]. playerId=" + ((CatanRobberMoveAction) action).getPlayerId());
 
             //Don't move if they've already moved the robber
