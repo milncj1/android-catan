@@ -65,6 +65,7 @@ public class CatanLocalGame extends LocalGame {
     }
 
     @Override protected void onMatchReady() {
+        sessionReady = true;
         persistMatch();
     }
 
@@ -82,6 +83,23 @@ public class CatanLocalGame extends LocalGame {
     public CatanLocalGame() {
         super();
         state = new CatanGameState();
+    }
+
+    /**
+     * Restoring a match must never create a fresh random island first.
+     * Start directly from the saved rules state, before player threads start.
+     */
+    public CatanLocalGame(CatanGameState savedState) {
+        super();
+        if (savedState == null || savedState.getBoard() == null)
+            throw new IllegalArgumentException("Cannot restore an empty match");
+        state = new CatanGameState(savedState);
+    }
+
+    private volatile boolean sessionReady;
+
+    public boolean isSessionReady() {
+        return sessionReady;
     }
 
     /*--------------------------------------- Action Methods -------------------------------------------*/
