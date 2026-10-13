@@ -1853,6 +1853,68 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     }
 
     /**
+     * A build is confirmed only if the next authoritative board actually
+     * contains the requested piece. No premature success on sendAction().
+     */
+    private String confirmPendingBuild(CatanGameState next) {
+        if (pendingBuild == PENDING_NONE || next == null) return null;
+        String confirmation = null;
+        if (pendingBuild == PENDING_SETTLEMENT) {
+            edu.up.cs.androidcatan.catan.gamestate.buildings.Building piece =
+                    next.getBoard().getBuildingAtIntersection(pendingIntersection);
+            if (piece instanceof edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement
+                    && piece.getOwnerId() == playerNum)
+                confirmation = "Settlement built at junction " + pendingIntersection + ".";
+        } else if (pendingBuild == PENDING_CITY) {
+            edu.up.cs.androidcatan.catan.gamestate.buildings.Building piece =
+                    next.getBoard().getBuildingAtIntersection(pendingIntersection);
+            if (piece instanceof City && piece.getOwnerId() == playerNum)
+                confirmation = "City upgraded at junction " + pendingIntersection + ".";
+        } else if (pendingBuild == PENDING_ROAD) {
+            for (Road road : next.getBoard().getRoads()) {
+                if (road.getOwnerId() == playerNum
+                        && ((road.getIntersectionAId() == pendingRoadFrom
+                                    && road.getIntersectionBId() == pendingRoadTo)
+                            || (road.getIntersectionAId() == pendingRoadTo
+                                    && road.getIntersectionBId() == pendingRoadFrom))) {
+                    confirmation = "Road built between junctions "
+                            + pendingRoadFrom + " and " + pendingRoadTo + ".";
+                    break;
+                }
+            }
+        }
+        if (confirmation != null) {
+            pendingBuild = PENDING_NONE;
+            pendingIntersection = -1;
+            pendingRoadFrom = pendingRoadTo = -1;
+            selectedIntersections.clear();
+            if (boardSurfaceView != null && boardSurfaceView.getGrid() != null)
+                boardSurfaceView.getGrid().clearHighLightedIntersections();
+        }
+        return confirmation;
+    }
+
+    private void rejectPendingBuild(boolean notYourTurn) {
+        if (pendingBuild == PENDING_NONE) {
+            showBuildProblem(notYourTurn
+                    ? "Wait for your turn before making a move."
+                    : "Move not accepted. Check the selected position and game rules.");
+            return;
+        }
+        String reason = "The game rejected that build. Your resources have not been spent.";
+        if (notYourTurn) reason = "This is not your turn to build.";
+        else if (pendingBuild == PENDING_SETTLEMENT) {
+            String details = settlementProblem(pendingIntersection);
+            if (details != null) reason = details;
+        }
+        pendingBuild = PENDING_NONE;
+        pendingIntersection = -1;
+        pendingRoadFrom = pendingRoadTo = -1;
+        // Keep the selected junction highlighted, so it can be corrected.
+        showBuildProblem(reason);
+    }
+
+    /**
      * callback method when we get a message (e.g., from the game)
      *
      * @param info the message
@@ -1874,11 +1936,18 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             Log.e(TAG, "receiveInfo: boardSurfaceView is null.");
             return;
         }
-        selectedIntersections.clear();
-
         if (info instanceof CatanGameState) {
 
-            this.state = new CatanGameState((CatanGameState) info);
+            CatanGameState next = new CatanGameState((CatanGameState) info);
+            String buildConfirmation = confirmPendingBuild(next);
+            this.state = next;
+            // Clear stale selections on accepted state updates, not on a
+            // rejected build; rejection should preserve the attempted point.
+            if (pendingBuild == PENDING_NONE) {
+                selectedIntersections.clear();
+                if (boardSurfaceView.getGrid() != null)
+                    boardSurfaceView.getGrid().clearHighLightedIntersections();
+            }
             captureOwnResourceChanges();
             // set resource count TextViews to the players resource inventory amounts
             Log.i(TAG, "receiveInfo: player list: " + ((CatanGameState) info).getPlayerList());
@@ -1905,10 +1974,16 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             fitPopupOnScreen(developmentGroup);
             fitPopupOnScreen(pickResourceGroup);
             drawGraphics();
+            if (buildConfirmation != null) {
+                messageTextView.setText(buildConfirmation);
+                Toast.makeText(myActivity, buildConfirmation, Toast.LENGTH_SHORT).show();
+            }
 
         } else if (info instanceof NotYourTurnInfo) {
+            rejectPendingBuild(true);
             Log.i(TAG, "receiveInfo: Player tried to make action but it is not their turn.");
         } else if (info instanceof IllegalMoveInfo) {
+            rejectPendingBuild(false);
             Log.i(TAG, "receiveInfo: Illegal move info received.");
         } else {
             Log.e(TAG, "receiveInfo: Received instanceof not anything we know. Returning void.");
