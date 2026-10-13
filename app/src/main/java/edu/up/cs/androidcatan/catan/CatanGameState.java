@@ -218,45 +218,57 @@ public class CatanGameState extends GameState {
      *
      * @param diceSum - dice sum
      */
+    /**
+     * The base-game bank contains 19 cards of each resource. Calculate the
+     * remaining stock from every player's hand so old Build 005 saves remain
+     * compatible and no additional serialized fields are required.
+     */
+    int getBankResourceCount(int resourceId) {
+        if (resourceId < 0 || resourceId >= 5) return 0;
+        int remaining = 19;
+        for (Player player : playerList) {
+            remaining -= player.getResourceCards()[resourceId];
+        }
+        return Math.max(0, remaining);
+    }
+
     void produceResources(int diceSum) {
-        Log.d(TAG, "produceResources() called with: diceSum = [" + diceSum + "]");
+        if (isActionPhase || isSetupPhase || diceSum == 7) return;
 
-        //Make sure it is not the action phase
-        if (isActionPhase) {
-            Log.e(TAG, "produceResources: It is the action phase. Returned false.");
-            return;
-        }
-
-        //Make sure it is not the setup phase
-        if (isSetupPhase) {
-            Log.e(TAG, "produceResources: not producing any resources since it is the setup phase.");
-            return;
-        }
-
-        //Get Hexagons with chit values matching the dice value rolled
-        ArrayList<Integer> productionHexagonIds = board.getHexagonsFromChitValue(diceSum);
-        Log.i(TAG, "produceResources: Hexagons with chit value " + diceSum + ": " + productionHexagonIds.toString());
-
-        //Iterate through the Hexagons
-        for (Integer i : productionHexagonIds) {
-            // The robber completely blocks production on its occupied tile.
-            if (board.getRobber().getHexagonId() == i) continue;
-            Hexagon hex = board.getHexagonFromId(i);
-            Log.i(TAG, "produceResources: Hexagon " + i + " producing " + hex.getResourceId());
-
-            ArrayList<Integer> receivingIntersections = board.getHexToIntIdMap().get(i);// intersections adjacent to producing hexagon tile
-            Log.i(TAG, "produceResources: received intersections: " + receivingIntersections);
-
-            // iterate through each intersection surrounding the producing hexagon
-            for (Integer intersectionId : receivingIntersections) {
-                Log.e(TAG, "produceResources: hex:" + hex.toString());
-                // check if this intersection has a building
-                if (board.getBuildings()[intersectionId] != null) {
-                    this.playerList.get(board.getBuildings()[intersectionId].getOwnerId()).addResourceCard(hex.getResourceId(), board.getBuildings()[intersectionId].getVictoryPoints());
-                    Log.i(TAG, "produceResources: Giving " + board.getBuildings()[intersectionId].getVictoryPoints() + " resources of type: " + hex.getResourceId() + " to player " + board.getBuildings()[intersectionId].getOwnerId());
-                } else {
-                    Log.i(TAG, "produceResources: No building located at intersection: " + intersectionId + " not giving any resources.");
+        // Collect all claims BEFORE paying anyone. When the supply is short,
+        // nobody gets that resource unless just one player would receive it.
+        int[][] claims = new int[5][4];
+        for (Integer hexId : board.getHexagonsFromChitValue(diceSum)) {
+            if (hexId == board.getRobber().getHexagonId()) continue;
+            Hexagon hex = board.getHexagonFromId(hexId);
+            if (hex == null || hex.getResourceId() < 0 || hex.getResourceId() >= 5)
+                continue;
+            int resource = hex.getResourceId();
+            for (Integer intersection : board.getHexToIntIdMap().get(hexId)) {
+                Building building = board.getBuildingAtIntersection(intersection);
+                if (building != null) {
+                    int owner = building.getOwnerId();
+                    if (owner >= 0 && owner < 4)
+                        claims[resource][owner] += building.getVictoryPoints();
                 }
+            }
+        }
+        for (int resource = 0; resource < claims.length; resource++) {
+            int totalDemand = 0;
+            int receivingPlayers = 0;
+            int onlyPlayer = -1;
+            for (int player = 0; player < 4; player++) {
+                int demand = claims[resource][player];
+                totalDemand += demand;
+                if (demand > 0) { receivingPlayers++; onlyPlayer = player; }
+            }
+            int available = getBankResourceCount(resource);
+            if (totalDemand <= available) {
+                for (int player = 0; player < 4; player++)
+                    if (claims[resource][player] > 0)
+                        playerList.get(player).addResourceCard(resource, claims[resource][player]);
+            } else if (receivingPlayers == 1 && available > 0) {
+                playerList.get(onlyPlayer).addResourceCard(resource, available);
             }
         }
     }
