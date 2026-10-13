@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.LinearGradient;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -123,14 +125,24 @@ public class HexagonGrid extends BoardSurfaceView {
 
         Paint roadPaint = new Paint(); // paint for drawing the roads
         roadPaint.setStyle(Paint.Style.STROKE);
-        roadPaint.setStrokeWidth(30);
+        roadPaint.setStrokeWidth(24);
+        roadPaint.setStrokeCap(Paint.Cap.ROUND);
+        roadPaint.setAntiAlias(true);
 
         ArrayList<Road> dataRoads = this.board.getRoads(); // get list of all roads on the board
         Log.d(TAG, "drawRoads: roads: " + this.board.getRoads().toString());
 
         for (Road r : dataRoads) {
+            float x1 = intersections[r.getIntersectionAId()].getXPos();
+            float y1 = intersections[r.getIntersectionAId()].getYPos();
+            float x2 = intersections[r.getIntersectionBId()].getXPos();
+            float y2 = intersections[r.getIntersectionBId()].getYPos();
+            roadPaint.setColor(0xFF302B26);
+            roadPaint.setStrokeWidth(33f);
+            canvas.drawLine(x1, y1, x2, y2, roadPaint);
             roadPaint.setColor(playerColors[r.getOwnerId()]);
-            canvas.drawLine(intersections[r.getIntersectionAId()].getXPos(), intersections[r.getIntersectionAId()].getYPos(), intersections[r.getIntersectionBId()].getXPos(), intersections[r.getIntersectionBId()].getYPos(), roadPaint);
+            roadPaint.setStrokeWidth(24f);
+            canvas.drawLine(x1, y1, x2, y2, roadPaint);
         }
     }
 
@@ -205,15 +217,19 @@ public class HexagonGrid extends BoardSurfaceView {
      * @param canvas Canvas to draw upon.
      */
     public void drawBorder(Canvas canvas) {
-        canvas.drawColor(Color.argb(255, 160, 206, 255)); // set the background to ocean color
+        Paint ocean = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ocean.setShader(new LinearGradient(-150f, -150f, 1830f, 1700f,
+                0xFF0D5979, 0xFF65A9B5, Shader.TileMode.CLAMP));
+        // Draw in the original board coordinates, not the device's raw pixels.
+        canvas.drawRect(-250f, -250f, 1900f, 1800f, ocean);
 
-        Paint tanPaint = new Paint(); // paint for island background
-        tanPaint.setColor(Color.argb(255, 226, 210, 113));
-
-        int centerX = canvas.getWidth() / 2;
-        int centerY = canvas.getHeight() / 2;
-
-        canvas.drawCircle(centerX, centerY - 15, 665, tanPaint);
+        Paint surf = new Paint(Paint.ANTI_ALIAS_FLAG);
+        surf.setColor(0x886DD7C5);
+        canvas.drawCircle(885f, 765f, 845f, surf);
+        surf.setColor(0xFFD9C38E);
+        canvas.drawCircle(885f, 765f, 823f, surf);
+        surf.setColor(0xFFEDD7A0);
+        canvas.drawCircle(885f, 759f, 802f, surf);
     }
 
     /**
