@@ -46,7 +46,6 @@ public class CatanGameState extends GameState {
     //Setup phase variables
     static final int setupPhaseTurnOrder[] = {0, 1, 2, 3, 3, 2, 1, 0};
     private int setupPhaseTurnCounter;
-    private int lastSetupSettlementId = -1;
     private int currentSetupSettlement = -1;
 
     // robber
@@ -104,7 +103,6 @@ public class CatanGameState extends GameState {
         this.developmentCards.addAll(cgs.getDevelopmentCards());
         this.currentPlayerId = cgs.currentPlayerId;
         this.setupPhaseTurnCounter = cgs.setupPhaseTurnCounter;
-        this.lastSetupSettlementId = cgs.lastSetupSettlementId;
         this.currentSetupSettlement = cgs.currentSetupSettlement;
         this.isActionPhase = cgs.isActionPhase;
         this.playerStealingFrom = cgs.playerStealingFrom;
@@ -651,14 +649,6 @@ public class CatanGameState extends GameState {
         return robberDiscardedResources;
     }
 
-
-    public int getLastSetupSettlementId() {
-        return lastSetupSettlementId;
-    }
-
-    public void setLastSetupSettlementId(int value) {
-        lastSetupSettlementId = value;
-    }
 
     public int getSetupPhaseTurnCounter() {
         return setupPhaseTurnCounter;
