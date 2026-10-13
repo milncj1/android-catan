@@ -8,6 +8,9 @@ The user cannot enjoy a match without knowing which dice were rolled, what resou
 are in their hand, what development cards are owned/played, and what the CPUs are doing.
 
 ## Changes to verify
+- Each non-desert terrain hex has a much larger, labelled (BRICK, GRAIN,
+  LUMBER, ORE, WOOL) resource icon on a contrasting badge, within the
+  hexagon; number tokens remain separate and legible.
 - Always-visible match panel beneath the turn indicator, independent of the left action rail.
 - Last dice result shows the two dice and their total, even when a CPU rolls.
 - Human hand explicitly lists all five resource types and counts and its development cards by type.
@@ -35,7 +38,9 @@ are in their hand, what development cards are owned/played, and what the CPUs ar
 9. Play a development card or resolve a robber: the match log identifies the action.
 10. Close completely, restart, Continue: hand/dice and existing match log remain.
 11. Tap View rolls & actions: newest first, scrollable, no other player's hidden hand disclosed.
-12. Check for clipping or an obstructed island on the Samsung S24+ in landscape.
+12. On the Samsung S24+ in landscape, confirm that each enlarged terrain symbol
+   and label is recognisable, and that number tokens, robber, roads and
+   settlements are still legible without overlap or clipping.
 
 ## Owner approval discipline
 - NO new apk-build branch, workflow run, APK compilation or signature until explicitly approved.
