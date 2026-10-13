@@ -1708,7 +1708,11 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             }
 
         } else if (this.state.isSetupPhase()) { // IF SETUP PHASE
-            this.messageTextView.setText(R.string.setup_phase); // set info message
+            // Classic four-player snake order: 0,1,2,3,3,2,1,0.
+            // Spell out that the human must wait for a SECOND free placement.
+            final int placementNumber = state.getSetupPhaseTurnCounter() + 1;
+            final boolean secondRound = placementNumber > 4;
+            final boolean isMyPlacement = state.getCurrentPlayerId() == playerNum;
             // get settlement and road count for the current turn
             // Setup progress must survive an app restart or Continue Game.
             // The temporary UI building list is not a reliable source.
@@ -1753,6 +1757,25 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             this.sidebarOpenDevCardMenuButton.setClickable(false);
             this.tradeButton.setAlpha(0.5f);
             this.tradeButton.setClickable(false);
+
+            if (!isMyPlacement) {
+                String computerName = allPlayerNames[state.getCurrentPlayerId()];
+                this.messageTextView.setText("Opening placement " + placementNumber
+                        + " of 8 — " + computerName
+                        + " is placing. Your second free settlement comes after the computers.");
+            } else if (settlements == 0) {
+                this.messageTextView.setText(secondRound
+                        ? "Your SECOND opening settlement (2 of 2): select an empty junction and tap Settlement. No resource cost."
+                        : "Your FIRST opening settlement (1 of 2): select an empty junction and tap Settlement. No resource cost.");
+            } else if (roads == 0) {
+                this.messageTextView.setText(secondRound
+                        ? "Now place the free road touching your SECOND settlement."
+                        : "Now place the free road touching your FIRST settlement.");
+            } else {
+                this.messageTextView.setText(secondRound
+                        ? "Second opening settlement and road complete. Tap END TURN to start the game."
+                        : "First opening settlement and road complete. Tap END TURN; the computer players go next, then you place your SECOND pair.");
+            }
 
         } else if (!state.isActionPhase()) { // IF NOT THE ACTION PHASE AND NOT THE SETUP PHASE
 
@@ -1830,7 +1853,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         TextView turnChip = myActivity.findViewById(R.id.turn_status_chip);
         if (turnChip != null) {
             String who = getAllPlayerNames()[state.getCurrentPlayerId()];
-            String stage = state.isSetupPhase() ? "Placement"
+            String stage = state.isSetupPhase()
+                    ? "Opening " + (state.getSetupPhaseTurnCounter() + 1) + "/8"
                     : state.isRobberPhase() ? "Robber"
                     : state.isActionPhase() ? "Build / trade" : "Roll";
             turnChip.setText(who + " · " + stage);
