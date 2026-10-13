@@ -280,6 +280,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private GameMainActivity myActivity;  // the android activity that we are running
     public CatanGameState state = null; // game state
     private BoardSurfaceView boardSurfaceView;
+    private TextView hudLastRoll, hudHandFirst, hudHandSecond, hudCards, hudLatestAction;
+    private static final String[] HUD_CARD_NAMES =
+            {"Knight", "Victory Point", "Year of Plenty", "Monopoly", "Road Building"};
     private TextView diceStatusChip;
     private TextView lastActionChip;
     private TextView handStatusChip;
@@ -1369,6 +1372,67 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     /**
      * updates all text views a gui components to reflect current game state
      */
+    private void updateGameplayHud() {
+        if (myActivity == null || state == null || playerNum < 0
+                || playerNum >= state.getPlayerList().size()) return;
+
+        int[] hand = state.getPlayerList().get(playerNum).getResourceCards();
+        if (hudHandFirst != null) hudHandFirst.setText("Brick " + hand[0]
+                + "  ·  Grain " + hand[1] + "  ·  Lumber " + hand[2]);
+        if (hudHandSecond != null) hudHandSecond.setText("Ore " + hand[3]
+                + "  ·  Wool " + hand[4] + "  ·  Total " +
+                state.getPlayerList().get(playerNum).getTotalResourceCardCount());
+
+        if (hudLastRoll != null) {
+            int[] dice = state.getDice().getDiceValues();
+            if (state.isSetupPhase()) {
+                hudLastRoll.setText("Dice: opening placements");
+            } else if (dice[0] + dice[1] != state.getCurrentDiceSum()) {
+                hudLastRoll.setText("Dice: waiting for first roll");
+            } else {
+                hudLastRoll.setText("Last roll: " + dice[0] + " + " + dice[1]
+                        + " = " + state.getCurrentDiceSum());
+            }
+        }
+
+        if (hudCards != null) {
+            int[] counts = new int[HUD_CARD_NAMES.length];
+            for (Integer id : state.getPlayerList().get(playerNum).getDevelopmentCards()) {
+                if (id != null && id >= 0 && id < counts.length) counts[id]++;
+            }
+            StringBuilder cards = new StringBuilder("Your development cards: ");
+            int found = 0;
+            for (int i = 0; i < counts.length; i++) {
+                if (counts[i] == 0) continue;
+                if (found++ > 0) cards.append(" · ");
+                cards.append(HUD_CARD_NAMES[i]).append(" ×").append(counts[i]);
+            }
+            if (found == 0) cards.append("None");
+            hudCards.setText(cards.toString());
+        }
+        if (hudLatestAction != null)
+            hudLatestAction.setText("Latest: " + CatanMatchHistory.latest(myActivity));
+    }
+
+    private void showGameplayHistory() {
+        if (myActivity == null) return;
+        String all = CatanMatchHistory.history(myActivity);
+        // Show recent events first in a readable, scrollable native dialog.
+        String[] lines = all.isEmpty() ? new String[0] : all.split("\\n");
+        StringBuilder readable = new StringBuilder();
+        for (int i = lines.length - 1; i >= 0; i--) {
+            if (!lines[i].trim().isEmpty())
+                readable.append("• ").append(lines[i]).append("\\n\\n");
+        }
+        new AlertDialog.Builder(myActivity)
+                .setTitle("Match history — latest first")
+                .setMessage(readable.length() == 0
+                        ? "Rolls, building, trading and development cards will appear here."
+                        : readable.toString())
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
     private void updateTextViews() {
 
         View decorView = myActivity.getWindow().getDecorView();
@@ -1774,6 +1838,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 diceStatusChip.setText(event.getDescription());
             return; // Public notices must NOT erase selected roads or intersections.
         }
+        if (info instanceof CatanPublicEventInfo) {
+            if (myActivity != null) {
+                CatanMatchHistory.append(myActivity,
+                        ((CatanPublicEventInfo) info).getDescription());
+                updateGameplayHud();
+            }
+            return;
+        }
         if (this.boardSurfaceView == null) {
             Log.e(TAG, "receiveInfo: boardSurfaceView is null.");
             return;
@@ -1812,6 +1884,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             }
 
             updateTextViews();
+            updateGameplayHud();
             fitPopupOnScreen(robberDiscardGroup);
             fitPopupOnScreen(robberChooseHexGroup);
             fitPopupOnScreen(developmentGroup);
@@ -2194,6 +2267,16 @@ if(newGame) {
             });
         }
 
+        hudLastRoll = activity.findViewById(R.id.hud_last_roll);
+        hudHandFirst = activity.findViewById(R.id.hud_hand_first);
+        hudHandSecond = activity.findViewById(R.id.hud_hand_second);
+        hudCards = activity.findViewById(R.id.hud_development_cards);
+        hudLatestAction = activity.findViewById(R.id.hud_latest_action);
+        Button historyButton = activity.findViewById(R.id.hud_history_button);
+        if (historyButton != null) historyButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override public void onClick(View v) { showGameplayHistory(); }
+                });
         // if we have state update the GUI based on the state
         if (this.state != null) receiveInfo(state);
         applyControlRailLayout();
