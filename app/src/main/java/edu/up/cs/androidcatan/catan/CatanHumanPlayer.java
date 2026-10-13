@@ -304,6 +304,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         return initialStateDisplayed && boardSurfaceView != null && state != null;
     }
     private boolean controlsCollapsed = false;
+    private boolean hudExpanded = false;
+
 
 
     /*--------------------- Constructors ------------------------*/
@@ -2272,6 +2274,20 @@ if(newGame) {
             });
         }
 
+        Button hudToggle = activity.findViewById(R.id.hud_toggle);
+        if (hudToggle != null) hudToggle.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                hudExpanded = !hudExpanded;
+                applyHudVisibility();
+            }
+        });
+        Button resetCamera = activity.findViewById(R.id.board_reset_view);
+        if (resetCamera != null) resetCamera.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (boardSurfaceView != null) boardSurfaceView.resetCamera();
+            }
+        });
+        applyHudVisibility();
         hudLastRoll = activity.findViewById(R.id.hud_last_roll);
         hudHandFirst = activity.findViewById(R.id.hud_hand_first);
         hudHandSecond = activity.findViewById(R.id.hud_hand_second);
@@ -2428,6 +2444,16 @@ if(newGame) {
      * The original controls remain functional. Only their visibility and
      * allocated screen width change when the player collapses the control rail.
      */
+    /** The island must remain accessible without a large permanent overlay. */
+    private void applyHudVisibility() {
+        if (myActivity == null) return;
+        View panel = myActivity.findViewById(R.id.gameplay_hud);
+        if (panel != null) panel.setVisibility(hudExpanded ? View.VISIBLE : View.GONE);
+        Button toggle = myActivity.findViewById(R.id.hud_toggle);
+        if (toggle != null)
+            toggle.setText(hudExpanded ? "Hide dice & hand ▴" : "Dice & hand ▾");
+    }
+
     private void applyControlRailLayout() {
         if (myActivity == null) return;
         View sidebarGuide = myActivity.findViewById(R.id.guideline_right_sidebar);
