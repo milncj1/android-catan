@@ -1,43 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Retain the framework's TabHost/remote widgets for compatibility, but
+     show only the local offline game configuration in the personal version. -->
 <TabHost xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/tabHost"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content" >
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
 
     <TabWidget
         android:id="@android:id/tabs"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" />
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
     <FrameLayout
         android:id="@android:id/tabcontent"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" >
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:id="@+id/localGameTab"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="@dimen/tab_height" >
-
+            android:orientation="vertical">
             <include
-                android:id="@+id/localTabLayout"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                layout="@layout/game_local_tab" />
+                layout="@layout/game_local_tab"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/remoteGameTab"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="@dimen/tab_height" >
-
-            <include
-                android:id="@+id/remoteTabLayout"
-                layout="@layout/game_remote_tab" />
+            android:orientation="vertical">
+            <include layout="@layout/game_remote_tab"/>
         </LinearLayout>
     </FrameLayout>
-
 </TabHost>
