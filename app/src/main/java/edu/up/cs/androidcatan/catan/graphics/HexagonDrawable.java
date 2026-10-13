@@ -50,6 +50,7 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
     };
 
     static int[] resourceDrawables = {R.drawable.brick_icon_25x25, R.drawable.grain_icon_25x25, R.drawable.lumber_icon_25x25, R.drawable.ore_icon_25x25, R.drawable.wool_icon_25x25};
+    private static final String[] resourceLabels = {"BRICK", "GRAIN", "LUMBER", "ORE", "WOOL", "DESERT"};
 
     /**
      * the method for drawing the hexagon shaped tiles on the board
@@ -181,11 +182,35 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
             numerals.setColor((chitValue == 6 || chitValue == 8) ? 0xFFB92F2C : 0xFF473C32);
             canvas.drawText(Integer.toString(chitValue), x, tokenY + 19f, numerals);
 
+            // On a landscape phone the board is scaled down substantially.
+            // Put the resource in a high-contrast, labelled emblem rather than
+            // a tiny 36px symbol that is difficult to recognise after scaling.
+            Paint emblem = new Paint(Paint.ANTI_ALIAS_FLAG);
+            emblem.setColor(0xEEFFF5DB);
+            canvas.drawRoundRect(x - 69f, y - 164f, x + 69f, y - 13f,
+                    24f, 24f, emblem);
+            emblem.setStyle(Paint.Style.STROKE);
+            emblem.setStrokeWidth(4f);
+            emblem.setColor(0xFF4D3F2F);
+            canvas.drawRoundRect(x - 69f, y - 164f, x + 69f, y - 13f,
+                    24f, 24f, emblem);
+
             Drawable resource = context.getDrawable(resourceDrawables[terrain]);
             if (resource != null) {
-                resource.setBounds(x + 63, y + 70, x + 99, y + 106);
+                // 100x100 virtual pixels, nearly three times the previous size.
+                resource.setBounds(x - 50, y - 156, x + 50, y - 56);
                 resource.draw(canvas);
             }
+
+            Paint tag = new Paint(Paint.ANTI_ALIAS_FLAG);
+            tag.setColor(0xFF33483F);
+            canvas.drawRoundRect(x - 65f, y - 47f, x + 65f, y - 17f,
+                    10f, 10f, tag);
+            tag.setColor(Color.WHITE);
+            tag.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+            tag.setTextAlign(Paint.Align.CENTER);
+            tag.setTextSize(23f);
+            canvas.drawText(resourceLabels[terrain], x, y - 25f, tag);
         }
 
         if (isRobber) {
