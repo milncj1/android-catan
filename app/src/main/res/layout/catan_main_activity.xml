@@ -337,6 +337,24 @@
 
     <!--scoreboard START-->
 
+    <!-- Always visible even when the action rail is collapsed. -->
+    <TextView
+        android:id="@+id/turn_status_chip"
+        android:layout_width="wrap_content"
+        android:layout_height="34dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/score_panel_bg"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:gravity="center_vertical"
+        android:singleLine="true"
+        android:text="Starting game"
+        android:textColor="#FFF8F3E6"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <!-- Compact floating scorecard over the sea, rather than a solid black strip. -->
     <View
         android:id="@+id/score_panel"
