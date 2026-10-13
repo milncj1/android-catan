@@ -17,6 +17,10 @@ to the owner's private ChatGPT Library, under:
 
 Do not put either file in a public GitHub issue, branch, Actions artifact,
 pull request, or the APK itself. The keystore alias is `catan-permanent`.
+
+Public certificate fingerprint (SHA-256, for checking delivered APKs):
+`0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`.
+This fingerprint is not a password and is safe to publish.
 User should also save backups in another safe, private location.
 
 ## Future update procedure
