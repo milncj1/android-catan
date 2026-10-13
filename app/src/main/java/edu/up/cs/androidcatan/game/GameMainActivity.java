@@ -117,6 +117,8 @@ View.OnClickListener {
     protected GameConfig savedMatchConfiguration() { return null; }
     protected void onNewMatchRequested() { }
     protected void prepareLocalMatch(LocalGame localGame, GameConfig options) { }
+    protected void onLocalMatchLaunched(LocalGame localGame) { }
+
 
 
 	/**
@@ -361,6 +363,7 @@ View.OnClickListener {
 		// start the game; then return null to indicate that the launch was
 		// successful
 		game.start(players);
+        if (game instanceof LocalGame) onLocalMatchLaunched((LocalGame) game);
 		return null;
 
 	}// launchGame
@@ -554,12 +557,26 @@ View.OnClickListener {
 
         // Resume only after loading a complete, validated state.
         else if (button.getId() == R.id.continueGameButton) {
-            GameConfig saved = savedMatchConfiguration();
-            if (saved == null) {
-                MessageBox.popUpMessage("Saved match couldn't be read. You can start a new game.", this);
-            } else {
-                String problem = launchGame(saved);
-                if (problem != null) MessageBox.popUpMessage(problem, this);
+            // Never silently leave the user staring at an old loading screen.
+            // A failed restore must preserve the autosave and report why.
+            try {
+                GameConfig saved = savedMatchConfiguration();
+                if (saved == null) {
+                    MessageBox.popUpMessage(
+                            "This saved game could not be opened. It has not been deleted.", this);
+                } else {
+                    android.widget.Toast.makeText(this, "Restoring your saved game…",
+                            android.widget.Toast.LENGTH_SHORT).show();
+                    String problem = launchGame(saved);
+                    if (problem != null) MessageBox.popUpMessage(
+                            "Could not continue: " + problem, this);
+                }
+            } catch (RuntimeException problem) {
+                Log.e("GameMainActivity", "Failed to restore saved Catan session", problem);
+                MessageBox.popUpMessage(
+                        "Couldn't restore your match. The saved game is still protected. "
+                                + "Please report this error: "
+                                + problem.getClass().getSimpleName(), this);
             }
         }
 
