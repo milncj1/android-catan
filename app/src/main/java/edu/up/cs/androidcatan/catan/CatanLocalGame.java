@@ -46,6 +46,8 @@ public class CatanLocalGame extends LocalGame {
     private final static String TAG = "CatanLocalGame";
 
     private CatanGameState state;
+    private GameAction lastAcceptedCandidate;
+    private static final String[] RESOURCE_NAMES = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
 
     private Context autosaveContext;
     private int[] autosaveTypes;
@@ -73,6 +75,7 @@ public class CatanLocalGame extends LocalGame {
     }
 
     @Override protected void onAcceptedMove() {
+        publishAcceptedMove(lastAcceptedCandidate);
         // Resumed CPUs may act before the UI is connected. Keep the original
         // snapshot intact until the human can see the board again.
         if (!resumedFromSave || restoredBoardDisplayed) persistMatch();
@@ -128,6 +131,72 @@ public class CatanLocalGame extends LocalGame {
         return sessionReady;
     }
 
+    /**
+     * Publish only information all players may legitimately see. Buying a
+     * development card must NOT disclose which card another player drew.
+     * Private inventories remain on their owners' UI only.
+     */
+    private void publishAcceptedMove(GameAction action) {
+        if (action == null || players == null || playerNames == null) return;
+        int who = getPlayerIdx(action.getPlayer());
+        if (who < 0 || who >= playerNames.length) return;
+        String actor = playerNames[who];
+        String description = null;
+        boolean roll = false;
+        if (action instanceof CatanRollDiceAction) {
+            int[] dice = state.getDice().getDiceValues();
+            description = actor + " rolled " + dice[0] + " + " + dice[1]
+                    + " = " + state.getCurrentDiceSum()
+                    + (state.getCurrentDiceSum() == 7 ? " — robber activated" : "");
+            roll = true;
+        } else if (action instanceof CatanBuildSettlementAction) {
+            description = actor + " placed a settlement";
+        } else if (action instanceof CatanBuildRoadAction) {
+            description = actor + " built a road";
+        } else if (action instanceof CatanBuildCityAction) {
+            description = actor + " upgraded a settlement to a city";
+        } else if (action instanceof CatanBuyDevCardAction) {
+            description = actor + " bought a development card";
+        } else if (action instanceof CatanUseKnightCardAction) {
+            description = actor + " played Knight";
+        } else if (action instanceof CatanUseMonopolyCardAction) {
+            int id = ((CatanUseMonopolyCardAction) action).getChosenResource();
+            description = actor + " played Monopoly: " + RESOURCE_NAMES[id];
+        } else if (action instanceof CatanUseYearOfPlentyCardAction) {
+            CatanUseYearOfPlentyCardAction card = (CatanUseYearOfPlentyCardAction) action;
+            description = actor + " played Year of Plenty: "
+                    + RESOURCE_NAMES[card.getChosenResource()] + " and "
+                    + RESOURCE_NAMES[card.getSecondChosenResource()];
+        } else if (action instanceof CatanUseRoadBuildingCardAction) {
+            description = actor + " played Road Building";
+        } else if (action instanceof CatanRobberDiscardAction) {
+            description = actor + " finished robber discards";
+        } else if (action instanceof CatanRobberMoveAction) {
+            description = actor + " moved the robber";
+        } else if (action instanceof CatanRobberStealAction) {
+            int from = ((CatanRobberStealAction) action).getStealingFromPlayerId();
+            description = from < 0 ? actor + " found nobody to steal from"
+                    : actor + " stole from " + playerNames[from];
+        } else if (action instanceof CatanTradeWithBankAction) {
+            CatanTradeWithBankAction trade = (CatanTradeWithBankAction) action;
+            description = actor + " traded 4 " + RESOURCE_NAMES[trade.getResourceIdGiving()]
+                    + " for 1 " + RESOURCE_NAMES[trade.getResourceIdRec()] + " (bank)";
+        } else if (action instanceof CatanTradeWithPortAction) {
+            description = actor + " traded at a 2:1 harbour";
+        } else if (action instanceof CatanTradeWithCustomPortAction) {
+            description = actor + " traded at a 3:1 harbour";
+        } else if (action instanceof CatanEndTurnAction) {
+            description = actor + " finished their turn — " + playerNames[state.getCurrentPlayerId()]
+                    + " is next";
+        }
+        if (description != null) {
+            CatanPublicEventInfo notice = new CatanPublicEventInfo(description, roll);
+            for (GamePlayer p : players) {
+                if (p instanceof CatanHumanPlayer) p.sendInfo(notice);
+            }
+        }
+    }
+
     /*--------------------------------------- Action Methods -------------------------------------------*/
 
     /**
@@ -176,6 +245,7 @@ public class CatanLocalGame extends LocalGame {
      */
     @Override
     protected synchronized boolean makeMove(GameAction action) {
+        lastAcceptedCandidate = action;
         Log.d(TAG, "makeMove() called with: action = [" + action + "]");
         Log.d(TAG, "makeMove: state: " + state.toString());
         /* --------------------------- Turn Actions --------------------------------------- */
