@@ -238,6 +238,8 @@ public class CatanGameState extends GameState {
 
         //Iterate through the Hexagons
         for (Integer i : productionHexagonIds) {
+            // The robber completely blocks production on its occupied tile.
+            if (board.getRobber().getHexagonId() == i) continue;
             Hexagon hex = board.getHexagonFromId(i);
             Log.i(TAG, "produceResources: Hexagon " + i + " producing " + hex.getResourceId());
 
