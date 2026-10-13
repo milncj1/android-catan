@@ -43,6 +43,17 @@ public final class CatanMatchHistory {
                 .getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "");
     }
 
+    /** Last publicly announced roll, with the player's name and both dice. */
+    public static String lastRoll(Context context) {
+        String all = history(context);
+        if (all.isEmpty()) return "";
+        String[] entries = all.split("\\n");
+        for (int i = entries.length - 1; i >= 0; i--) {
+            if (entries[i].contains(" rolled ")) return entries[i];
+        }
+        return "";
+    }
+
     public static String latest(Context context) {
         String history = history(context);
         if (history.isEmpty()) return "Every player's rolls and actions appear here.";
