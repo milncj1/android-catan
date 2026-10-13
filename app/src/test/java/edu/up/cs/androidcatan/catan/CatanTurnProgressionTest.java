@@ -36,7 +36,9 @@ public class CatanTurnProgressionTest {
                 for (Integer next : board.getIntersectionAdjacencyList().get(intersection)) {
                     // At this point the new settlement does not yet exist.
                     if (board.getRoadMatrix()[intersection][next] != null
-                            && board.getRoadMatrix()[intersection][next].getOwnerId() == -1) {
+                            && board.getRoadMatrix()[intersection][next].getOwnerId() == -1
+                            && board.getRoadsAtIntersection(intersection).size() < 3
+                            && board.getRoadsAtIntersection(next).size() < 3) {
                         selected = intersection;
                         roadEnd = next;
                         break;
