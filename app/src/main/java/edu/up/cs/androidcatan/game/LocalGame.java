@@ -259,7 +259,8 @@ public abstract class LocalGame implements Game, Tickable {
 	 * @param action
 	 * 			the action that was sent
 	 */
-	private final void checkAndHandleAction(GameAction action) {
+	// Serialize accepted actions and their autosaves as one transaction.
+	private final synchronized void checkAndHandleAction(GameAction action) {
         Log.d("LocalGame", "checkAndHandleAction() called with: action = [" + action + "]");
 		// get the player and player ID
 		GamePlayer player = action.getPlayer();
