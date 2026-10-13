@@ -100,7 +100,8 @@ public class CatanGameState extends GameState {
         this.isRobberPhase = cgs.isRobberPhase;
         this.freeRoadsRemaining = cgs.freeRoadsRemaining;
         this.developmentCardPlayedThisTurn = cgs.developmentCardPlayedThisTurn;
-        System.arraycopy(cgs.robberPlayerListHasDiscarded, 0, this.robberPlayerListHasDiscarded, 0, cgs.robberPlayerListHasDiscarded.length);
+        System.arraycopy(cgs.robberDiscardedResources, 0,
+                this.robberDiscardedResources, 0, this.robberDiscardedResources.length);
         this.developmentCards.addAll(cgs.getDevelopmentCards());
         this.currentPlayerId = cgs.currentPlayerId;
         this.setupPhaseTurnCounter = cgs.setupPhaseTurnCounter;
@@ -108,7 +109,7 @@ public class CatanGameState extends GameState {
         this.setupRoadBuiltThisTurn = cgs.setupRoadBuiltThisTurn;
         this.isActionPhase = cgs.isActionPhase;
         this.playerStealingFrom = cgs.playerStealingFrom;
-        System.arraycopy(cgs.robberPlayerListHasDiscarded, 0, this.robberPlayerListHasDiscarded, 0, cgs.robberPlayerListHasDiscarded.length);
+
         this.robberPlayerListHasDiscarded = Arrays.copyOf(cgs.robberPlayerListHasDiscarded, cgs.robberPlayerListHasDiscarded.length);
         // copy player list (using player deep copy const.)
         for (int i = 0; i < cgs.playerList.size(); i++) {
