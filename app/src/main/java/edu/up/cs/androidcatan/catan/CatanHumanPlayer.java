@@ -1117,7 +1117,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             return true;
         }
         // if it is not the setup phase, then check if it is the action phase
-        if (!state.isActionPhase()) {
+        if (!state.isActionPhase() && state.getFreeRoadsRemaining() == 0) {
             Log.i(TAG, "tryBuildRoad: Player cannot build road. Not action phase.");
             messageTextView.setText(R.string.roll_the_dice);
             shake(messageTextView);
@@ -1552,9 +1552,17 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             this.buildCityButton.setAlpha(0.5f);
             this.buildCityButton.setClickable(false);
 
-            // dev card menu button
-            this.sidebarOpenDevCardMenuButton.setAlpha(0.5f);
-            this.sidebarOpenDevCardMenuButton.setClickable(false);
+            // Action cards can be played before rolling the dice.
+            boolean canPlayCard = !state.hasPlayedDevelopmentCardThisTurn()
+                    && !state.getPlayerList().get(this.playerNum).getPlayableDevCards().isEmpty();
+            this.sidebarOpenDevCardMenuButton.setAlpha(canPlayCard ? 1f : 0.5f);
+            this.sidebarOpenDevCardMenuButton.setClickable(canPlayCard);
+
+            // Road Building's two free roads can be laid before rolling.
+            if (state.getFreeRoadsRemaining() > 0) {
+                this.buildRoadButton.setAlpha(1f);
+                this.buildRoadButton.setClickable(true);
+            }
 
             // trade button on sidebar
             this.tradeButton.setAlpha(0.5f);
