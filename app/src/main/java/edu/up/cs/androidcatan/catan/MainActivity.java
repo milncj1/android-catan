@@ -144,7 +144,7 @@ public class MainActivity extends GameMainActivity {
                         .setTitle("Unable to finish restoring")
                         .setMessage("Your original saved game has been kept. "
                                 + "Catan did not finish reconnecting the match. "
-                                + "Close and reopen the app to try again.\\n\\n"
+                                + "Close and reopen the app to try again.\n\n"
                                 + "Diagnostic: " + stage + "; board=" + boardDisplayed)
                         .setPositiveButton("OK", null)
                         .show();
