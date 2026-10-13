@@ -1383,12 +1383,18 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                             .getTotalResourceCardCount());
 
         if (hudLastRoll != null) {
-            int[] dice = state.getDice().getDiceValues();
-            if (state.isSetupPhase()) hudLastRoll.setText("Dice: opening placements");
-            else if (dice[0] + dice[1] != state.getCurrentDiceSum())
-                hudLastRoll.setText("Dice: waiting for first roll");
-            else hudLastRoll.setText("Last roll: " + dice[0] + " + "
-                    + dice[1] + " = " + state.getCurrentDiceSum());
+            String namedRoll = CatanMatchHistory.lastRoll(myActivity);
+            if (!namedRoll.isEmpty()) {
+                hudLastRoll.setText(namedRoll);
+            } else if (state.isSetupPhase()) {
+                hudLastRoll.setText("Dice: opening placements");
+            } else if (state.isActionPhase()) {
+                int[] dice = state.getDice().getDiceValues();
+                hudLastRoll.setText("Current dice: " + dice[0] + " + "
+                        + dice[1] + " = " + state.getCurrentDiceSum());
+            } else {
+                hudLastRoll.setText("Dice: waiting for roll");
+            }
         }
 
         if (hudCards != null) {
