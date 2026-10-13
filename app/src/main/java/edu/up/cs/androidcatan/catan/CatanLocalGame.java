@@ -515,9 +515,8 @@ public class CatanLocalGame extends LocalGame {
         Player current = state.getCurrentPlayer();
         int lr = (state.getCurrentLongestRoadPlayerId() == i) ? 2 : 0;
         int la = (state.getCurrentLargestArmyPlayerId() == i) ? 2 : 0;
-        int hiddenCards = java.util.Collections.frequency(current.getDevelopmentCards(), 1);
-        int total = current.getVictoryPoints() + current.getVictoryPointsPrivate()
-                + hiddenCards + lr + la;
+        // Buying a Victory Point card already increases private VP by one.
+        int total = current.getVictoryPoints() + current.getVictoryPointsPrivate() + lr + la;
         return total >= 10 ? playerNames[i] + " wins!" : null;
     }
 
