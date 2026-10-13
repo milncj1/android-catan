@@ -480,18 +480,16 @@ public class CatanLocalGame extends LocalGame {
             return null;
         }
 
-        //Iterate through players and see if anyone has 10 or more victory points
-        for (int i = 0; i < this.state.getPlayerList().size(); i++) {
-
-            int lr = (this.state.getCurrentLongestRoadPlayerId() == i) ? 2 : 0;
-            int la = (this.state.getCurrentLargestArmyPlayerId() == i) ? 2 : 0;
-
-            //Player has won the game
-            if (this.state.getPlayerList().get(i).getVictoryPointsPrivate() + lr + la + this.state.getPlayerList().get(i).getVictoryPoints() > 9) {
-                return playerNames[i] + " wins!";
-            }
-        }
-        return null; // return null if no winner, but the game is not over
+        // In classic Catan, only the player whose turn it is may win.
+        // Victory Point development cards count automatically while held.
+        int i = state.getCurrentPlayerId();
+        Player current = state.getCurrentPlayer();
+        int lr = (state.getCurrentLongestRoadPlayerId() == i) ? 2 : 0;
+        int la = (state.getCurrentLargestArmyPlayerId() == i) ? 2 : 0;
+        int hiddenCards = java.util.Collections.frequency(current.getDevelopmentCards(), 1);
+        int total = current.getVictoryPoints() + current.getVictoryPointsPrivate()
+                + hiddenCards + lr + la;
+        return total >= 10 ? playerNames[i] + " wins!" : null;
     }
 
     /**
