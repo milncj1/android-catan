@@ -278,7 +278,7 @@ public class CatanLocalGame extends LocalGame {
             if (owner != state.getCurrentPlayerId() || build.isSetupPhase() != state.isSetupPhase()) return false;
             if (ownedBuildings(owner, Settlement.class) >= 5) return false;
             if (!state.getBoard().validBuildingLocation(owner, state.isSetupPhase(), point)) return false;
-            if (!state.isSetupPhase() && !state.isActionPhase()) return false;
+            if (!state.isSetupPhase() && (!state.isActionPhase() || state.isRobberPhase())) return false;
             if (state.isSetupPhase() && state.getCurrentSetupSettlement() >= 0) return false;
             if (!state.isSetupPhase()
                     && !state.getCurrentPlayer().removeResourceBundle(Settlement.resourceCost)) return false;
@@ -288,8 +288,9 @@ public class CatanLocalGame extends LocalGame {
                 state.setCurrentSetupSettlement(point);
                 if (state.getSetupPhaseTurnCounter() > 3) {
                     for (Integer hexagon : state.getBoard().getIntToHexIdMap().get(point)) {
-                        state.getCurrentPlayer().addResourceCard(
-                                state.getBoard().getHexagonFromId(hexagon).getResourceId(), 1);
+                        int resource = state.getBoard().getHexagonFromId(hexagon).getResourceId();
+                        if (resource >= 0 && resource < 5 && state.getBankResourceCount(resource) > 0)
+                            state.getCurrentPlayer().addResourceCard(resource, 1);
                     }
                 }
             }
@@ -301,7 +302,8 @@ public class CatanLocalGame extends LocalGame {
         if (action instanceof CatanBuildCityAction) {
             CatanBuildCityAction build = (CatanBuildCityAction) action;
             int owner = build.getOwnerId(), point = build.getIntersectionId();
-            if (owner != state.getCurrentPlayerId() || state.isSetupPhase() || !state.isActionPhase()) return false;
+            if (owner != state.getCurrentPlayerId() || state.isSetupPhase()
+                    || !state.isActionPhase() || state.isRobberPhase()) return false;
             if (ownedBuildings(owner, City.class) >= 4) return false;
             if (!state.getBoard().validCityLocation(owner, point)) return false;
             if (!state.getCurrentPlayer().removeResourceBundle(City.resourceCost)) return false;
@@ -372,10 +374,17 @@ public class CatanLocalGame extends LocalGame {
             int first = card.getChosenResource(), second = card.getSecondChosenResource();
             if (first < 0 || first > 4 || second < 0 || second > 4) return false;
 
+            // Year of Plenty draws from the bank, not unlimited cards.
+            // If a stack is depleted, take only the cards still available.
+            int firstAvailable = state.getBankResourceCount(first);
+            int secondAvailable = state.getBankResourceCount(second);
+            int firstAward = Math.min(1, firstAvailable);
+            int secondAward = Math.min(1, secondAvailable - (first == second ? firstAward : 0));
+            if (firstAward == 0 && secondAward == 0) return false;
             state.getCurrentPlayer().removeDevCard(2);
             state.setDevelopmentCardPlayedThisTurn(true);
-            state.getCurrentPlayer().addResourceCard(first, 1);
-            state.getCurrentPlayer().addResourceCard(second, 1);
+            if (firstAward > 0) state.getCurrentPlayer().addResourceCard(first, firstAward);
+            if (secondAward > 0) state.getCurrentPlayer().addResourceCard(second, secondAward);
             return true;
         }
 
@@ -387,12 +396,13 @@ public class CatanLocalGame extends LocalGame {
             state.setDevelopmentCardPlayedThisTurn(true);
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
-            //Set total resources and get the resource the player wants
+            //Take this resource from the OTHER players, never from the bank.
             int totalResources = 0;
             int resourceId = ((CatanUseMonopolyCardAction) action).getChosenResource();
 
             //Iterate through all players and remove the specified resource, adding the the totalResources
             for (Player player : state.getPlayerList()) {
+                if (player.getPlayerId() == state.getCurrentPlayerId()) continue;
                 int resCount = player.getResourceCards()[resourceId];
                 player.removeResourceCard(resourceId, resCount);
                 totalResources += resCount;
@@ -421,7 +431,11 @@ public class CatanLocalGame extends LocalGame {
             Log.d(TAG, "makeMove() called with: action = [" + action + "], playerId=" + ((CatanRobberDiscardAction) action).getPlayerId());
 
             //Discard specified resources
-            return state.discardResources(((CatanRobberDiscardAction) action).getPlayerId(), ((CatanRobberDiscardAction) action).getRobberDiscardedResources());
+            CatanRobberDiscardAction discard = (CatanRobberDiscardAction) action;
+            // The sender may discard only their own cards.
+            if (players != null && getPlayerIdx(action.getPlayer()) != discard.getPlayerId())
+                return false;
+            return state.discardResources(discard.getPlayerId(), discard.getRobberDiscardedResources());
         }
 
         //Player is Moving robber during Move Robber Phase
@@ -462,7 +476,8 @@ public class CatanLocalGame extends LocalGame {
             if (!canTradeNow()) return false;
             CatanTradeWithBankAction trade = (CatanTradeWithBankAction) action;
             int give = trade.getResourceIdGiving(), receive = trade.getResourceIdRec();
-            if (!validResource(give) || !validResource(receive) || give == receive) return false;
+            if (!validResource(give) || !validResource(receive) || give == receive
+                    || state.getBankResourceCount(receive) < 1) return false;
             if (!state.getCurrentPlayer().removeResourceCard(give, 4)) return false;
             state.getCurrentPlayer().addResourceCard(receive, 1);
             return true;
@@ -475,7 +490,8 @@ public class CatanLocalGame extends LocalGame {
             int received = trade.getResourceRecId();
             if (port == null || !validResource(received) || port.getTradeRatio() != 2
                     || !validResource(port.getResourceId())
-                    || received == port.getResourceId() || !ownsPort(port, state.getCurrentPlayerId()))
+                    || received == port.getResourceId() || !ownsPort(port, state.getCurrentPlayerId())
+                    || state.getBankResourceCount(received) < 1)
                 return false;
             if (!state.getCurrentPlayer().removeResourceCard(port.getResourceId(), 2)) return false;
             state.getCurrentPlayer().addResourceCard(received, 1);
@@ -495,7 +511,8 @@ public class CatanLocalGame extends LocalGame {
                     break;
                 }
             }
-            if (!hasGeneralPort || !state.getCurrentPlayer().removeResourceCard(give, 3))
+            if (!hasGeneralPort || state.getBankResourceCount(receive) < 1
+                    || !state.getCurrentPlayer().removeResourceCard(give, 3))
                 return false;
             state.getCurrentPlayer().addResourceCard(receive, 1);
             return true;
