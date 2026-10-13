@@ -324,7 +324,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             Log.i(TAG, "onClick: " + state.getBoard().toString() + "");
 
             //Player does not have enough resources to build the road
-            if (!state.isSetupPhase() && !state.getPlayerList().get(state.getCurrentPlayerId()).hasResourceBundle(Road.resourceCost)) {
+            if (!state.isSetupPhase() && state.getFreeRoadsRemaining() == 0
+                    && !state.getPlayerList().get(state.getCurrentPlayerId()).hasResourceBundle(Road.resourceCost)) {
                 messageTextView.setText(R.string.not_enough_for_road);
                 shake(messageTextView);
                 return;
