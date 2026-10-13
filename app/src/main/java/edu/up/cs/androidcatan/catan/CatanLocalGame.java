@@ -229,6 +229,7 @@ public class CatanLocalGame extends LocalGame {
 
         //Player would like to buy a development card
         if (action instanceof CatanBuyDevCardAction) {
+            if (state.isSetupPhase() || !state.isActionPhase() || state.isRobberPhase()) return false;
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
             // There are exactly 25 cards in classic Catan. Reject the
@@ -245,6 +246,8 @@ public class CatanLocalGame extends LocalGame {
 
         //Player would like to player a Knight Dev Card
         if (action instanceof CatanUseKnightCardAction) {
+            if (!canPlayDevelopmentCard(0)) return false;
+            state.setDevelopmentCardPlayedThisTurn(true);
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
             //Remove the dev card from their hand
@@ -267,31 +270,31 @@ public class CatanLocalGame extends LocalGame {
 
         //Player would like to use the Victory Points Dev Card
         if (action instanceof CatanUseVictoryPointCardAction) {
-            Log.d(TAG, "makeMove() called with: action = [" + action + "]");
-
-            //Remove the dev card and add victory points to the player's private victory points
-            state.getCurrentPlayer().removeDevCard(1);
-            state.getCurrentPlayer().addPrivateVictoryPoints(1);
-            return true;
+            // Victory Point cards are hidden and count from the moment purchased.
+            // They are not spent/played as an ordinary development card.
+            return false;
         }
 
         //Player would like to use Catan Year of Plenty Dev Card
         if (action instanceof CatanUseYearOfPlentyCardAction) {
-            Log.d(TAG, "makeMove() called with: action = [" + action + "]");
+            if (!canPlayDevelopmentCard(2)) return false;
+            CatanUseYearOfPlentyCardAction card = (CatanUseYearOfPlentyCardAction) action;
+            int first = card.getChosenResource(), second = card.getSecondChosenResource();
+            if (first < 0 || first > 4 || second < 0 || second > 4) return false;
 
-            // Standard rules: choose TWO resources, which may be different.
-            CatanUseYearOfPlentyCardAction plenty = (CatanUseYearOfPlentyCardAction) action;
-            int first = plenty.getChosenResource();
-            int second = plenty.getSecondChosenResource();
-            if (first < 0 || first >= 5 || second < 0 || second >= 5) return false;
+            state.getCurrentPlayer().removeDevCard(2);
+            state.setDevelopmentCardPlayedThisTurn(true);
             state.getCurrentPlayer().addResourceCard(first, 1);
             state.getCurrentPlayer().addResourceCard(second, 1);
-            state.getCurrentPlayer().removeDevCard(2);
             return true;
         }
 
         //Player would like to use the Monopoly Dev Card
         if (action instanceof CatanUseMonopolyCardAction) {
+            if (!canPlayDevelopmentCard(3)) return false;
+            int chosen = ((CatanUseMonopolyCardAction) action).getChosenResource();
+            if (chosen < 0 || chosen > 4) return false;
+            state.setDevelopmentCardPlayedThisTurn(true);
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
             //Set total resources and get the resource the player wants
@@ -313,10 +316,11 @@ public class CatanLocalGame extends LocalGame {
 
         //Player would like to use the Road Building Dev Card
         if (action instanceof CatanUseRoadBuildingCardAction) {
-            if (!canPlayActionCard(4)) return false;
+            if (!canPlayDevelopmentCard(4)) return false;
+            // Two roads at no resource cost, not four free resource cards.
             state.getCurrentPlayer().removeDevCard(4);
-            state.setFreeRoadsRemaining(2);
             state.setDevelopmentCardPlayedThisTurn(true);
+            state.setFreeRoadsRemaining(2);
             return true;
         }
 
