@@ -387,11 +387,21 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     //if they have a year of plenty card
                     if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 2) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using year of plenty card");
-                        game.sendAction(new CatanUseYearOfPlentyCardAction(this, playerLeastResource(gs))); //change chosenResource
-                        Log.d(TAG, "receiveInfo: Used year of plenty card");
+                        // Pick a resource which is actually present in the finite bank.
+                        // An illegal development-card action would otherwise leave the
+                        // computer waiting forever for a fresh game-state callback.
+                        int selected = -1;
+                        int fewestHeld = Integer.MAX_VALUE;
+                        for (int res = 0; res < 5; res++) {
+                            if (gs.getBankResourceCount(res) > 0
+                                    && gs.getPlayerList().get(playerNum).getResourceCards()[res] < fewestHeld) {
+                                selected = res;
+                                fewestHeld = gs.getPlayerList().get(playerNum).getResourceCards()[res];
+                            }
+                        }
+                        if (selected < 0) continue;
+                        game.sendAction(new CatanUseYearOfPlentyCardAction(this, selected));
                         game.sendAction(new CatanEndTurnAction(this));
-                        sleep(350);
-                        Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
 
