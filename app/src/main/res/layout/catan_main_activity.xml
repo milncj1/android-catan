@@ -300,6 +300,7 @@
         style="@android:style/Widget.Material.DropDownItem.Spinner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:alpha="255"
         android:background="@android:color/background_light"
         android:dropDownWidth="match_parent"
@@ -307,23 +308,34 @@
         android:paddingTop="0dp"
         android:paddingEnd="4dp"
         android:spinnerMode="dropdown"
+        app:layout_constraintEnd_toEndOf="@+id/use_Card"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/use_Card"
+        app:layout_constraintTop_toBottomOf="@+id/build_devCard" />
 
     <TextView
         android:id="@+id/development_Card_Info"
         android:layout_width="180dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:minHeight="0dp"
         android:padding="8dp"
         android:textColor="#FFF8F3E6"
         android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
         android:id="@+id/resource_pick_background"
         android:layout_width="416dp"
         android:layout_height="121dp"
+        android:layout_marginStart="395dp"
         android:alpha="0.5"
         android:background="@android:color/background_light"
         android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/pickResMenu_monopolyVerticalGuideLine" />
 
     <Button
         android:id="@+id/use_Card"
@@ -332,12 +344,13 @@
         android:layout_height="37dp"
         android:text="@string/Use_Button"
         android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="@+id/development_Card_Info"
+        app:layout_constraintStart_toStartOf="@+id/development_Card_Info"
+        app:layout_constraintTop_toBottomOf="@+id/development_Card_Info" />
 
     <!--dev card menu END-->
 
     <!--scoreboard START-->
-
-    <!-- Always visible even when the action rail is collapsed. -->
     <TextView
         android:id="@+id/turn_status_chip"
         android:layout_width="wrap_content"
@@ -355,98 +368,129 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Compact floating scorecard over the sea, rather than a solid black strip. -->
+    <!-- Four scores on a parchment-sea overlay instead of a black panel. -->
     <View
         android:id="@+id/score_panel"
         android:layout_width="176dp"
         android:layout_height="130dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/score_panel_bg"
-
+        app:layout_constraintStart_toEndOf="@+id/guideline_right_sidebar"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/Player1_Name"
-        android:layout_width="115dp"
-        android:layout_height="30dp"
-        android:scrollHorizontally="true"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:singleLine="true"
+        android:layout_width="112dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="11dp"
+        android:layout_marginTop="8dp"
         android:text="@string/Player1"
-        android:textAlignment="viewStart"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-
-    <TextView
-        android:id="@+id/Player2_Name"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
-        android:scrollHorizontally="true"
+        android:singleLine="true"
         android:ellipsize="end"
-        android:maxLines="1"
-        android:text="@string/Player2"
-        android:textAlignment="viewStart"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-
-    <TextView
-        android:id="@+id/Player3_Name"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
-        android:scrollHorizontally="true"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="@string/Player3"
-        android:textAlignment="viewStart"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-
-    <TextView
-        android:id="@+id/Player4_Name"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
-        android:scrollHorizontally="true"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="@string/Player4"
-        android:textAlignment="viewStart"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:gravity="center_vertical"
+        android:textColor="#FFE7544B"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/score_panel"
+        app:layout_constraintTop_toTopOf="@+id/score_panel" />
 
     <TextView
         android:id="@+id/Player1_Score"
-        android:layout_width="20dp"
-        android:layout_height="30dp"
+        android:layout_width="29dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="3dp"
         android:text="@string/Player1_Score"
-        android:textAlignment="center"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:gravity="center"
+        android:textColor="#FFFFF8EB"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@+id/Player1_Name"
+        app:layout_constraintTop_toTopOf="@+id/Player1_Name" />
+
+    <TextView
+        android:id="@+id/Player2_Name"
+        android:layout_width="112dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="11dp"
+        android:text="@string/Player2"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:textColor="#FFF5F4F0"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/score_panel"
+        app:layout_constraintTop_toBottomOf="@+id/Player1_Name" />
 
     <TextView
         android:id="@+id/Player2_Score"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
+        android:layout_width="29dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="3dp"
         android:text="@string/Player2_Score"
-        android:textAlignment="center"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:gravity="center"
+        android:textColor="#FFFFF8EB"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@+id/Player2_Name"
+        app:layout_constraintTop_toTopOf="@+id/Player2_Name" />
+
+    <TextView
+        android:id="@+id/Player3_Name"
+        android:layout_width="112dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="11dp"
+        android:text="@string/Player3"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:textColor="#FFFFAC4D"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/score_panel"
+        app:layout_constraintTop_toBottomOf="@+id/Player2_Name" />
 
     <TextView
         android:id="@+id/Player3_Score"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
+        android:layout_width="29dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="3dp"
         android:text="@string/Player3_Score"
-        android:textAlignment="center"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:gravity="center"
+        android:textColor="#FFFFF8EB"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@+id/Player3_Name"
+        app:layout_constraintTop_toTopOf="@+id/Player3_Name" />
+
+    <TextView
+        android:id="@+id/Player4_Name"
+        android:layout_width="112dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="11dp"
+        android:text="@string/Player4"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:textColor="#FF82AEE9"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/score_panel"
+        app:layout_constraintTop_toBottomOf="@+id/Player3_Name" />
 
     <TextView
         android:id="@+id/Player4_Score"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
+        android:layout_width="29dp"
+        android:layout_height="27dp"
+        android:layout_marginStart="3dp"
         android:text="@string/Player4_Score"
-        android:textAlignment="center"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
+        android:gravity="center"
+        android:textColor="#FFFFF8EB"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@+id/Player4_Name"
+        app:layout_constraintTop_toTopOf="@+id/Player4_Name" />
 
     <!-- scoreboard END -->
 
