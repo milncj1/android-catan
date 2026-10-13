@@ -212,98 +212,48 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
 
         //Carry out robber phase
         if (gs.isRobberPhase()) {
-            Log.i(TAG, "receiveInfo: Computer has reached the Robber Phase");
-            sleep(500);
-            /*--------------------Discard Phase--------------------*/
-
-            //1. Check if this player has discarded
             if (!gs.getRobberPlayerListHasDiscarded()[playerNum]) {
-                Log.i(TAG, "receiveInfo: Computer player " + playerNum + " needs to discard!!!");
-
-                //2a. Check if the player needs to discard cards; if not, send discard action with empty resource list;
-                //   GameState will handle logic.
-                if (!gs.checkIfPlayerHasDiscarded(playerNum)) {
-                    Log.i(TAG, "receiveInfo: Computer " + playerNum + " does not need to discard, but still needs to send action.");
-                    game.sendAction(new CatanRobberDiscardAction(this, playerNum, robberResourcesDiscard));
-                    return;
-                }
-
-                //2b. Player needs to discard cards; player will randomly choose resources until half of their cards have been discarded
-                else {
-                    int randomResource = random.nextInt(5);
-                    robberResourcesDiscard = new int[]{0, 0, 0, 0, 0};
-
-                    //3. Loop until computer has chosen enough cards to discard
-                    while (!gs.validDiscard(playerNum, robberResourcesDiscard)) {
-                        if (robberResourcesDiscard[randomResource] < gs.getPlayerList().get(this.playerNum).getResourceCards()[randomResource]) {
-                            robberResourcesDiscard[randomResource]++;
+                int[] remaining = gs.getPlayerList().get(playerNum).getResourceCards().clone();
+                int sum = 0;
+                for (int count : remaining) sum += count;
+                int required = sum > 7 ? sum / 2 : 0;
+                int[] discard = new int[5];
+                for (int i = 0; i < required; i++) {
+                    int held = 0;
+                    for (int value : remaining) held += value;
+                    if (held <= 0) return;
+                    int target = random.nextInt(held);
+                    for (int resource = 0; resource < 5; resource++) {
+                        if (target < remaining[resource]) {
+                            remaining[resource]--;
+                            discard[resource]++;
+                            break;
                         }
-
-                        randomResource = random.nextInt(5);
+                        target -= remaining[resource];
                     }
-
-                    //4. Send discard action
-                    Log.i(TAG, "receiveInfo: Computer is now discarding resources");
-                    CatanRobberDiscardAction action = new CatanRobberDiscardAction(this, playerNum, robberResourcesDiscard);
-                    game.sendAction(action);
-                    Log.i(TAG, "receiveInfo: Player is ending the discard phase!");
-                    return;
                 }
-            }
-
-            //5. Wait until all players have completed their discard phase
-            if (!gs.allPlayersHaveDiscarded() && gs.getCurrentPlayerId() == playerNum) {
-                Log.d(TAG, "receiveInfo: Not all players have discarded!!!!");
+                game.sendAction(new CatanRobberDiscardAction(this, playerNum, discard));
                 return;
             }
-
-            Log.i(TAG, "receiveInfo: Robber Phase --> Move Robber Phase");
-
-            /*----------------------Move Robber Phase----------------*/
-
-            //6. If it is this players turn, continue to rest of robber phase; otherwise player is done
-            if (gs.getCurrentPlayerId() == playerNum) {
-                Log.i(TAG, "receiveInfo: Computer is moving robber playerNum=" + playerNum);
-
-                //7. Check if player has move robber; if not move to random, VALID hexagon
-                if (!gs.getHasMovedRobber()) {
-                    Log.i(TAG, "receiveInfo: Computer Player playerId=" + playerNum + " hasMovedRobber: " + gs.getHasMovedRobber());
-                    Log.i(TAG, "receiveInfo: Computer is moving the robber");
-                    sleep(2000);
-
-                    //8. Choose a random hex, then loop until valid
-                    hexId = random.nextInt(gs.getBoard().getHexagons().size());
-                    while (!tryMoveRobber(hexId, gs)) {
-                        hexId = random.nextInt(gs.getBoard().getHexagons().size());
-                    }
-                    return;
-                } else {
-                    Log.i(TAG, "receiveInfo: gs.hasMovedRobber = " + true);
-                }
-
-                /*----------------Steal Resource Phase--------------*/
-                Log.d(TAG, "receiveInfo: player has reached the stealing phase playerId=" + playerNum);
-                //10. Computer chooses a random intersection to steal from
-                sleep(500);
-                // get adjacent intersections around the hexagon
-                ArrayList<Integer> intersections = gs.getBoard().getHexToIntIdMap().get(hexId);
-
-                int randomIntersectionIdx = random.nextInt(intersections.size());
-                int intersectionId = intersections.get(randomIntersectionIdx);
-
-                while (!gs.getBoard().hasBuilding(intersectionId) || gs.getBoard().getBuildingAtIntersection(intersectionId).getOwnerId() == playerNum) {
-                    randomIntersectionIdx = random.nextInt(intersections.size());
-                    intersectionId = intersections.get(randomIntersectionIdx);
-                }
-
-                //11. Valid intersection found, steal from this player
-                Log.i(TAG, "receiveInfo: Computer is now stealing from player " + gs.getBoard().getBuildingAtIntersection(intersectionId).getOwnerId());
-                // send CatanRobberStealAction to the game
-                game.sendAction(new CatanRobberStealAction(this, this.playerNum, gs.getBoard().getBuildingAtIntersection(intersectionId).getOwnerId()));
+            if (gs.getCurrentPlayerId() != playerNum || !gs.allPlayersHaveDiscarded()) return;
+            if (!gs.getHasMovedRobber()) {
+                int current = gs.getBoard().getRobber().getHexagonId();
+                int size = gs.getBoard().getHexagons().size();
+                if (size < 2) return;
+                int dest = random.nextInt(size - 1);
+                if (dest >= current) dest++;
+                game.sendAction(new CatanRobberMoveAction(this, playerNum, dest));
                 return;
-            } else {
-                Log.d(TAG, "receiveInfo: it is the robber phase and not my turn playerId=" + playerNum);
             }
+            // Read the destination from saved state, not this CPU's former
+            // transient hexId field. No victim is legal on an empty tile.
+            ArrayList<Integer> eligible = new ArrayList<>();
+            for (int p = 0; p < gs.getPlayerList().size(); p++) {
+                if (gs.isRobberVictim(playerNum, p)) eligible.add(p);
+            }
+            int victim = eligible.isEmpty() ? -1 : eligible.get(random.nextInt(eligible.size()));
+            game.sendAction(new CatanRobberStealAction(this, playerNum, victim));
+            return;
         }
 
         /*----------------------------------Build Actions------------------------------------------*/
