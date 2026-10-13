@@ -129,7 +129,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
             // if they have not built a settlement on this turn
             if (!buildingsBuiltOnThisTurn.contains(1)) {
                 Log.i(TAG, "receiveInfo: Player has not built a settlement, will attempt now. playerNum=" + this.playerNum);
-                sleep(1000);
+                sleep(250);
                 // Evaluate every *legal* intersection rather than randomly choosing
                 // only from the small subset permitted by the old bot.
                 int randSettlementIntersection = -1;
@@ -156,7 +156,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 game.sendAction(new CatanBuildSettlementAction(this, gs.isSetupPhase(), this.playerNum, randSettlementIntersection)); // sending build settlement action
                 this.lastSettlementIntersectionId = randSettlementIntersection;
                 buildingsBuiltOnThisTurn.add(1);
-                sleep(1000);
+                sleep(250);
                 return;
                 // else if the player has not built a road on this turn
             } else if (!buildingsBuiltOnThisTurn.contains(0)) {
@@ -185,7 +185,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 game.sendAction(new CatanBuildRoadAction(this, true,
                         this.playerNum, lastSettlementIntersectionId, bestRoadDestination));
                 buildingsBuiltOnThisTurn.add(0);
-                sleep(1000); // sleep
+                sleep(250); // sleep
                 Log.i(TAG, "receiveInfo() returned: void");
                 return;
             }
@@ -301,7 +301,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
                     //10. Send the action to move the robber; information has been saved to also steal with the robber
 
-                    sleep(3000);
+                    sleep(500);
                     game.sendAction(new CatanRobberMoveAction(this, playerNum, hexId));
                     return;
 
@@ -310,9 +310,9 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 /*----------------Steal Resource Phase--------------*/
 
                 //11. Now Steal from the selected intersection
-                sleep(1000);
+                sleep(250);
                 game.sendAction(new CatanRobberStealAction(this, playerNum, playerWithMostVPs));
-                sleep(3000);
+                sleep(500);
                 return;
             }//End of Robber Phases after Discard phase
         }//End of Robber Phase
@@ -332,7 +332,15 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 return;
             }
 
-            sleep(1000);
+            sleep(200);
+
+            // A played Road Building card grants two free road placements.
+            // Place them before considering any paid action or ending the turn.
+            if (gs.getFreeRoadsRemaining() > 0) {
+                if (buildBestRoad(gs)) return;
+                game.sendAction(new CatanEndTurnAction(this));
+                return;
+            }
 
             /*****Looks to trade so they can potentially build a road******/
             int brickCount = gs.getPlayerList().get(this.playerNum).getResourceCards()[0];
@@ -362,7 +370,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 if (bestSite >= 0) {
                     game.sendAction(new CatanBuildSettlementAction(this, false, this.playerNum, bestSite));
                     game.sendAction(new CatanEndTurnAction(this));
-                    sleep(2000);
+                    sleep(350);
                     return;
                 }
             }
@@ -384,77 +392,68 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 if (bestCitySite >= 0) {
                     game.sendAction(new CatanBuildCityAction(this, false, this.playerNum, bestCitySite));
                     game.sendAction(new CatanEndTurnAction(this));
-                    sleep(2000);
+                    sleep(350);
                     return;
                 }
             }
 
             /******Looks to buy a dev card*******/
-            if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(DevelopmentCard.resourceCost)) {
+            if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(DevelopmentCard.resourceCost) && gs.hasDevelopmentCardsAvailable()) {
                 Log.d(TAG, "receiveInfo: Player " + this.playerNum + " purchased dev card");
                 game.sendAction(new CatanBuyDevCardAction(this));
                 Log.d(TAG, "receiveInfo: CatanBuyDevCardAction sent");
                 game.sendAction(new CatanEndTurnAction(this));
-                sleep(2000);
+                sleep(350);
                 Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                 return;
             }
 
             /*****Looks to use a dev card*******/
-            if (gs.getPlayerList().get(this.playerNum).getDevelopmentCards().size() > 0) {
+            if (!gs.hasPlayedDevelopmentCardThisTurn()
+                    && !gs.getPlayerList().get(this.playerNum).getPlayableDevCards().isEmpty()) {
                 Log.d(TAG, "receiveInfo: Player " + this.playerNum + " has a playable development card");
-                for (int n = 0; n < gs.getPlayerList().get(this.playerNum).getDevelopmentCards().size(); n++) {
+                for (int n = 0; n < gs.getPlayerList().get(this.playerNum).getPlayableDevCards().size(); n++) {
 
-                    //if they have a victory points card
-                    if (gs.getPlayerList().get(this.playerNum).getDevelopmentCards().get(n) == 1) {
-                        Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using vp card");
-                        game.sendAction(new CatanUseVictoryPointCardAction(this));
-                        Log.d(TAG, "receiveInfo: CatanUseVictoryPointCardAction sent");
-                        game.sendAction(new CatanEndTurnAction(this));
-                        sleep(2000);
-                        Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
-                        return;
-                    }
+                    // Victory Point cards stay hidden and score automatically.
+                    if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 1) continue;
 
                     //if they have a knight card
-                    if (gs.getPlayerList().get(this.playerNum).getDevelopmentCards().get(n) == 0) {
+                    if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 0) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using knight card");
                         game.sendAction(new CatanUseKnightCardAction(this));
                         Log.d(TAG, "receiveInfo: CatanUseKnightCardAction sent");
                         game.sendAction(new CatanEndTurnAction(this));
-                        sleep(2000);
+                        sleep(350);
                         Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
 
                     //if they have a year of plenty card
-                    if (gs.getPlayerList().get(this.playerNum).getDevelopmentCards().get(n) == 2) {
+                    if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 2) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using year of plenty card");
                         game.sendAction(new CatanUseYearOfPlentyCardAction(this, playerLeastResource(gs))); //change chosenResource
                         Log.d(TAG, "receiveInfo: Used year of plenty card");
                         game.sendAction(new CatanEndTurnAction(this));
-                        sleep(2000);
+                        sleep(350);
                         Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
 
                     //if they have a monopoly card
-                    if (gs.getPlayerList().get(this.playerNum).getDevelopmentCards().get(n) == 3) {
+                    if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 3) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using monopoly card");
                         game.sendAction(new CatanUseMonopolyCardAction(this, playerLeastResource(gs))); //change chosenResource
                         game.sendAction(new CatanEndTurnAction(this));
-                        sleep(2000);
+                        sleep(350);
                         Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
 
                     //if they have a road card
-                    if (gs.getPlayerList().get(this.playerNum).getDevelopmentCards().get(n) == 4) {
+                    if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 4) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using road dev card");
+                        if (getPlayerRoads(gs).size() >= 15) continue;
                         game.sendAction(new CatanUseRoadBuildingCardAction(this));
-                        game.sendAction(new CatanEndTurnAction(this));
-                        sleep(2000);
-                        Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
                 }
@@ -465,14 +464,14 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 Log.d(TAG, "receiveInfo: Brick count: " + brickCount + " and lumberCount: " + lumberCount + " caused a trade");
                 game.sendAction(new CatanTradeWithBankAction(this, 0, 2));
                 game.sendAction(new CatanEndTurnAction(this));
-                sleep(2000);
+                sleep(350);
                 return;
             }
             if (lumberCount >= 5 && brickCount == 0) {
                 Log.d(TAG, "receiveInfo: Lumber count: " + lumberCount + " and brickCount: " + brickCount + " caused a trade");
                 game.sendAction(new CatanTradeWithBankAction(this, 2, 0));
                 game.sendAction(new CatanEndTurnAction(this));
-                sleep(2000);
+                sleep(350);
                 return;
             }
 
@@ -482,7 +481,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     game.sendAction(new CatanTradeWithBankAction(this, 1, playerLeastResource(gs)));
                     Log.d(TAG, "receiveInfo: CatanTradeWithBankAction sent");
                     game.sendAction(new CatanEndTurnAction(this));
-                    sleep(2000);
+                    sleep(350);
                     Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                     return;
                 }
@@ -494,60 +493,53 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     game.sendAction(new CatanTradeWithBankAction(this, 4, playerLeastResource(gs)));
                     Log.d(TAG, "receiveInfo: CatanTradeWithBankAction sent");
                     game.sendAction(new CatanEndTurnAction(this));
-                    sleep(2000);
+                    sleep(350);
                     Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                     return;
                 }
             }
 
-            /******Looks to build another road*****/
-            int chance = random.nextInt(2);
-            Log.d(TAG, "receiveInfo: Chance returned: " + chance);
-            if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(Road.resourceCost)) { //took out playerRoadCount method, can add back in later if necessary
-
-                // Search all legal roads rather than extending one random
-                // endpoint. Prefer connections towards promising new settlements.
-                ArrayList<Integer> roadEndpoints =
-                        getPlayerRoadIntersection(getPlayerRoads(gs));
-                int bestFrom = -1;
-                int bestTo = -1;
-                double bestRoadScore = Double.NEGATIVE_INFINITY;
-                for (Integer from : roadEndpoints) {
-                    for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(from)) {
-                        if (!gs.getBoard().validRoadPlacement(this.playerNum, false, from, to)) {
-                            continue;
-                        }
-                        double score = CatanStrategy.scoreRoadDestination(gs, to, this.playerNum)
-                                + random.nextDouble() * 0.2;
-                        if (score > bestRoadScore) {
-                            bestRoadScore = score;
-                            bestFrom = from;
-                            bestTo = to;
-                        }
-                    }
-                }
-                if (bestFrom >= 0) {
-                    game.sendAction(new CatanBuildRoadAction(this, false,
-                            this.playerNum, bestFrom, bestTo));
-                    game.sendAction(new CatanEndTurnAction(this));
-                    return;
-                }
-
-                //End turn after building
-                Log.d(TAG, "receiveInfo: Problem with building a road");
+            /******Looks to extend towards the next useful settlement*****/
+            if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(Road.resourceCost)
+                    && getPlayerRoads(gs).size() < 15 && buildBestRoad(gs)) {
                 game.sendAction(new CatanEndTurnAction(this));
-                sleep(2000);
                 return;
             }
 
             //End turn if no other action can be taken
             game.sendAction(new CatanEndTurnAction(this));
             Log.d(TAG, "receiveInfo: CatanEndTurnAction sent: Nothing was built");
-            sleep(2000);
+            sleep(350);
             return;
             //not setup phase if statement END
         }
     }// receiveInfo() END
+
+    /**
+     * Choose a legal road with the highest future expansion value.
+     * Only place the road here; the next game-state callback chooses whether
+     * to place another free road or finish the turn.
+     */
+    private boolean buildBestRoad(CatanGameState gs) {
+        Random random = new Random();
+        int bestFrom = -1, bestTo = -1;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (Integer from : getPlayerRoadIntersection(getPlayerRoads(gs))) {
+            for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(from)) {
+                if (!gs.getBoard().validRoadPlacement(playerNum, false, from, to)) continue;
+                double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum)
+                        + random.nextDouble() * 0.2;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestFrom = from;
+                    bestTo = to;
+                }
+            }
+        }
+        if (bestFrom < 0) return false;
+        game.sendAction(new CatanBuildRoadAction(this, false, playerNum, bestFrom, bestTo));
+        return true;
+    }
 
     /**
      * Attempts the move the robber if possible
