@@ -955,8 +955,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
             // save the X,Y coordinates
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                lastTouchDownXY[0] = event.getX();
-                lastTouchDownXY[1] = event.getY();
+                lastTouchDownXY[0] = boardSurfaceView.toBoardX(event.getX());
+                lastTouchDownXY[1] = boardSurfaceView.toBoardY(event.getY());
             }
 
             // let the touch event pass on to whoever needs it
