@@ -1,6 +1,6 @@
 # Build 007 — settlement placement accuracy and movable map
 Date: 13 October 2026
-Status: **Built and permanently signed; awaiting Samsung installation/test.** Build 006 remains the confirmed-good installed baseline.
+Status: **Built and permanently signed; awaiting Samsung installation/test.** Build 007 is now the latest owner-confirmed working installed baseline.
 
 ## User-reported faults
 - The settlement UI sometimes says "built" without any piece on the map or enough resources.
@@ -53,3 +53,8 @@ Status: **Built and permanently signed; awaiting Samsung installation/test.** Bu
 - SHA-256 of signed APK: `59f9f9bb98221ce1f6378dda70fe4a0dd5cf22b073c1fbc6517f547e5bc8b4e3`.
 - The APK has NOT yet been Samsung-installed/tested. **Install over** Build 006; never uninstall or clear data.
 - No second GitHub build was triggered, and `master` is untouched.
+
+## Owner acceptance update — 13 October 2026
+- Owner reports Build 007 **"Works"** on Samsung after install/testing. Treat as current confirmed-working installed baseline, superseding Build 006 for future development.
+- This is an overall confirmation; no separate detailed report has yet established every individual test-case outcome or a completed full match.
+- Keep permanent signing identity and serialized-save compatibility. Do not uninstall, wipe data, merge to master or trigger new APK builds without explicit approval.
