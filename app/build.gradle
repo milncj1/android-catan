@@ -18,19 +18,8 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    // Stable release signing: same certificate on every approved APK.
-    // The key file is decrypted only inside an approved GitHub Actions runner.
-    signingConfigs {
-        permanent {
-            storeFile rootProject.file('ci/signing/catan-signing.p12')
-            storePassword System.getenv('CATAN_SIGNING_PASSWORD') ?: ''
-            keyAlias 'catan-updates'
-            keyPassword System.getenv('CATAN_SIGNING_PASSWORD') ?: ''
-        }
-    }
     buildTypes {
         release {
-            signingConfig signingConfigs.permanent
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
