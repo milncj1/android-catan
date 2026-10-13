@@ -288,8 +288,13 @@ public class CatanLocalGame extends LocalGame {
         if (action instanceof CatanUseYearOfPlentyCardAction) {
             Log.d(TAG, "makeMove() called with: action = [" + action + "]");
 
-            //Add 2 of the specified resource to the player's hand then remove the dev card
-            state.getCurrentPlayer().addResourceCard(((CatanUseYearOfPlentyCardAction) action).getChosenResource(), 2);
+            // Standard rules: choose TWO resources, which may be different.
+            CatanUseYearOfPlentyCardAction plenty = (CatanUseYearOfPlentyCardAction) action;
+            int first = plenty.getChosenResource();
+            int second = plenty.getSecondChosenResource();
+            if (first < 0 || first >= 5 || second < 0 || second >= 5) return false;
+            state.getCurrentPlayer().addResourceCard(first, 1);
+            state.getCurrentPlayer().addResourceCard(second, 1);
             state.getCurrentPlayer().removeDevCard(2);
             return true;
         }
