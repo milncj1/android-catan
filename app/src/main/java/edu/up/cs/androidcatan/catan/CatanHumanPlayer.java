@@ -1012,28 +1012,39 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (grid.getIntersections() == null) return;
             Log.d("TAG", "onLongClick: x = " + x + ", y = " + y); // x, y position
 
+            // Only ONE junction may be selected for each tap. Previously the
+            // 200x200 hit boxes overlapped and a single tap could toggle two
+            // junctions, making the chosen build position look arbitrary.
+            int nearest = -1;
+            float nearestDistanceSquared = 88f * 88f;
             for (int i = 0; i < grid.getIntersections().length; i++) {
-                int xPos = grid.getIntersections()[i].getXPos();
-                int yPos = grid.getIntersections()[i].getYPos();
-
-                // if y is greater than y - 25 and less than y + 25
-                if (y > yPos - 100 && y < yPos + 100 && x > xPos - 100 && x < xPos + 100) {
-                    // if x is greater than point 3 and less than point 0
-                    Log.d(TAG, "onClick: Touched intersection id: " + grid.getIntersections()[i].getIntersectionId());
-                    touchedIntersection = true;
-                    if (grid.getHighlightedIntersections().contains(i)) {
-                        boardSurfaceView.getGrid().getHighlightedIntersections().remove((Integer) i);
-                        selectedIntersections.remove((Integer) i);
-                    } else {
-                        boardSurfaceView.getGrid().addHighlightedIntersection(i);
-                        if (selectedIntersections.size() > 1) selectedIntersections.remove(0);
-                        selectedIntersections.add(i);
-
-                    }
-                    boardSurfaceView.getGrid().setHighlightedHexagon(-1);
-                    selectedHexagonId = -1;
-                    boardSurfaceView.invalidate();
+                float dx = x - grid.getIntersections()[i].getXPos();
+                float dy = y - grid.getIntersections()[i].getYPos();
+                float distanceSquared = dx * dx + dy * dy;
+                if (distanceSquared < nearestDistanceSquared) {
+                    nearestDistanceSquared = distanceSquared;
+                    nearest = i;
                 }
+            }
+            if (nearest >= 0) {
+                touchedIntersection = true;
+                if (grid.getHighlightedIntersections().contains(nearest)) {
+                    grid.getHighlightedIntersections().remove((Integer) nearest);
+                    selectedIntersections.remove((Integer) nearest);
+                } else {
+                    // The road tool permits up to two selected junctions.
+                    // Keep their visible highlights and internal IDs in sync.
+                    if (selectedIntersections.size() >= 2) {
+                        Integer old = selectedIntersections.remove(0);
+                        grid.getHighlightedIntersections().remove(old);
+                    }
+                    selectedIntersections.add(nearest);
+                    grid.getHighlightedIntersections().remove((Integer) nearest);
+                    grid.addHighlightedIntersection(nearest);
+                }
+                grid.setHighlightedHexagon(-1);
+                selectedHexagonId = -1;
+                boardSurfaceView.invalidate();
             }
             // if they didn't touch an intersection then check if they touched a hexagon
             if (!touchedIntersection) {
