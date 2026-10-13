@@ -24,6 +24,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanUseVictoryPointCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseYearOfPlentyCardAction;
 import edu.up.cs.androidcatan.catan.gamestate.DevelopmentCard;
 import edu.up.cs.androidcatan.catan.gamestate.LongestRoadCalculator;
+import edu.up.cs.androidcatan.catan.gamestate.Port;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.City;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Road;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement;
@@ -365,46 +366,48 @@ public class CatanLocalGame extends LocalGame {
 
         /*---------------------------------- Trade Actions ---------------------------------------*/
 
-        //Player is trading with the bank
+        // Trade with bank or an occupied port only after rolling the dice.
         if (action instanceof CatanTradeWithBankAction) {
-            Log.d(TAG, "makeMove() called with: action = [" + action + "]");
-
-            // Player.removeResources returns false if the player does not have enough, if they do it removes them.
-            if (!state.getCurrentPlayer().removeResourceCard(((CatanTradeWithBankAction) action).getResourceIdGiving(), 4)) {
-                Log.e(TAG, "makeMove: trade with bank action: not enough resources, player id: " + state.getCurrentPlayerId());
-                return false;
-            }
-
-            //Trade 4 of player's own resource for 1 specified resource
-            state.getCurrentPlayer().addResourceCard(((CatanTradeWithBankAction) action).getResourceIdRec(), 1); // add resource card to players inventory
-            Log.w(TAG, "tradeWithBank - player " + state.getCurrentPlayerId() + " traded " + 4 + " " + ((CatanTradeWithBankAction) action).getResourceIdGiving() + " for a " + ((CatanTradeWithBankAction) action).getResourceIdRec() + " with bank.\n");
+            if (!canTradeNow()) return false;
+            CatanTradeWithBankAction trade = (CatanTradeWithBankAction) action;
+            int give = trade.getResourceIdGiving(), receive = trade.getResourceIdRec();
+            if (!validResource(give) || !validResource(receive) || give == receive) return false;
+            if (!state.getCurrentPlayer().removeResourceCard(give, 4)) return false;
+            state.getCurrentPlayer().addResourceCard(receive, 1);
             return true;
         }
 
-        //Player is traiding with a port
         if (action instanceof CatanTradeWithPortAction) {
-            Log.d(TAG, "makeMove() called with: action = [" + action + "]");
-            // remove resources from the player
-            if (state.getCurrentPlayer().removeResourceCard(((CatanTradeWithPortAction) action).getPort().getResourceId(), ((CatanTradeWithPortAction) action).getPort().getTradeRatio())) {
-                // add requested resource to player
-                state.getCurrentPlayer().addResourceCard(((CatanTradeWithPortAction) action).getResourceRecId(), 1);
-                return true;
-            } else { //Invalid trade
-                Log.e(TAG, "makeMove: trade with port: Could not remove resources from player. Returning false");
+            if (!canTradeNow()) return false;
+            CatanTradeWithPortAction trade = (CatanTradeWithPortAction) action;
+            Port port = trade.getPort();
+            int received = trade.getResourceRecId();
+            if (port == null || !validResource(received) || port.getTradeRatio() != 2
+                    || !validResource(port.getResourceId())
+                    || received == port.getResourceId() || !ownsPort(port, state.getCurrentPlayerId()))
                 return false;
-            }
+            if (!state.getCurrentPlayer().removeResourceCard(port.getResourceId(), 2)) return false;
+            state.getCurrentPlayer().addResourceCard(received, 1);
+            return true;
         }
 
-        //Player is trading with port that gives a specified resource
         if (action instanceof CatanTradeWithCustomPortAction) {
-            // remove resources from players inventory
-            if (state.getCurrentPlayer().removeResourceCard(((CatanTradeWithCustomPortAction) action).getResourceGiveId(), 3)) {
-                // add requested resource to player
-                state.getCurrentPlayer().addResourceCard(((CatanTradeWithCustomPortAction) action).getResourceRecId(), 1);
-            } else {
-                Log.e(TAG, "makeMove: custom port trade: Could not remove resources from player. Returning false");
-                return false;
+            if (!canTradeNow()) return false;
+            CatanTradeWithCustomPortAction trade = (CatanTradeWithCustomPortAction) action;
+            int give = trade.getResourceGiveId(), receive = trade.getResourceRecId();
+            if (!validResource(give) || !validResource(receive) || give == receive) return false;
+            boolean hasGeneralPort = false;
+            for (Port port : state.getBoard().getPortList()) {
+                if (port.getTradeRatio() == 3 && port.getResourceId() == -1
+                        && ownsPort(port, state.getCurrentPlayerId())) {
+                    hasGeneralPort = true;
+                    break;
+                }
             }
+            if (!hasGeneralPort || !state.getCurrentPlayer().removeResourceCard(give, 3))
+                return false;
+            state.getCurrentPlayer().addResourceCard(receive, 1);
+            return true;
         }
 
         // if we reach here, the GameAction object we received is not one that we recognize
@@ -440,6 +443,32 @@ public class CatanLocalGame extends LocalGame {
      * @return a message that tells who has won the game, or null if the
      * game is not over
      */
+    private boolean canTradeNow() {
+        return !state.isSetupPhase() && state.isActionPhase() && !state.isRobberPhase();
+    }
+
+    private static boolean validResource(int resourceId) {
+        return resourceId >= 0 && resourceId < 5;
+    }
+
+    private boolean ownsPort(Port candidate, int owner) {
+        for (Port actual : state.getBoard().getPortList()) {
+            if (actual.getTradeRatio() != candidate.getTradeRatio()
+                    || actual.getResourceId() != candidate.getResourceId()) continue;
+            boolean sameEnds = actual.getIntersectionA() == candidate.getIntersectionA()
+                    && actual.getIntersectionB() == candidate.getIntersectionB();
+            boolean flipped = actual.getIntersectionA() == candidate.getIntersectionB()
+                    && actual.getIntersectionB() == candidate.getIntersectionA();
+            if (!sameEnds && !flipped) continue;
+            for (int point : new int[]{actual.getIntersectionA(), actual.getIntersectionB()}) {
+                if (state.getBoard().hasBuilding(point)
+                        && state.getBoard().getBuildingAtIntersection(point).getOwnerId() == owner)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     private int ownedRoads(int owner) {
         int count = 0;
         for (Road road : state.getBoard().getRoads()) {
