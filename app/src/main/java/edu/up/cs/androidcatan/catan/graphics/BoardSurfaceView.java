@@ -40,6 +40,54 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
     private static final float BOARD_WIDTH = 1980f;
     private static final float BOARD_HEIGHT = 1855f;
 
+    // Camera position is UI-only, never part of the serialised game state.
+    // At 1.0 the original complete island remains visible.
+    private float userZoom = 1.0f;
+    private float cameraOffsetX = 0f;
+    private float cameraOffsetY = 0f;
+    private static final float MAX_ZOOM = 3.25f;
+
+    public void resetCamera() {
+        userZoom = 1.0f;
+        cameraOffsetX = cameraOffsetY = 0f;
+        invalidate();
+    }
+
+    public float getUserZoom() {
+        return userZoom;
+    }
+
+    public void panBy(float pixelsX, float pixelsY) {
+        cameraOffsetX += pixelsX;
+        cameraOffsetY += pixelsY;
+        constrainCamera();
+        invalidate();
+    }
+
+    /** Pinch around the fingers' centre, keeping the same map point beneath it. */
+    public void zoomBy(float factor, float focalX, float focalY) {
+        if (!Float.isFinite(factor) || factor <= 0) return;
+        float old = userZoom;
+        userZoom = Math.max(1.0f, Math.min(MAX_ZOOM, userZoom * factor));
+        float ratio = userZoom / old;
+        cameraOffsetX = focalX - viewportLeft()
+                - (focalX - viewportLeft() - cameraOffsetX) * ratio;
+        cameraOffsetY = focalY - viewportTop()
+                - (focalY - viewportTop() - cameraOffsetY) * ratio;
+        constrainCamera();
+        invalidate();
+    }
+
+    private void constrainCamera() {
+        float contentWidth = BOARD_WIDTH * viewportScale() * userZoom;
+        float contentHeight = BOARD_HEIGHT * viewportScale() * userZoom;
+        // Keep the whole viewport covered in whichever dimension is zoomed.
+        float maxX = Math.max(0f, (contentWidth - getWidth()) / 2f);
+        float maxY = Math.max(0f, (contentHeight - getHeight()) / 2f);
+        cameraOffsetX = Math.max(-maxX, Math.min(maxX, cameraOffsetX));
+        cameraOffsetY = Math.max(-maxY, Math.min(maxY, cameraOffsetY));
+    }
+
     private float viewportScale() {
         if (getWidth() <= 0 || getHeight() <= 0) return 1f;
         return Math.min(getWidth() / BOARD_WIDTH, getHeight() / BOARD_HEIGHT);
@@ -54,11 +102,11 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
     }
 
     public float toBoardX(float screenX) {
-        return (screenX - viewportLeft()) / viewportScale() + BOARD_LEFT;
+        return (screenX - viewportLeft() - cameraOffsetX) / (viewportScale() * userZoom) + BOARD_LEFT;
     }
 
     public float toBoardY(float screenY) {
-        return (screenY - viewportTop()) / viewportScale() + BOARD_TOP;
+        return (screenY - viewportTop() - cameraOffsetY) / (viewportScale() * userZoom) + BOARD_TOP;
     }
 
 
@@ -97,8 +145,8 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
             // draw the game
             Log.i(TAG, "onDraw: drawing grid");
             canvas.save();
-            canvas.translate(viewportLeft(), viewportTop());
-            canvas.scale(viewportScale(), viewportScale());
+            canvas.translate(viewportLeft() + cameraOffsetX, viewportTop() + cameraOffsetY);
+            canvas.scale(viewportScale() * userZoom, viewportScale() * userZoom);
             canvas.translate(-BOARD_LEFT, -BOARD_TOP);
             grid.drawGameBoard(canvas);
             canvas.restore();
