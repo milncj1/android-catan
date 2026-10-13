@@ -5,7 +5,7 @@
     android:id="@+id/top_gui_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#89aaaaaa"
+    android:background="#FF175875"
     android:theme="@android:style/Theme.Material.Light.NoActionBar.Fullscreen">
 
     <!--
@@ -50,12 +50,6 @@
         android:visibility="gone"
         app:constraint_referenced_ids="trade_with_bank_or_port, image_trade_menu_give_ore,lumberSelectionBoxGive,oreSelectionBoxReceive,grainSelectiomBoxGive,button_trade_menu_cancel,image_trade_menu_rec_ore,image_trade_menu_rec_wool,timage_trade_menu_give_lumber,lumberSelectionBoxReceive,image_trade_menu_give_grain,oreSelectionBoxGive,grainSelectionBoxReceive,image_trade_menu_rec_lumber,woolSelectionBoxGive,resourceReceiveText,resourceGiveText,image_trade_menu_give_wool,button_trade_menu_confirm,image_trade_menu_rec_grain,brickSelectionBoxGive,woolSelectionBoxReceive,image_trade_menu_rec_brick,image_trade_menu_give_birck,brickSelectionBoxReceive,imageView" />
 
-    <android.support.constraint.Group
-        android:id="@+id/group_static_sidebar_menu"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="visible"
-        app:constraint_referenced_ids="sidebar_button_devcards,sidebar_button_roll,sidebar_heading_build,sidebar_button_settlement,sidebar_button_score,sidebar_heading_vp,sidebar_value_brick,sidebar_value_ore,sidebar_value_wool,sidebar_value_grain,sidebar_value_lumber" />
 
     <!--dev card group-->
     <android.support.constraint.Group
@@ -187,25 +181,14 @@
 
     <TextView
         android:id="@+id/robber_choosehex_message"
-        android:layout_width="250dp"
-        android:layout_height="39dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        app:layout_constraintEnd_toStartOf="@+id/robber_choosehex_confirm"
-        app:layout_constraintStart_toStartOf="@+id/guideline_middle_54"
-        app:layout_constraintTop_toTopOf="@+id/top_buildmenu_alex" />
+        android:layout_width="28dp"
+        android:layout_height="28dp"
 
     <Button
         android:id="@+id/robber_choosehex_confirm"
         android:layout_width="wrap_content"
         android:layout_height="44dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
         android:text="Confirm"
-        app:layout_constraintBottom_toTopOf="@+id/guideline8"
-        app:layout_constraintEnd_toStartOf="@+id/guideline_wall_dc_info"
-        app:layout_constraintTop_toTopOf="@+id/top_buildmenu_alex" />
 
     <android.support.constraint.Guideline
         android:id="@+id/guideline_left_0"
@@ -317,7 +300,6 @@
         style="@android:style/Widget.Material.DropDownItem.Spinner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:alpha="255"
         android:background="@android:color/background_light"
         android:dropDownWidth="match_parent"
@@ -325,34 +307,23 @@
         android:paddingTop="0dp"
         android:paddingEnd="4dp"
         android:spinnerMode="dropdown"
-        app:layout_constraintEnd_toEndOf="@+id/use_Card"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/use_Card"
-        app:layout_constraintTop_toBottomOf="@+id/build_devCard" />
 
     <TextView
         android:id="@+id/development_Card_Info"
         android:layout_width="180dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
         android:minHeight="0dp"
         android:padding="8dp"
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textColor="#FFF8F3E6"
+        android:textSize="14sp"
 
     <ImageView
         android:id="@+id/resource_pick_background"
         android:layout_width="416dp"
         android:layout_height="121dp"
-        android:layout_marginStart="395dp"
         android:alpha="0.5"
         android:background="@android:color/background_light"
         android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/pickResMenu_monopolyVerticalGuideLine" />
 
     <Button
         android:id="@+id/use_Card"
@@ -361,20 +332,23 @@
         android:layout_height="37dp"
         android:text="@string/Use_Button"
         android:textAlignment="center"
-        app:layout_constraintEnd_toEndOf="@+id/development_Card_Info"
-        app:layout_constraintStart_toStartOf="@+id/development_Card_Info"
-        app:layout_constraintTop_toBottomOf="@+id/development_Card_Info" />
 
     <!--dev card menu END-->
 
     <!--scoreboard START-->
 
+    <!-- Compact floating scorecard over the sea, rather than a solid black strip. -->
+    <View
+        android:id="@+id/score_panel"
+        android:layout_width="176dp"
+        android:layout_height="130dp"
+        android:background="@drawable/score_panel_bg"
+
+
     <TextView
         android:id="@+id/Player1_Name"
         android:layout_width="115dp"
         android:layout_height="30dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
         android:scrollHorizontally="true"
         android:ellipsize="end"
         android:maxLines="1"
@@ -383,8 +357,6 @@
         android:textAlignment="viewStart"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintStart_toStartOf="@+id/robber_discard_leftVerticalGuideLine"
-        app:layout_constraintTop_toTopOf="@+id/guideline_top_border_dc_layout" />
 
     <TextView
         android:id="@+id/Player2_Name"
@@ -397,9 +369,6 @@
         android:textAlignment="viewStart"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/Player1_Name"
-        app:layout_constraintStart_toStartOf="@+id/Player1_Name"
-        app:layout_constraintTop_toBottomOf="@+id/Player1_Name" />
 
     <TextView
         android:id="@+id/Player3_Name"
@@ -412,9 +381,6 @@
         android:textAlignment="viewStart"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/Player2_Name"
-        app:layout_constraintStart_toStartOf="@+id/Player1_Name"
-        app:layout_constraintTop_toBottomOf="@+id/Player2_Name" />
 
     <TextView
         android:id="@+id/Player4_Name"
@@ -427,9 +393,6 @@
         android:textAlignment="viewStart"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/Player3_Name"
-        app:layout_constraintStart_toStartOf="@+id/Player1_Name"
-        app:layout_constraintTop_toBottomOf="@+id/Player3_Name" />
 
     <TextView
         android:id="@+id/Player1_Score"
@@ -439,9 +402,6 @@
         android:textAlignment="center"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintBottom_toBottomOf="@+id/Player1_Name"
-        app:layout_constraintStart_toEndOf="@+id/Player1_Name"
-        app:layout_constraintTop_toTopOf="@+id/Player1_Name" />
 
     <TextView
         android:id="@+id/Player2_Score"
@@ -451,9 +411,6 @@
         android:textAlignment="center"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/Player1_Score"
-        app:layout_constraintStart_toEndOf="@+id/Player2_Name"
-        app:layout_constraintTop_toBottomOf="@+id/Player1_Score" />
 
     <TextView
         android:id="@+id/Player3_Score"
@@ -463,9 +420,6 @@
         android:textAlignment="center"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/Player2_Score"
-        app:layout_constraintStart_toEndOf="@+id/Player3_Name"
-        app:layout_constraintTop_toBottomOf="@+id/Player2_Score" />
 
     <TextView
         android:id="@+id/Player4_Score"
@@ -475,9 +429,6 @@
         android:textAlignment="center"
         android:textColor="@android:color/black"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/Player3_Score"
-        app:layout_constraintStart_toEndOf="@+id/Player4_Name"
-        app:layout_constraintTop_toBottomOf="@+id/Player3_Score" />
 
     <!-- scoreboard END -->
 
@@ -486,7 +437,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.14" />
+        app:layout_constraintGuide_percent="0.12"     android:layout_marginStart="1dp"
+        android:gravity="center_vertical"
 
     <Button
         android:background="@drawable/sidebar_button"
@@ -497,14 +449,8 @@
         style="@style/Widget.AppCompat.Button"
         android:layout_width="0dp"
         android:layout_height="37dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
         android:text="@string/score"
         android:textAlignment="center"
-        app:layout_constraintBottom_toTopOf="@+id/sidebar_button_menu"
-        app:layout_constraintEnd_toStartOf="@+id/guideline_right_sidebar"
-        app:layout_constraintHorizontal_bias="0.493"
-        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:background="@drawable/sidebar_button"
@@ -1278,7 +1224,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.14" />
+        app:layout_constraintGuide_percent="0.12" />
 
     <android.support.constraint.Guideline
         android:id="@+id/robber_discard_topHorizontalGuideline"
@@ -1560,16 +1506,18 @@
 
     <TextView
         android:id="@+id/textview_game_message"
-        android:layout_width="197dp"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="12dp"
         android:layout_marginBottom="8dp"
         android:text="@string/message_text"
         android:textAlignment="gravity"
+        android:padding="9dp"
+        android:background="@drawable/score_panel_bg"
         android:textColor="@android:color/background_light"
-        android:textSize="18sp"
+        android:textSize="14sp"
         app:layout_constraintBottom_toTopOf="@+id/guideline8"
-        app:layout_constraintStart_toStartOf="@+id/robber_discard_leftVerticalGuideLine" />
+        app:layout_constraintStart_toEndOf="@+id/guideline_right_sidebar" />
 
     <ImageView
         android:id="@+id/building_costs"
@@ -2388,4 +2336,23 @@ Moving the Robber\n
         app:layout_constraintTop_toTopOf="@+id/button_trade_menu_confirm" />
 
     <!--help menus END-->
+    <!-- Persistent button to collapse/expand the action rail. -->
+    <Button
+        android:id="@+id/toggle_sidebar"
+        android:layout_width="36dp"
+        android:layout_height="33dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="2dp"
+        android:background="@drawable/sidebar_button"
+        android:text="‹"
+        android:contentDescription="Collapse or expand controls"
+        android:textColor="#FFF8F3E6"
+        android:textSize="19sp"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:padding="0dp"
+        android:textAllCaps="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </android.support.constraint.ConstraintLayout>
