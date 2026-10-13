@@ -236,7 +236,11 @@ public class CatanLocalGame extends LocalGame {
             if (!player.removeResourceBundle(DevelopmentCard.resourceCost)) return false;
             int devCard = state.getRandomDevCard();
             player.getDevelopmentCards().add(devCard);
-            player.addDevCardsBuiltThisTurn(devCard);
+            if (devCard == 1) {
+                player.addPrivateVictoryPoints(1); // Secret VP is awarded when drawn.
+            } else {
+                player.addDevCardsBuiltThisTurn(devCard);
+            }
 
             return true;
         }
@@ -454,7 +458,8 @@ public class CatanLocalGame extends LocalGame {
     }
 
     private boolean canPlayDevelopmentCard(int type) {
-        return !state.isSetupPhase() && state.isActionPhase() && !state.isRobberPhase()
+        // Action development cards may be used before or after rolling.
+        return !state.isSetupPhase() && !state.isRobberPhase()
                 && !state.hasPlayedDevelopmentCardThisTurn()
                 && state.getCurrentPlayer().getPlayableDevCards().contains(type);
     }
