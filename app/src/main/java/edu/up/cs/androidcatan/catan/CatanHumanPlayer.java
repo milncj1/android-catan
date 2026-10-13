@@ -105,6 +105,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private TextView messageTextView = (TextView) null;
 
     private ArrayList<String> devCards = new ArrayList<>();
+    private boolean developmentPurchasePending = false;
+    private ArrayList<Integer> developmentHandBeforePurchase = null;
 
     /* ------------- Building Buttons -------------------- */
     private Button buildCityButton = null;
@@ -725,9 +727,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         /* -------------------- Development Card Button OnClick() Handlers ---------------------- */
 
-        // Development button located on the sidebar. Should only show/hide dev card menu.
+        // An illustrated, scrollable private hand replaces the old cramped dropdown.
         if (button.getId() == R.id.sidebar_button_devcards) {
-            toggleGroupVisibilityAllowTapping(developmentGroup); // toggle menu vis.
+            showDevelopmentCollection();
             return;
         }
 
@@ -818,19 +820,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         // Build development card button in the development card menu.
         if (button.getId() == R.id.build_devCard) {
-            // check if player has resources
-            if (state.getCurrentPlayer().hasResourceBundle(DevelopmentCard.resourceCost)) {
-                // send action to the game
-                game.sendAction(new CatanBuyDevCardAction(this));
-                //devCardsBuiltThisTurn.add(state.getCurrentPlayer().getDevelopmentCards().get(state.getCurrentPlayer().getDevelopmentCards().size()-1));
-                messageTextView.setText(R.string.you_built_a_dev);
-            } else {
-                messageTextView.setText(R.string.not_enough_for_dev_card);
-                Toast toast = Toast.makeText(myActivity.getApplicationContext(), "Not enough resources to build a devlopment.", Toast.LENGTH_SHORT);
-                toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0);
-                toast.show();
-                shake(messageTextView);
-            }
+            buyDevelopmentCard();
             return;
         }
 
@@ -1942,6 +1932,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
             CatanGameState next = new CatanGameState((CatanGameState) info);
             String buildConfirmation = confirmPendingBuild(next);
+            int cardDrawn = findNewDevelopmentCard(next);
             this.state = next;
             // Clear stale selections on accepted state updates, not on a
             // rejected build; rejection should preserve the attempted point.
@@ -1980,12 +1971,18 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 messageTextView.setText(buildConfirmation);
                 Toast.makeText(myActivity, buildConfirmation, Toast.LENGTH_SHORT).show();
             }
+            if (cardDrawn >= 0) {
+                messageTextView.setText("Development card drawn — added to your hand.");
+                CatanDevelopmentCardsUI.showDrawnCard(myActivity, cardDrawn);
+            }
 
         } else if (info instanceof NotYourTurnInfo) {
-            rejectPendingBuild(true);
+            if (developmentPurchasePending) rejectDevelopmentPurchase(true);
+            else rejectPendingBuild(true);
             Log.i(TAG, "receiveInfo: Player tried to make action but it is not their turn.");
         } else if (info instanceof IllegalMoveInfo) {
-            rejectPendingBuild(false);
+            if (developmentPurchasePending) rejectDevelopmentPurchase(false);
+            else rejectPendingBuild(false);
             Log.i(TAG, "receiveInfo: Illegal move info received.");
         } else {
             Log.e(TAG, "receiveInfo: Received instanceof not anything we know. Returning void.");
@@ -2370,6 +2367,11 @@ if(newGame) {
         hudHandFirst = activity.findViewById(R.id.hud_hand_first);
         hudHandSecond = activity.findViewById(R.id.hud_hand_second);
         hudCards = activity.findViewById(R.id.hud_development_cards);
+        if (hudCards != null) {
+            hudCards.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { showDevelopmentCollection(); }
+            });
+        }
         hudLatestAction = activity.findViewById(R.id.hud_latest_action);
         Button historyButton = activity.findViewById(R.id.hud_history_button);
         if (historyButton != null) historyButton.setOnClickListener(
