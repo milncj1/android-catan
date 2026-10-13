@@ -1634,7 +1634,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (i != this.playerNum)
                 this.playerScores[i].setText(String.valueOf(state.getPlayerList().get(i).getVictoryPoints()+ addToThisPlayer));
             else
-                this.playerScores[this.playerNum].setText(String.valueOf(state.getPlayerList().get(this.playerNum).getVictoryPointsPrivate() + addToThisPlayer + state.getPlayerList().get(this.playerNum).getVictoryPoints()));
+                this.playerScores[this.playerNum].setText(String.valueOf(state.getPlayerList().get(this.playerNum).getVictoryPointsPrivate() + Collections.frequency(state.getPlayerList().get(this.playerNum).getDevelopmentCards(), 1) + addToThisPlayer + state.getPlayerList().get(this.playerNum).getVictoryPoints()));
         }
 
         // go through each player name
@@ -1662,7 +1662,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (this.playerNum == state.getCurrentLongestRoadPlayerId()) addToThisPlayer += 2;
 
         //Personal Score with Private VPs
-        this.myScore.setText(String.format("VPs: %s", String.valueOf(state.getPlayerList().get(this.playerNum).getVictoryPointsPrivate() + addToThisPlayer + state.getPlayerList().get(this.playerNum).getVictoryPoints())));
+        this.myScore.setText(String.format("VPs: %s", String.valueOf(state.getPlayerList().get(this.playerNum).getVictoryPointsPrivate() + Collections.frequency(state.getPlayerList().get(this.playerNum).getDevelopmentCards(), 1) + addToThisPlayer + state.getPlayerList().get(this.playerNum).getVictoryPoints())));
 
         // current turn indicator (sidebar menu)
         this.currentTurnIdTextView.setText(String.valueOf(getAllPlayerNames()[state.getCurrentPlayerId()]));
