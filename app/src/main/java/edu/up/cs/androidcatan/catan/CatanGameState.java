@@ -127,8 +127,13 @@ public class CatanGameState extends GameState {
     /**
      * @return The id of the development card the player drew randomly.
      */
+    public boolean hasDevelopmentCardsAvailable() {
+        return !developmentCards.isEmpty();
+    }
+
     public int getRandomDevCard() {
-        if (developmentCards.size() == 0) generateDevCardDeck();
+        // Standard Catan has a finite deck. Never regenerate used cards.
+        if (developmentCards.isEmpty()) return -1;
 
         // generate random number from 0 to the length of the dev card deck
         Random random = new Random();
