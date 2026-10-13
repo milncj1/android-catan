@@ -47,8 +47,6 @@ public class CatanGameState extends GameState {
     static final int setupPhaseTurnOrder[] = {0, 1, 2, 3, 3, 2, 1, 0};
     private int setupPhaseTurnCounter;
     private int currentSetupSettlement = -1;
-    private int freeRoadsRemaining = 0;
-    private boolean developmentCardPlayedThisTurn = false;
 
     // robber
     private boolean hasMovedRobber = false;
@@ -106,8 +104,6 @@ public class CatanGameState extends GameState {
         this.currentPlayerId = cgs.currentPlayerId;
         this.setupPhaseTurnCounter = cgs.setupPhaseTurnCounter;
         this.currentSetupSettlement = cgs.currentSetupSettlement;
-        this.freeRoadsRemaining = cgs.freeRoadsRemaining;
-        this.developmentCardPlayedThisTurn = cgs.developmentCardPlayedThisTurn;
         this.isActionPhase = cgs.isActionPhase;
         this.playerStealingFrom = cgs.playerStealingFrom;
         System.arraycopy(cgs.robberPlayerListHasDiscarded, 0, this.robberPlayerListHasDiscarded, 0, cgs.robberPlayerListHasDiscarded.length);
@@ -600,12 +596,6 @@ public class CatanGameState extends GameState {
 
     public int getCurrentSetupSettlement() { return currentSetupSettlement; }
     public void setCurrentSetupSettlement(int intersection) { this.currentSetupSettlement = intersection; }
-
-    public int getFreeRoadsRemaining() { return freeRoadsRemaining; }
-    public void setFreeRoadsRemaining(int count) { freeRoadsRemaining = Math.max(0, count); }
-
-    public boolean hasPlayedDevelopmentCardThisTurn() { return developmentCardPlayedThisTurn; }
-    public void setDevelopmentCardPlayedThisTurn(boolean played) { developmentCardPlayedThisTurn = played; }
 
     public boolean isSetupPhase() {
         return isSetupPhase;
