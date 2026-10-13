@@ -112,6 +112,13 @@ View.OnClickListener {
 	 */
 	public abstract LocalGame createLocalGame();
 
+    /** Personal game hooks; other framework clients keep the default behaviour. */
+    protected boolean hasSavedMatch() { return false; }
+    protected GameConfig savedMatchConfiguration() { return null; }
+    protected void onNewMatchRequested() { }
+    protected void prepareLocalMatch(LocalGame localGame, GameConfig options) { }
+
+
 	/**
 	 * Creates a "proxy" game that acts as an intermediary between a local
 	 * player and a game that is somewhere else on the net.
@@ -181,9 +188,9 @@ View.OnClickListener {
 		// Make that clear rather than showing a blank or fake in-progress board.
 		if (savedInstanceState != null
 				&& savedInstanceState.getBoolean("match_was_playing", false)
-				&& doingConfiguration) {
+				&& doingConfiguration && hasSavedMatch()) {
 			android.widget.Toast.makeText(this,
-					"Previous match could not be resumed yet. Start a new game.",
+					"Your last match was saved. Tap Continue Game to resume.",
 					android.widget.Toast.LENGTH_LONG).show();
 		}
 	}// onCreate
@@ -288,10 +295,9 @@ View.OnClickListener {
 		// network connection until other errors are checked)
 		if (config.isLocal()) { // local game
 			game = createLocalGame();
-			// verify we have a game
-			if (game == null) {
-				return "Game creation failed.";
-			}
+			if (game == null) return "Game creation failed.";
+            // Restore authoritative rules data before starting any CPUs.
+            prepareLocalMatch((LocalGame) game, config);
 		}
 
 		//////////////////////////////////////
@@ -479,6 +485,12 @@ View.OnClickListener {
 		v = findViewById(R.id.playGameButton);
 		v.setOnClickListener(this);
 
+        View continueButton = findViewById(R.id.continueGameButton);
+        if (continueButton != null) {
+            continueButton.setVisibility(hasSavedMatch() ? View.VISIBLE : View.GONE);
+            continueButton.setOnClickListener(this);
+        }
+
 
 		// Offline-only personal app: no network IP lookup at startup.
 		// The old IP widget belongs to the original multiplayer framework.
@@ -540,19 +552,39 @@ View.OnClickListener {
 			}
 		}
 
-		//Start Game Button
-		else if (button.getId() == R.id.playGameButton) {
-			String msg = startGame();
-			if (msg != null) {
-				// we have an error message
-				MessageBox.popUpMessage(msg, this);
-			}
+        // Resume only after loading a complete, validated state.
+        else if (button.getId() == R.id.continueGameButton) {
+            GameConfig saved = savedMatchConfiguration();
+            if (saved == null) {
+                MessageBox.popUpMessage("Saved match couldn't be read. You can start a new game.", this);
+            } else {
+                String problem = launchGame(saved);
+                if (problem != null) MessageBox.popUpMessage(problem, this);
+            }
+        }
 
-		}
+        // New game replaces the existing match only after explicit confirmation.
+        else if (button.getId() == R.id.playGameButton) {
+            if (hasSavedMatch()) {
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Start a new game?")
+                        .setMessage("This will replace your unfinished saved match.")
+                        .setNegativeButton("Keep current game", null)
+                        .setPositiveButton("Start new game", (dialog, which) -> {
+                            String problem = startGame();
+                            if (problem != null) MessageBox.popUpMessage(problem, this);
+                        })
+                        .show();
+            } else {
+                String problem = startGame();
+                if (problem != null) MessageBox.popUpMessage(problem, this);
+            }
+        }
 
 	}// onClick
 
 	private String startGame() {
+        onNewMatchRequested();
 		GameConfig finalConfig = scrapeData();
 		if (!finalConfig.isLocal() || finalConfig.getNumPlayers() != 4)
 			return "This offline game needs you and three computer players.";
