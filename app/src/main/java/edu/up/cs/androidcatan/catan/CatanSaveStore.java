@@ -8,7 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.FileOutputStream;
 import java.io.Serializable;
 
 /**
@@ -80,7 +80,7 @@ public final class CatanSaveStore {
         if (!snapshot.isValid()) return false;
 
         AtomicFile file = atomic(context);
-        OutputStream out = null;
+        FileOutputStream out = null;
         try {
             out = file.startWrite();
             ObjectOutputStream objectStream = new ObjectOutputStream(out);
