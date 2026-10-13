@@ -1435,6 +1435,91 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         return false;
     }
 
+    /** Viewable at any time; actual buying and playing remains turn-restricted. */
+    private void showDevelopmentCollection() {
+        if (state == null || myActivity == null) return;
+        CatanDevelopmentCardsUI.showCollection(myActivity, state, playerNum,
+                developmentPurchasePending, new CatanDevelopmentCardsUI.Listener() {
+                    @Override public void buyCard() { buyDevelopmentCard(); }
+                    @Override public void playCard(int cardId) { playDevelopmentCard(cardId); }
+                });
+    }
+
+    private void buyDevelopmentCard() {
+        if (state == null || developmentPurchasePending) return;
+        if (state.getCurrentPlayerId() != playerNum || state.isSetupPhase()
+                || state.isRobberPhase() || !state.isActionPhase()) {
+            showBuildProblem("You can buy development cards only after rolling on your turn.");
+            return;
+        }
+        if (!state.hasDevelopmentCardsAvailable()) {
+            showBuildProblem("The development deck is empty.");
+            return;
+        }
+        if (!state.getPlayerList().get(playerNum).hasResourceBundle(DevelopmentCard.resourceCost)) {
+            showBuildProblem("You need 1 wool, 1 grain and 1 ore to buy a development card.");
+            return;
+        }
+        developmentPurchasePending = true;
+        developmentHandBeforePurchase =
+                new ArrayList<>(state.getPlayerList().get(playerNum).getDevelopmentCards());
+        messageTextView.setText("Drawing a random development card...");
+        game.sendAction(new CatanBuyDevCardAction(this));
+    }
+
+    /**
+     * The new card's type is disclosed only to the human buying it and only
+     * after an accepted state update has placed it in the private hand.
+     */
+    private int findNewDevelopmentCard(CatanGameState next) {
+        if (!developmentPurchasePending || developmentHandBeforePurchase == null
+                || next == null) return -1;
+        ArrayList<Integer> added = new ArrayList<>(
+                next.getPlayerList().get(playerNum).getDevelopmentCards());
+        for (Integer previous : developmentHandBeforePurchase)
+            added.remove(previous); // Removes one copy, preserving duplicate card counts.
+        if (added.isEmpty()) return -1;
+        developmentPurchasePending = false;
+        developmentHandBeforePurchase = null;
+        return added.get(0);
+    }
+
+    private void rejectDevelopmentPurchase(boolean notYourTurn) {
+        developmentPurchasePending = false;
+        developmentHandBeforePurchase = null;
+        showBuildProblem(notYourTurn ? "Wait for your turn to buy development cards."
+                : "The game could not complete that purchase; no card was added.");
+    }
+
+    private void playDevelopmentCard(int id) {
+        if (state == null || id < 0 || id > 4
+                || state.getCurrentPlayerId() != playerNum || state.isSetupPhase()
+                || state.isRobberPhase() || state.hasPlayedDevelopmentCardThisTurn()
+                || !state.getPlayerList().get(playerNum).getPlayableDevCards().contains(id)) {
+            showBuildProblem("That card cannot be played yet. New cards become usable next turn.");
+            return;
+        }
+        if (id == 1) {
+            messageTextView.setText("Victory Point cards count automatically and stay secret.");
+            return;
+        }
+        if (id == 0) {
+            game.sendAction(new CatanUseKnightCardAction(this));
+        } else if (id == 2 || id == 3) {
+            if (pickResourceGroup != null && pickResourceGroup.getVisibility() != View.VISIBLE)
+                toggleGroupVisibility(pickResourceGroup);
+            selectedDevCard = id;
+            firstYearOfPlentyResource = -1;
+            selectedResourceId = -1;
+            messageTextView.setText(id == 2
+                    ? "Select your first of two Year of Plenty resources."
+                    : "Select a resource for Monopoly.");
+        } else if (id == 4) {
+            game.sendAction(new CatanUseRoadBuildingCardAction(this));
+            messageTextView.setText("Road Building played — place your two free roads.");
+        }
+    }
+
     /* ---------------------------------------- GUI Methods --------------------------------------*/
 
     /**
