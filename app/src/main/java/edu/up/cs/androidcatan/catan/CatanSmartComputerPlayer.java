@@ -103,96 +103,46 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
         // if it is the setup phase and the players turn
         if (gs.isSetupPhase() && this.playerNum == gs.getCurrentPlayerId()) {
-
-            //Player has already built needed buildings
-            if (roadCount + settlementCount >= 8) {
-                Log.e(TAG, "receiveInfo: It is the setup phase, but player has already built 4 things. Ending turn.");
-                Log.i(TAG, "receiveInfo: sending CatanEndTurnAction to the game. playerNum=" + this.playerNum);
-                buildingsBuiltOnThisTurn.clear();
-                lastSettlementIntersectionId = -1;
-                game.sendAction(new CatanEndTurnAction(this));
-                return;
-            }
-
-            //End Turn if the player has already built
-            if (buildingsBuiltOnThisTurn.size() > 1) {
-                Log.i(TAG, "receiveInfo: built 2 or more things ending turn.");
-                game.sendAction(new CatanEndTurnAction(this));
-
-                //Reset values
-                buildingsBuiltOnThisTurn.clear();
-                lastSettlementIntersectionId = -1;
-                return;
-            }
-            Log.d(TAG, "receiveInfo: It is the setup phase. Computer player will now attempt to build a settlement or a road." + " " + this.playerNum);
-
-            // if they have not built a settlement on this turn
-            if (!buildingsBuiltOnThisTurn.contains(1)) {
-                Log.i(TAG, "receiveInfo: Player has not built a settlement, will attempt now. playerNum=" + this.playerNum);
-                sleep(250);
-                // Evaluate every *legal* intersection rather than randomly choosing
-                // only from the small subset permitted by the old bot.
-                int randSettlementIntersection = -1;
-                double bestOpeningScore = Double.NEGATIVE_INFINITY;
-                for (int candidate = 0; candidate < gs.getBoard().getBuildings().length; candidate++) {
-                    if (!gs.getBoard().validBuildingLocation(this.playerNum, true, candidate)) {
-                        continue;
-                    }
-                    double score = CatanStrategy.scoreIntersection(gs, candidate, this.playerNum)
-                            + random.nextDouble() * 0.25;
-                    if (score > bestOpeningScore) {
-                        randSettlementIntersection = candidate;
-                        bestOpeningScore = score;
-                    }
-                }
-                if (randSettlementIntersection < 0) {
-                    Log.e(TAG, "No legal starting settlement found");
-                    return;
-                }
-                Log.e(TAG, "receiveInfo: exiting settlement look for " + this.playerNum);
-
-                // send the build settlement action to the game
-                Log.d(TAG, "receiveInfo: sending a CatanBuildSettlementAction to the game with intersection id: " + randSettlementIntersection + " " + this.playerNum);
-                game.sendAction(new CatanBuildSettlementAction(this, gs.isSetupPhase(), this.playerNum, randSettlementIntersection)); // sending build settlement action
-                this.lastSettlementIntersectionId = randSettlementIntersection;
-                buildingsBuiltOnThisTurn.add(1);
-                sleep(250);
-                return;
-                // else if the player has not built a road on this turn
-            } else if (!buildingsBuiltOnThisTurn.contains(0)) {
-                Log.i(TAG, "receiveInfo: Player has not built a road, will attempt now. playerNum=" + this.playerNum);
-                // get adjacent intersections to what we just built
-                ArrayList<Integer> intersectionsToChooseFrom = gs.getBoard().getIntersectionAdjacencyList().get(lastSettlementIntersectionId);
-
-                Log.d(TAG, "receiveInfo: intersectionsToChooseFrom: " + intersectionsToChooseFrom + " " + this.playerNum);
-
-                int bestRoadDestination = -1;
-                double bestRoadValue = Double.NEGATIVE_INFINITY;
-                for (Integer candidate : intersectionsToChooseFrom) {
-                    if (!gs.getBoard().validRoadPlacement(this.playerNum, true,
-                            lastSettlementIntersectionId, candidate, lastSettlementIntersectionId)) continue;
-                    double value = CatanStrategy.scoreRoadDestination(gs, candidate, this.playerNum)
+            // These flags come from the authoritative (and autosaved) game.
+            // Do not use temporary CPU fields, which reset after Continue Game.
+            int placedSettlement = gs.getCurrentSetupSettlement();
+            if (placedSettlement < 0) {
+                int best = -1;
+                double bestValue = Double.NEGATIVE_INFINITY;
+                for (int vertex = 0; vertex < gs.getBoard().getBuildings().length; vertex++) {
+                    if (!gs.getBoard().validBuildingLocation(playerNum, true, vertex)) continue;
+                    double value = CatanStrategy.scoreIntersection(gs, vertex, playerNum)
                             + random.nextDouble() * 0.1;
-                    if (value > bestRoadValue) {
-                        bestRoadValue = value;
-                        bestRoadDestination = candidate;
+                    if (value > bestValue) {
+                        best = vertex;
+                        bestValue = value;
                     }
                 }
-                if (bestRoadDestination < 0) {
-                    Log.e(TAG, "No legal opening road found");
-                    return;
-                }
-                game.sendAction(new CatanBuildRoadAction(this, true,
-                        this.playerNum, lastSettlementIntersectionId, bestRoadDestination));
-                buildingsBuiltOnThisTurn.add(0);
-                sleep(250); // sleep
-                Log.i(TAG, "receiveInfo() returned: void");
+                if (best >= 0) {
+                    game.sendAction(new CatanBuildSettlementAction(this, true, playerNum, best));
+                } else Log.e(TAG, "No legal initial settlement for player " + playerNum);
                 return;
             }
-            Log.d(TAG, "receiveInfo: Ending turn during the setup phase after building 1 road and 1 settlement " + this.playerNum);
+            if (!gs.isSetupRoadBuiltThisTurn()) {
+                int bestTo = -1;
+                double bestValue = Double.NEGATIVE_INFINITY;
+                for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(placedSettlement)) {
+                    if (!gs.getBoard().validRoadPlacement(playerNum, true,
+                            placedSettlement, to, placedSettlement)) continue;
+                    double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum)
+                            + random.nextDouble() * 0.1;
+                    if (score > bestValue) {
+                        bestValue = score;
+                        bestTo = to;
+                    }
+                }
+                if (bestTo >= 0) {
+                    game.sendAction(new CatanBuildRoadAction(this, true, playerNum,
+                            placedSettlement, bestTo));
+                } else Log.e(TAG, "No legal initial road from " + placedSettlement);
+                return;
+            }
             game.sendAction(new CatanEndTurnAction(this));
-            buildingsBuiltOnThisTurn.clear();
-            lastSettlementIntersectionId = -1;
             return;
         } // setup phase if statement END
 
