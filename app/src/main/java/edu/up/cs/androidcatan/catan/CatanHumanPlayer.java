@@ -280,6 +280,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private GameMainActivity myActivity;  // the android activity that we are running
     public CatanGameState state = null; // game state
     private BoardSurfaceView boardSurfaceView;
+    private TextView hudLastRoll, hudHandFirst, hudHandSecond, hudCards, hudLatestAction;
+    private static final String[] HUD_CARD_NAMES =
+            {"Knight", "Victory Point", "Year of Plenty", "Monopoly", "Road Building"};
     private boolean activityHistoryLoaded;
      private int[] lastOwnResources;
     private static final String[] HAND_RESOURCES = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
@@ -1366,6 +1369,76 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     /**
      * updates all text views a gui components to reflect current game state
      */
+    /** Always-visible match details, even when the action rail is collapsed. */
+    private void updateGameplayHud() {
+        if (myActivity == null || state == null || playerNum < 0
+                || playerNum >= state.getPlayerList().size()) return;
+        int[] hand = state.getPlayerList().get(playerNum).getResourceCards();
+        if (hudHandFirst != null)
+            hudHandFirst.setText("YOUR HAND · Brick " + hand[0]
+                    + " · Grain " + hand[1] + " · Lumber " + hand[2]);
+        if (hudHandSecond != null)
+            hudHandSecond.setText("Ore " + hand[3] + " · Wool " + hand[4]
+                    + " · Total " + state.getPlayerList().get(playerNum)
+                            .getTotalResourceCardCount());
+
+        if (hudLastRoll != null) {
+            int[] dice = state.getDice().getDiceValues();
+            if (state.isSetupPhase()) hudLastRoll.setText("Dice: opening placements");
+            else if (dice[0] + dice[1] != state.getCurrentDiceSum())
+                hudLastRoll.setText("Dice: waiting for first roll");
+            else hudLastRoll.setText("Last roll: " + dice[0] + " + "
+                    + dice[1] + " = " + state.getCurrentDiceSum());
+        }
+
+        if (hudCards != null) {
+            int[] counts = new int[HUD_CARD_NAMES.length];
+            for (Integer card : state.getPlayerList().get(playerNum).getDevelopmentCards())
+                if (card != null && card >= 0 && card < counts.length) counts[card]++;
+            StringBuilder summary = new StringBuilder("Your development cards: ");
+            int types = 0;
+            for (int i = 0; i < counts.length; i++) {
+                if (counts[i] == 0) continue;
+                if (types++ > 0) summary.append(" · ");
+                summary.append(HUD_CARD_NAMES[i]).append(" ×").append(counts[i]);
+            }
+            if (types == 0) summary.append("None");
+            hudCards.setText(summary.toString());
+        }
+        if (hudLatestAction != null)
+            hudLatestAction.setText("Latest: " + CatanMatchHistory.latest(myActivity));
+    }
+
+    private void showGameplayHistory() {
+        if (myActivity == null) return;
+        String history = CatanMatchHistory.history(myActivity);
+        String[] lines = history.isEmpty() ? new String[0] : history.split("\\n");
+        StringBuilder report = new StringBuilder();
+        if (state != null && allPlayerNames != null) {
+            report.append("OTHER PLAYERS — PUBLIC CARD COUNTS");
+            for (int i = 0; i < state.getPlayerList().size(); i++) {
+                if (i == playerNum) continue;
+                Player opponent = state.getPlayerList().get(i);
+                report.append('\n').append(allPlayerNames[i]).append(": ")
+                        .append(opponent.getTotalResourceCardCount())
+                        .append(" resource cards · ")
+                        .append(opponent.getDevelopmentCards().size())
+                        .append(" development cards");
+            }
+            report.append('\n').append('\n');
+        }
+        if (lines.length == 0) report.append("No moves recorded yet.");
+        for (int i = lines.length - 1; i >= 0; i--) {
+            if (!lines[i].trim().isEmpty())
+                report.append("• ").append(lines[i]).append('\n').append('\n');
+        }
+        new AlertDialog.Builder(myActivity)
+                .setTitle("Rolls & actions — newest first")
+                .setMessage(report.toString())
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
     private void updateTextViews() {
 
         View decorView = myActivity.getWindow().getDecorView();
@@ -1702,6 +1775,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (debugMode)
             Log.i(TAG, "receiveInfo() called with: info: \n" + info.toString() + "----------------------------");
 
+        if (info instanceof CatanPublicEventInfo) {
+            if (myActivity != null)
+                CatanMatchHistory.append(myActivity,
+                        ((CatanPublicEventInfo) info).getDescription());
+            updateGameplayHud();
+            return; // A public notice must not clear selected roads or intersections.
+        }
         if (this.boardSurfaceView == null) {
             Log.e(TAG, "receiveInfo: boardSurfaceView is null.");
             return;
@@ -1731,6 +1811,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             }
 
             updateTextViews();
+            updateGameplayHud();
             fitPopupOnScreen(robberDiscardGroup);
             fitPopupOnScreen(robberChooseHexGroup);
             fitPopupOnScreen(developmentGroup);
@@ -2106,6 +2187,16 @@ if(newGame) {
             });
         }
 
+        hudLastRoll = activity.findViewById(R.id.hud_last_roll);
+        hudHandFirst = activity.findViewById(R.id.hud_hand_first);
+        hudHandSecond = activity.findViewById(R.id.hud_hand_second);
+        hudCards = activity.findViewById(R.id.hud_development_cards);
+        hudLatestAction = activity.findViewById(R.id.hud_latest_action);
+        Button historyButton = activity.findViewById(R.id.hud_history_button);
+        if (historyButton != null) historyButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override public void onClick(View v) { showGameplayHistory(); }
+                });
         // if we have state update the GUI based on the state
         if (this.state != null) receiveInfo(state);
         applyControlRailLayout();
