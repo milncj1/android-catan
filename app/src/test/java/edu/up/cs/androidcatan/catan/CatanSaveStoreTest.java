@@ -76,6 +76,38 @@ public class CatanSaveStoreTest {
         assertEquals(0, snap.getState().getPlayerList().get(0).getResourceCards()[0]);
     }
 
+    @Test public void savedRoadsAreRestoredIndependentlyOfOriginalBoard() throws Exception {
+        CatanGameState original = new CatanGameState();
+        original.getBoard().addRoad(0, 0, 1);
+        CatanSaveStore.Snapshot saved = roundTrip(
+                new CatanSaveStore.Snapshot(original, NAMES, TYPES));
+
+        CatanGameState restored = saved.getState();
+        assertEquals(1, restored.getBoard().getRoads().size());
+        assertEquals(0, restored.getBoard().getRoadMatrix()[0][1].getOwnerId());
+
+        // A mutation to a restored copy must not alter another copy or the
+        // existing match. Previously Board copied shared road-matrix rows.
+        restored.getBoard().getRoadMatrix()[0][1].setOwnerId(1);
+        assertEquals(0, original.getBoard().getRoadMatrix()[0][1].getOwnerId());
+        assertEquals(0, saved.getState().getBoard().getRoadMatrix()[0][1].getOwnerId());
+    }
+
+    @Test public void cpuCanResumeAnOpeningRoadFromSavedSettlement() throws Exception {
+        CatanGameState state = new CatanGameState();
+        state.setCurrentPlayerId(2);
+        state.setCurrentSetupSettlement(7);
+        state.setSetupRoadBuiltThisTurn(false);
+        state.getBoard().addBuilding(7, new Settlement(2));
+
+        CatanGameState recovered = roundTrip(
+                new CatanSaveStore.Snapshot(state, NAMES, TYPES)).getState();
+        assertEquals(2, recovered.getCurrentPlayerId());
+        assertEquals(7, recovered.getCurrentSetupSettlement());
+        assertFalse(recovered.isSetupRoadBuiltThisTurn());
+        assertEquals(2, recovered.getBoard().getBuildingAtIntersection(7).getOwnerId());
+    }
+
     @Test public void invalidPlayerConfigurationsCannotBeRestored() {
         assertFalse(new CatanSaveStore.Snapshot(new CatanGameState(),
                 NAMES, new int[]{2, 2, 2, 2}).isValid());
