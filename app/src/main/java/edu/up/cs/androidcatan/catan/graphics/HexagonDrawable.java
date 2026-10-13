@@ -5,6 +5,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.LinearGradient;
+import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -39,6 +42,12 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
     protected int hexagonId;
     protected int chitValue;
     protected boolean isRobber, isDesert;
+
+    private static final int[] terrainArt = {
+            R.drawable.terrain_brick, R.drawable.terrain_grain,
+            R.drawable.terrain_lumber, R.drawable.terrain_ore,
+            R.drawable.terrain_wool, R.drawable.terrain_desert
+    };
 
     static int[] resourceDrawables = {R.drawable.brick_icon_25x25, R.drawable.grain_icon_25x25, R.drawable.lumber_icon_25x25, R.drawable.ore_icon_25x25, R.drawable.wool_icon_25x25};
 
@@ -86,76 +95,113 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
      * @param canvas    Canvas to draw the hexagon upon.
      * @param debugMode Debug mode.
      */
+    /**
+     * Paint an illustrated hex without changing its original geometry.
+     * Roads, settlements and touch hit testing continue to use the same points.
+     */
     public void drawHexagon(Canvas canvas, boolean debugMode) {
-        Paint hexagonPaint = new Paint();
-        hexagonPaint.setColor(this.color);
-        hexagonPaint.setStyle(Paint.Style.FILL);
-
-        Paint blackFont = new Paint();
-        blackFont.setColor(Color.BLACK);
-        blackFont.setStyle(Paint.Style.FILL);
-        blackFont.setTextSize(50);
-
-        Paint highlightPaint = new Paint();
-        highlightPaint.setColor(Color.CYAN);
-        highlightPaint.setStyle(Paint.Style.STROKE);
-        highlightPaint.setStrokeWidth(10f);
-
         points = calculateHexagonPoints(this.x, this.y, this.size);
-
         Path hexagonPath = createHexagonPath(points);
-        canvas.drawPath(hexagonPath, hexagonPaint);
 
-        if (this.highlight) canvas.drawPath(hexagonPath, highlightPaint);
+        final int[] light = {0xFFD99471, 0xFFF8D56B, 0xFF6FA66B,
+                             0xFFA8AEB4, 0xFF9ACD7F, 0xFFE8CB91};
+        final int[] dark  = {0xFF99583F, 0xFFD4A744, 0xFF36683E,
+                             0xFF59656D, 0xFF56834B, 0xFFC69C62};
+        int terrain = Math.max(0, Math.min(resourceId, 5));
 
-        Paint robberPaint = new Paint();
-        robberPaint.setColor(Color.DKGRAY);
-        robberPaint.setStyle(Paint.Style.FILL);
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setColor(0x660C2D2F);
+        canvas.save();
+        canvas.translate(5f, 9f);
+        canvas.drawPath(hexagonPath, shadow);
+        canvas.restore();
+
+        Paint ground = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ground.setShader(new LinearGradient(x - size, y - size,
+                x + size, y + size, light[terrain], dark[terrain],
+                Shader.TileMode.CLAMP));
+        canvas.drawPath(hexagonPath, ground);
+
+        Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
+        edge.setStyle(Paint.Style.STROKE);
+        edge.setStrokeWidth(9f);
+        edge.setStrokeJoin(Paint.Join.ROUND);
+        edge.setColor(0xFFEBD9A9);
+        canvas.drawPath(hexagonPath, edge);
+        edge.setStrokeWidth(3f);
+        edge.setColor(0x884C3927);
+        canvas.drawPath(hexagonPath, edge);
+
+        // Kenney CC0 miniature scenery, scattered deterministically so
+        // terrain does not rearrange itself every time the screen redraws.
+        Drawable decoration = context.getDrawable(terrainArt[terrain]);
+        if (decoration != null) {
+            canvas.save();
+            canvas.clipPath(hexagonPath);
+            for (int i = 0; i < 4; i++) {
+                int dx = ((hexagonId * 37 + i * 71) % 178) - 89;
+                int dy = ((hexagonId * 23 + i * 43) % 92) - 77;
+                int artSize = terrain == 1 ? 54 : 82;
+                decoration.setBounds(x + dx - artSize / 2,
+                        y + dy - artSize,
+                        x + dx + artSize / 2, y + dy + artSize / 3);
+                decoration.draw(canvas);
+            }
+            canvas.restore();
+        }
+
+        if (highlight) {
+            Paint selected = new Paint(Paint.ANTI_ALIAS_FLAG);
+            selected.setColor(0xFFFFEE96);
+            selected.setStyle(Paint.Style.STROKE);
+            selected.setStrokeJoin(Paint.Join.ROUND);
+            selected.setStrokeWidth(16f);
+            canvas.drawPath(hexagonPath, selected);
+        }
+
+        if (!isDesert) {
+            // Classic Catan number token: always legible above the scenery.
+            float tokenY = y + 49f;
+            Paint tokenShadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+            tokenShadow.setColor(0x77422D1F);
+            canvas.drawCircle(x + 3f, tokenY + 6f, 42f, tokenShadow);
+
+            Paint token = new Paint(Paint.ANTI_ALIAS_FLAG);
+            token.setColor(0xFFF8F0DC);
+            canvas.drawCircle(x, tokenY, 40f, token);
+            token.setColor(0xFFBEA879);
+            token.setStyle(Paint.Style.STROKE);
+            token.setStrokeWidth(4f);
+            canvas.drawCircle(x, tokenY, 39f, token);
+
+            Paint numerals = new Paint(Paint.ANTI_ALIAS_FLAG);
+            numerals.setTextAlign(Paint.Align.CENTER);
+            numerals.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+            numerals.setTextSize(57f);
+            numerals.setColor((chitValue == 6 || chitValue == 8) ? 0xFFB92F2C : 0xFF473C32);
+            canvas.drawText(Integer.toString(chitValue), x, tokenY + 19f, numerals);
+
+            Drawable resource = context.getDrawable(resourceDrawables[terrain]);
+            if (resource != null) {
+                resource.setBounds(x + 63, y + 70, x + 99, y + 106);
+                resource.draw(canvas);
+            }
+        }
+
+        if (isRobber) {
+            Drawable robber = context.getDrawable(R.drawable.robber);
+            if (robber != null) {
+                robber.setBounds(x - 65, y - 103, x + 65, y + 27);
+                robber.draw(canvas);
+            }
+        }
 
         if (debugMode) {
-            blackFont.setTextSize(30);
-            canvas.drawText("id: " + this.hexagonId, points[5][0] - 15, points[5][1] + 100 + this.size / 2, blackFont);
-            canvas.drawText("resId: " + this.resourceId, points[5][0] - 15, points[5][1] + 150 + this.size / 2, blackFont);
-            blackFont.setTextSize(50);
+            Paint debug = new Paint(Paint.ANTI_ALIAS_FLAG);
+            debug.setColor(Color.BLACK);
+            debug.setTextSize(22f);
+            canvas.drawText("id: " + hexagonId, x - 64f, y - 92f, debug);
         }
-
-        if (!this.isDesert) {
-            if (this.chitValue == 6 || this.chitValue == 8)
-                blackFont.setColor(Color.argb(255, 255, 0, 0));
-            if (this.chitValue < 10)
-                canvas.drawText("" + this.chitValue, points[5][0] - 15, points[5][1] + this.size / 2 + 50, blackFont);
-            else
-                canvas.drawText("" + this.chitValue, points[5][0] - 25, points[5][1] + this.size / 2 + 50, blackFont);
-        }
-
-        int cx = points[5][0];
-        int cy = points[5][1] + this.size;
-
-        if (this.isRobber) {
-            Log.d(TAG, "drawHexagon: Drawing the robber at hexagon: " + this.hexagonId);
-            Drawable robberDrawable = context.getDrawable(R.drawable.robber);
-            if (robberDrawable != null) {
-                robberDrawable.setBounds(cx - 60, cy - 60, cx + 60, cy + 60);
-                robberDrawable.draw(canvas);
-            } else {
-                Log.e(TAG, "drawHexagon: resourceDrawable is null", new NullPointerException());
-            }
-
-        }
-        if (this.resourceId < 5 && this.resourceId >= 0) {
-            Drawable resourceDrawable = context.getDrawable(resourceDrawables[this.resourceId]);
-            if (resourceDrawable != null) {
-                resourceDrawable.setBounds(cx - 30, cy - 30 + 100, cx + 30, cy + 30 + 100);
-                resourceDrawable.draw(canvas);
-            } else {
-                Log.e(TAG, "drawHexagon: resourceDrawable is null", new NullPointerException());
-            }
-        } else if (resourceId != 5) {
-            Log.e(TAG, "drawHexagon: resourceId is out of bounds", new Exception());
-        }
-        Paint intersectionPaint = new Paint();
-        intersectionPaint.setColor(Color.DKGRAY);
-        intersectionPaint.setStyle(Paint.Style.STROKE);
     }
 
     /**
