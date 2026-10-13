@@ -149,6 +149,7 @@ public class CatanLocalGame extends LocalGame {
             // update the setup phase
             if (state.isSetupPhase()) this.state.setSetupPhase(this.state.updateSetupPhase());
 
+            state.setLastSetupSettlementId(-1);
             state.setActionPhase(false); // set action phase to false
             state.setFreeRoadsRemaining(0); // unused Road Building placements expire at turn end
             state.setDevelopmentCardPlayedThisTurn(false);
@@ -168,7 +169,7 @@ public class CatanLocalGame extends LocalGame {
             int b = roadAction.getIntBid();
             // Check connectivity, adjacency and occupancy before changing resources.
             if (!state.getBoard().validRoadPlacement(state.getCurrentPlayerId(),
-                    state.isSetupPhase(), a, b)) return false;
+                    state.isSetupPhase(), a, b, state.getLastSetupSettlementId())) return false;
 
             // if it is the setup phase, do not remove resources
             if (((CatanBuildRoadAction) action).isSetupPhase()) {
@@ -202,6 +203,7 @@ public class CatanLocalGame extends LocalGame {
                 Log.i(TAG, "makeMove: Setup phase. Not checking for resources.");
                 // add settlement to the board
                 state.getBoard().addBuilding(((CatanBuildSettlementAction) action).getIntersectionId(), new Settlement(((CatanBuildSettlementAction) action).getOwnerId()));
+                state.setLastSetupSettlementId(((CatanBuildSettlementAction) action).getIntersectionId());
                 if (state.getSetupPhaseTurnCounter() > 3) {
                     ArrayList<Integer> adjacentHexagons = this.state.getBoard().getIntToHexIdMap().get(((CatanBuildSettlementAction) action).getIntersectionId());
                     for (Integer hexagon : adjacentHexagons) {
