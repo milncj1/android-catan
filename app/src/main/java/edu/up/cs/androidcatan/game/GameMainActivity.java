@@ -173,7 +173,22 @@ View.OnClickListener {
 			}
 		}
 
+		// A killed Android process cannot currently restore an unfinished match.
+		// Make that clear rather than showing a blank or fake in-progress board.
+		if (savedInstanceState != null
+				&& savedInstanceState.getBoolean("match_was_playing", false)
+				&& doingConfiguration) {
+			android.widget.Toast.makeText(this,
+					"Previous match could not be resumed yet. Start a new game.",
+					android.widget.Toast.LENGTH_LONG).show();
+		}
 	}// onCreate
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		outState.putBoolean("match_was_playing", !doingConfiguration);
+		super.onSaveInstanceState(outState);
+	}
 
 	/**
 	 * Returns the name of the configuration save-file.
@@ -231,18 +246,21 @@ View.OnClickListener {
 		// Perform superclass configuration changes
 		super.onConfigurationChanged(newConfig);
 
-		// if still on the configuration screen, continue showing it;
-		// otherwise, set the new GUI (which may have changed) for the
-		// human player
+		// The personal version always uses a human player. Preserve the
+		// existing live board on display changes; inflating it again would
+		// discard interaction state and can leave the old no-GUI screen.
 		if (!doingConfiguration) {
 			if (guiPlayer != null) {
-				// if there is a GUI player, link it to the activity
-				guiPlayer.gameSetAsGui(this);
+				View board = findViewById(R.id.board);
+				if (board != null) board.invalidate();
+				else guiPlayer.gameSetAsGui(this);
 			}
 			else {
-				// if there is no GUI player, set the layout to be one
-				// with a "no GUI" message
-				setContentView(R.layout.game_no_gui);
+				// Fail safely to the playable start menu, not a dead screen.
+				doingConfiguration = true;
+				setContentView(R.layout.game_config_main);
+				initStarterGui();
+				justStarted = false;
 			}
 		}
 	}//onConfigurationChanged
