@@ -131,6 +131,9 @@ public class CatanLocalGame extends LocalGame {
 
         //Player is ending their turn
         if (action instanceof CatanEndTurnAction) {
+            if (state.isSetupPhase()
+                    && (state.getCurrentSetupSettlement() < 0 || !state.isSetupRoadBuiltThisTurn()))
+                return false;
             if (!state.isSetupPhase() && (!state.isActionPhase() || state.isRobberPhase())) return false;
             Log.d(TAG, "makeMove() Player " + state.getCurrentPlayerId() + " is ending their turn.");
 
@@ -161,6 +164,7 @@ public class CatanLocalGame extends LocalGame {
             state.setFreeRoadsRemaining(0); // free roads expire at turn end
             state.setDevelopmentCardPlayedThisTurn(false);
             state.setCurrentSetupSettlement(-1);
+            state.setSetupRoadBuiltThisTurn(false);
             Log.i(TAG, "makeMove: It is now " + state.getCurrentPlayerId() + "'s turn.");
             return true;
         }
@@ -175,6 +179,9 @@ public class CatanLocalGame extends LocalGame {
             int owner = build.getOwnerId(), from = build.getIntAId(), to = build.getIntBid();
             if (owner != state.getCurrentPlayerId() || build.isSetupPhase() != state.isSetupPhase()) return false;
             if (ownedRoads(owner) >= 15) return false;
+            if (state.isSetupPhase()
+                    && (state.getCurrentSetupSettlement() < 0 || state.isSetupRoadBuiltThisTurn()))
+                return false;
             if (!state.getBoard().validRoadPlacement(owner, state.isSetupPhase(), from, to,
                     state.getCurrentSetupSettlement())) return false;
             if (!state.isSetupPhase() && !state.isActionPhase()) return false;
@@ -183,6 +190,7 @@ public class CatanLocalGame extends LocalGame {
                     && !state.getCurrentPlayer().removeResourceBundle(Road.resourceCost)) return false;
 
             state.getBoard().addRoad(owner, from, to);
+            if (state.isSetupPhase()) state.setSetupRoadBuiltThisTurn(true);
             if (free) state.setFreeRoadsRemaining(state.getFreeRoadsRemaining() - 1);
             if (!state.isSetupPhase()) updateLongestRoadHolder();
             return true;
