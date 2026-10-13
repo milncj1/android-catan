@@ -108,6 +108,31 @@ public class CatanSaveStoreTest {
         assertEquals(2, recovered.getBoard().getBuildingAtIntersection(7).getOwnerId());
     }
 
+    @Test public void reopenedGameUsesSavedPositionWithoutResettingIt() throws Exception {
+        CatanGameState saved = new CatanGameState();
+        saved.setCurrentPlayerId(2);
+        saved.setCurrentSetupSettlement(9);
+        saved.setSetupRoadBuiltThisTurn(false);
+        saved.getBoard().addBuilding(9, new Settlement(2));
+        saved.getPlayerList().get(1).addResourceCard(3, 2);
+
+        CatanLocalGame resumed = new CatanLocalGame(saved);
+        java.lang.reflect.Field gameStateField =
+                CatanLocalGame.class.getDeclaredField("state");
+        gameStateField.setAccessible(true);
+        CatanGameState restored = (CatanGameState) gameStateField.get(resumed);
+
+        assertNotSame(saved, restored);
+        assertEquals(2, restored.getCurrentPlayerId());
+        assertEquals(9, restored.getCurrentSetupSettlement());
+        assertFalse(restored.isSetupRoadBuiltThisTurn());
+        assertEquals(2, restored.getBoard().getBuildingAtIntersection(9).getOwnerId());
+        assertEquals(2, restored.getPlayerList().get(1).getResourceCards()[3]);
+        assertEquals(saved.getBoard().getHexagons().get(0).getResourceId(),
+                restored.getBoard().getHexagons().get(0).getResourceId());
+        assertFalse(resumed.isSessionReady());
+    }
+
     @Test public void invalidPlayerConfigurationsCannotBeRestored() {
         assertFalse(new CatanSaveStore.Snapshot(new CatanGameState(),
                 NAMES, new int[]{2, 2, 2, 2}).isValid());
