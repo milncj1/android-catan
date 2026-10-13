@@ -134,6 +134,20 @@
                 android:layout_height="wrap_content" />
         </ScrollView>
 
+        <Button
+            android:id="@+id/continueGameButton"
+            android:layout_width="match_parent"
+            android:layout_height="38dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/start_secondary_button"
+            android:text="Continue saved game"
+            android:contentDescription="Continue the last automatically saved game"
+            android:textColor="#FF214E3E"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:visibility="gone" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="46dp"
