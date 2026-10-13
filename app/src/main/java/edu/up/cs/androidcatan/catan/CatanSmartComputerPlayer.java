@@ -505,28 +505,32 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
             Log.d(TAG, "receiveInfo: Chance returned: " + chance);
             if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(Road.resourceCost)) { //took out playerRoadCount method, can add back in later if necessary
 
-                // get road endpoints for players roads
-                ArrayList<Integer> individualRoads = getPlayerRoadIntersection(getPlayerRoads(gs));
-                int randIntersection = random.nextInt(individualRoads.size());
-
-                // get random intersection from those road intersections
-                int roadCoordinate = individualRoads.get(randIntersection);
-
-                // get all adjacent intersections
-                ArrayList<Integer> intersectionsToChooseFrom = gs.getBoard().getIntersectionAdjacencyList().get(roadCoordinate);
-                Log.d(TAG, "IntersectionsToChooseFrom for coordinate: " + roadCoordinate + " for the following cords: " + intersectionsToChooseFrom.toString());
-
-                //int randomRoadIntersection = random.nextInt(intersectionsToChooseFrom.size());
-                for (int n = 0; n < intersectionsToChooseFrom.size(); n++) {
-                    if (gs.getBoard().validRoadPlacement(this.playerNum, false, roadCoordinate, intersectionsToChooseFrom.get(n))) {
-                        game.sendAction(new CatanBuildRoadAction(this, false, this.playerNum, roadCoordinate, intersectionsToChooseFrom.get(n))); //was random road intersection
-                        Log.d(TAG, "receiveInfo: CatanBuildRoadAction sent");
-
-                        game.sendAction(new CatanEndTurnAction(this));
-
-                        Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
-                        return;
+                // Search all legal roads rather than extending one random
+                // endpoint. Prefer connections towards promising new settlements.
+                ArrayList<Integer> roadEndpoints =
+                        getPlayerRoadIntersection(getPlayerRoads(gs));
+                int bestFrom = -1;
+                int bestTo = -1;
+                double bestRoadScore = Double.NEGATIVE_INFINITY;
+                for (Integer from : roadEndpoints) {
+                    for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(from)) {
+                        if (!gs.getBoard().validRoadPlacement(this.playerNum, false, from, to)) {
+                            continue;
+                        }
+                        double score = CatanStrategy.scoreRoadDestination(gs, to, this.playerNum)
+                                + random.nextDouble() * 0.2;
+                        if (score > bestRoadScore) {
+                            bestRoadScore = score;
+                            bestFrom = from;
+                            bestTo = to;
+                        }
                     }
+                }
+                if (bestFrom >= 0) {
+                    game.sendAction(new CatanBuildRoadAction(this, false,
+                            this.playerNum, bestFrom, bestTo));
+                    game.sendAction(new CatanEndTurnAction(this));
+                    return;
                 }
 
                 //End turn after building
