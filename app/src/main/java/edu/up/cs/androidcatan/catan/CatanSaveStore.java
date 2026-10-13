@@ -5,13 +5,11 @@ import android.util.AtomicFile;
 import android.util.Log;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.Arrays;
 
 /**
  * One private, offline, atomic autosave for the current match.
@@ -96,7 +94,8 @@ public final class CatanSaveStore {
     public static synchronized Snapshot load(Context context) {
         if (context == null) return null;
         AtomicFile file = atomic(context);
-        if (!file.getBaseFile().exists()) return null;
+        // AtomicFile.openRead() also repairs interrupted writes from .bak.
+        // Do not pre-check base.exists(), which would hide recoverable backups.
         if (file.getBaseFile().length() > MAX_SAVE_BYTES) {
             Log.w(TAG, "Save file exceeds safe size limit");
             return null;
