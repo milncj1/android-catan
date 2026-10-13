@@ -436,55 +436,51 @@ public class CatanGameState extends GameState {
      * @param playerId - player stealing resources
      * @return - action success
      */
-    public boolean robberSteal(int playerId, int stealingFromPlayerId) {
-
-        //Make sure they are not trying to steal from themselves
-        if (playerId == stealingFromPlayerId) {
-            Log.e(TAG, "robberSteal: Trying to steal from self, error.");
-            return false;
+    /** Whether an opponent has a settlement/city beside the robber's tile. */
+    public boolean hasRobberVictim(int playerId) {
+        int tile = board.getRobber().getHexagonId();
+        for (Integer intersection : board.getHexToIntIdMap().get(tile)) {
+            Building building = board.getBuildingAtIntersection(intersection);
+            if (building != null && building.getOwnerId() != playerId) return true;
         }
+        return false;
+    }
 
-        //Make sure it's a valid player id
-        if (playerId < 0 || playerId > 3 || stealingFromPlayerId < 0 || stealingFromPlayerId > 3) {
-            return false;
+    public boolean isRobberVictim(int playerId, int targetId) {
+        if (targetId < 0 || targetId >= playerList.size() || targetId == playerId) return false;
+        int tile = board.getRobber().getHexagonId();
+        for (Integer intersection : board.getHexToIntIdMap().get(tile)) {
+            Building building = board.getBuildingAtIntersection(intersection);
+            if (building != null && building.getOwnerId() == targetId) return true;
         }
+        return false;
+    }
 
-        //Pick random resource from player
-        int randomStolenResourceId = this.playerList.get(stealingFromPlayerId).getRandomCard();
-
-        //Specified player has no resources; don't steal anything; end of robber phase, reset values
-        if (randomStolenResourceId == -1) {
-            isRobberPhase = false;
-            hasMovedRobber = false;
-            // once they steal it is the end of the robber phase, so reset this array to false
-            for (int i = 0; i < robberPlayerListHasDiscarded.length; i++) {
-                robberPlayerListHasDiscarded[i] = false;
-            }
-            return true;
-        }
-
-        //Invalid steal ID
-        if (randomStolenResourceId < 0 || randomStolenResourceId > 4) {
-            Log.e(TAG, "robberSteal: Received invalid resource card id: " + randomStolenResourceId + " from Player.getRandomCard method.");
-            return false;
-        }
-
-        // remove resource card from players inventory
-        this.playerList.get(stealingFromPlayerId).removeResourceCard(randomStolenResourceId, 1);
-
-        // add resource card to the stealing players inventory
-        this.playerList.get(playerId).addResourceCard(randomStolenResourceId, 1);
-
-        Log.i(TAG, "robberSteal: Stolen card " + randomStolenResourceId + " added to player: " + this.playerList.get(playerId));
-
-        //Robber phase complete, reset values
+    private void completeRobberPhase() {
         isRobberPhase = false;
         hasMovedRobber = false;
+        Arrays.fill(robberPlayerListHasDiscarded, false);
+    }
 
-        // once they steal it is the end of the robber phase, so reset this array to false
-        for (int i = 0; i < robberPlayerListHasDiscarded.length; i++) {
-            robberPlayerListHasDiscarded[i] = false;
+    /**
+     * Choose a legitimate adjacent opponent, or -1 when no opponent borders
+     * the destination. A zero-card victim still counts as a legal choice.
+     */
+    public boolean robberSteal(int playerId, int stealingFromPlayerId) {
+        if (!isRobberPhase || !hasMovedRobber || playerId != currentPlayerId) return false;
+        if (stealingFromPlayerId == -1) {
+            if (hasRobberVictim(playerId)) return false;
+            completeRobberPhase();
+            return true;
         }
+        if (!isRobberVictim(playerId, stealingFromPlayerId)) return false;
+
+        int resource = playerList.get(stealingFromPlayerId).getRandomCard();
+        if (resource >= 0) {
+            if (!playerList.get(stealingFromPlayerId).removeResourceCard(resource, 1)) return false;
+            playerList.get(playerId).addResourceCard(resource, 1);
+        }
+        completeRobberPhase();
         return true;
     }
 
