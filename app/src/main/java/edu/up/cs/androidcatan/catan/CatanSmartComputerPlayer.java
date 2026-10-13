@@ -170,7 +170,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 double bestRoadValue = Double.NEGATIVE_INFINITY;
                 for (Integer candidate : intersectionsToChooseFrom) {
                     if (!gs.getBoard().validRoadPlacement(this.playerNum, true,
-                            lastSettlementIntersectionId, candidate)) continue;
+                            lastSettlementIntersectionId, candidate, lastSettlementIntersectionId)) continue;
                     double value = CatanStrategy.scoreRoadDestination(gs, candidate, this.playerNum)
                             + random.nextDouble() * 0.1;
                     if (value > bestRoadValue) {
