@@ -1685,6 +1685,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             }
 
             updateTextViews();
+            fitPopupOnScreen(robberDiscardGroup);
+            fitPopupOnScreen(robberChooseHexGroup);
+            fitPopupOnScreen(developmentGroup);
+            fitPopupOnScreen(pickResourceGroup);
             drawGraphics();
 
         } else if (info instanceof NotYourTurnInfo) {
@@ -2354,13 +2358,73 @@ if(newGame) {
     }
 
     /**
+     * Keep the remaining legacy controls (robber, development cards and
+     * resource picker) within the visible phone window. ConstraintLayout
+     * Groups refer to separate views rather than owning a layout container;
+     * each member therefore receives the same centre-and-scale transform.
+     * Android's View transforms preserve hit testing for touch controls.
+     */
+    private void fitPopupOnScreen(final Group group) {
+        if (group == null || group.getVisibility() != View.VISIBLE || myActivity == null) return;
+        group.post(new Runnable() {
+            @Override public void run() {
+                if (group.getVisibility() != View.VISIBLE || myActivity == null) return;
+                View root = myActivity.findViewById(R.id.top_gui_layout);
+                if (root == null || root.getWidth() < 1 || root.getHeight() < 1) return;
+
+                int[] ids = group.getReferencedIds();
+                float left = Float.MAX_VALUE, top = Float.MAX_VALUE;
+                float right = -Float.MAX_VALUE, bottom = -Float.MAX_VALUE;
+                ArrayList<View> members = new ArrayList<>();
+                for (int id : ids) {
+                    View item = myActivity.findViewById(id);
+                    if (item == null || item instanceof android.support.constraint.Guideline
+                            || item.getWidth() <= 0 || item.getHeight() <= 0
+                            || item.getVisibility() == View.GONE) continue;
+                    // Use layout bounds; transformations do not affect getLeft/getTop.
+                    item.setScaleX(1f);
+                    item.setScaleY(1f);
+                    item.setTranslationX(0f);
+                    item.setTranslationY(0f);
+                    members.add(item);
+                    left = Math.min(left, item.getLeft());
+                    top = Math.min(top, item.getTop());
+                    right = Math.max(right, item.getRight());
+                    bottom = Math.max(bottom, item.getBottom());
+                }
+                if (members.isEmpty() || right <= left || bottom <= top) return;
+
+                float density = myActivity.getResources().getDisplayMetrics().density;
+                float inset = Math.max(12f * density, 12f);
+                float width = root.getWidth(), height = root.getHeight();
+                float usableWidth = Math.max(1f, width - 2f * inset);
+                float usableHeight = Math.max(1f, height - 2f * inset);
+                float scale = Math.min(1f, Math.min(usableWidth / (right - left),
+                        usableHeight / (bottom - top)));
+                float originX = (width - (right - left) * scale) / 2f;
+                float originY = (height - (bottom - top) * scale) / 2f;
+                for (View item : members) {
+                    float centerX = (item.getLeft() + item.getRight()) / 2f;
+                    float centerY = (item.getTop() + item.getBottom()) / 2f;
+                    item.setScaleX(scale);
+                    item.setScaleY(scale);
+                    item.setTranslationX(originX + (centerX - left) * scale - centerX);
+                    item.setTranslationY(originY + (centerY - top) * scale - centerY);
+                }
+            }
+        });
+    }
+
+    /**
      * Toggles the visibility of a group.
      *
      * @param group Group to toggle visibility.
      */
     private void toggleGroupVisibilityAllowTapping(Group group) {
-        if (group.getVisibility() == View.GONE) group.setVisibility(View.VISIBLE);
-        else group.setVisibility(View.GONE);
+        if (group.getVisibility() == View.GONE) {
+            group.setVisibility(View.VISIBLE);
+            fitPopupOnScreen(group);
+        } else group.setVisibility(View.GONE);
     }
 
     /**
@@ -2372,6 +2436,7 @@ if(newGame) {
         if (group.getVisibility() == View.GONE) {
             this.isMenuOpen = true;
             group.setVisibility(View.VISIBLE);
+            fitPopupOnScreen(group);
         } else {
             this.isMenuOpen = false;
             group.setVisibility(View.GONE);
@@ -2384,6 +2449,7 @@ if(newGame) {
 
     private void toggleGroupVisibilityVISIBLE(Group group) {
         group.setVisibility(View.VISIBLE);
+        fitPopupOnScreen(group);
     }
 
 
