@@ -23,7 +23,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseVictoryPointCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseYearOfPlentyCardAction;
 import edu.up.cs.androidcatan.catan.gamestate.DevelopmentCard;
-import edu.up.cs.androidcatan.catan.gamestate.Graph;
+import edu.up.cs.androidcatan.catan.gamestate.LongestRoadCalculator;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.City;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Road;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement;
@@ -173,21 +173,7 @@ public class CatanLocalGame extends LocalGame {
                 // add the road to the board
                 state.getBoard().addRoad(((CatanBuildRoadAction) action).getOwnerId(), ((CatanBuildRoadAction) action).getIntAId(), ((CatanBuildRoadAction) action).getIntBid());
 
-                //New graph to add roads to board
-                Graph rg = new Graph(54);
-                rg.setAllRoads(state.getBoard().getRoads());
-
-                //Thread to update the player with the longest road
-                Thread t = new Thread(rg);
-                t.start();
-                try {
-                    Log.i(TAG, "makeMove: thread joined");
-                    t.join();
-                } catch (Exception e) {
-                    Log.e(TAG, "makeMove: t.join()", e);
-                }
-                state.setCurrentLongestRoadPlayerId(rg.updatePlayerWithLongestRoad());
-                state.setCurrentLongestRoadPlayerId(rg.getPlayerIdWithLongestRoad());
+                updateLongestRoadHolder();
                 return true;
             }
 
@@ -212,6 +198,7 @@ public class CatanLocalGame extends LocalGame {
                     }
                 }
                 state.getCurrentPlayer().addVictoryPoints(1);
+                updateLongestRoadHolder();
                 Log.d(TAG, "makeMove() returned: " + true);
                 return true;
             } else {
@@ -220,6 +207,7 @@ public class CatanLocalGame extends LocalGame {
                     // add settlement to the board
                     state.getBoard().addBuilding(((CatanBuildSettlementAction) action).getIntersectionId(), new Settlement(((CatanBuildSettlementAction) action).getOwnerId()));
                     state.getCurrentPlayer().addVictoryPoints(1);
+                    updateLongestRoadHolder(); // new settlement can block another player's road
                     Log.d(TAG, "makeMove() returned: " + true);
                     return true;
                 }
@@ -453,6 +441,12 @@ public class CatanLocalGame extends LocalGame {
      * @return a message that tells who has won the game, or null if the
      * game is not over
      */
+    private void updateLongestRoadHolder() {
+        state.setCurrentLongestRoadPlayerId(
+                LongestRoadCalculator.findHolder(state.getBoard().getRoads(),
+                        state.getBoard().getBuildings(), state.getCurrentLongestRoadPlayerId()));
+    }
+
     @Override
     public String checkIfGameOver() {
         Log.d(TAG, "checkIfGameOver() called");
