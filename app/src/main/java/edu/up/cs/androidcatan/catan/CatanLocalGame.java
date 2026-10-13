@@ -70,8 +70,13 @@ public class CatanLocalGame extends LocalGame {
 
     @Override protected void onMatchReady() {
         sessionReady = true;
-        // Do not replace an existing Build 004 save before its board reaches the GUI.
-        if (!resumedFromSave) persistMatch();
+        // Start a fresh turn diary only for a NEW match. Continue leaves it intact.
+        if (!resumedFromSave) {
+            CatanMatchHistory.clear(autosaveContext);
+            CatanMatchHistory.append(autosaveContext,
+                    "New match started — choose your opening settlement and road");
+            persistMatch();
+        }
     }
 
     @Override protected void onAcceptedMove() {
