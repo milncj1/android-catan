@@ -33,6 +33,34 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
     HexagonGrid grid; // hexagon grid for drawing the hex tiles
     private Canvas canvas; // canvas for drawing
     private boolean ready; // ready to draw?
+    // The original board uses fixed game coordinates; fit them to the phone
+    // without changing the game graph or making taps miss their targets.
+    private static final float BOARD_LEFT = -150f;
+    private static final float BOARD_TOP = -155f;
+    private static final float BOARD_WIDTH = 1980f;
+    private static final float BOARD_HEIGHT = 1855f;
+
+    private float viewportScale() {
+        if (getWidth() <= 0 || getHeight() <= 0) return 1f;
+        return Math.min(getWidth() / BOARD_WIDTH, getHeight() / BOARD_HEIGHT);
+    }
+
+    private float viewportLeft() {
+        return (getWidth() - BOARD_WIDTH * viewportScale()) * 0.5f;
+    }
+
+    private float viewportTop() {
+        return (getHeight() - BOARD_HEIGHT * viewportScale()) * 0.5f;
+    }
+
+    public float toBoardX(float screenX) {
+        return (screenX - viewportLeft()) / viewportScale() + BOARD_LEFT;
+    }
+
+    public float toBoardY(float screenY) {
+        return (screenY - viewportTop()) / viewportScale() + BOARD_TOP;
+    }
+
 
     public BoardSurfaceView(Context context) {
         super(context);
@@ -64,7 +92,12 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
         } else {
             // draw the game
             Log.i(TAG, "onDraw: drawing grid");
+            canvas.save();
+            canvas.translate(viewportLeft(), viewportTop());
+            canvas.scale(viewportScale(), viewportScale());
+            canvas.translate(-BOARD_LEFT, -BOARD_TOP);
             grid.drawGameBoard(canvas);
+            canvas.restore();
         }
     }
 
