@@ -1,6 +1,9 @@
 package edu.up.cs.androidcatan.catan;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.media.MediaPlayer;
@@ -464,23 +467,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         /* -------------------------- Scoreboard and Menu Buttons Handlers ---------------------- */
 
-        // Menu button on the sidebar.
+        // Native scrollable dialogs replace the 2018 fixed-size help pages.
         if (button.getId() == R.id.sidebar_button_menu) {
-
-            //Make menu visible
-            this.boardSurfaceView.invalidate();
-
-            toggleViewVisibility(this.buildingCosts); // toggle help image
-            toggleGroupVisibility(this.helpMenu);
-
-            //Make sure to make all menus disappear if they're open
-            toggleGroupVisibilityGONE(winningHelpMenu);
-            toggleGroupVisibilityGONE(setUpPhaseHelpMenu);
-            toggleGroupVisibilityGONE(buildingHelpMenu);
-            toggleGroupVisibilityGONE(developmentCardHelpMenu);
-            toggleGroupVisibilityGONE(tradingHelpMenu);
-            toggleGroupVisibilityGONE(robberHelpMenu);
-            Log.d(TAG, state.toString());
+            showHelpTopicsDialog();
             return;
         }
         // Score button on the sidebar.
@@ -820,29 +809,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         /* ------------------------------------ Trading ---------------------------------- */
 
-        // trade button on sidebar
+        // A single responsive trade dialog replaces the rigid 26-view overlay.
         if (button.getId() == R.id.sidebar_button_trade) {
-            Log.e(TAG, "onClick: selected intersections: " + this.selectedIntersections);
-            //checks to see if the user has any intersections selected.
-            if (selectedIntersections.size() == 1) {
-                // trading with port
-                messageTextView.setText("Trading with a port.");
-                tradingWithBankOrPort.setTextSize(12);
-                tradingWithBankOrPort.setText("Port\nSpecial:1");
-
-                toggleGroupVisibility(tradeGroup); // toggle menu vis.
-            } else if (selectedIntersections.size() == 0) {
-                // trading with bank
-                messageTextView.setText("Trading with the bank.");
-                tradingWithBankOrPort.setTextSize(18);
-                tradingWithBankOrPort.setText("Bank 4:1");
-                toggleGroupVisibility(tradeGroup); // toggle menu vis.
-            } else {
-                // not correct selections
-                Log.e(TAG, "onClick: user has selected too many intersections");
-                tradingWithBankOrPort.setText("2 Intersections Selected");
-                messageTextView.setText("Select intersection next to a port to trade with a port. Or don't select any to trade with the bank.");
+            if (selectedIntersections.size() > 1) {
+                messageTextView.setText("Select one port intersection, or clear selection for the bank.");
+                return;
             }
+            showTradeDialog();
             return;
         }
 
@@ -2086,6 +2059,115 @@ if(newGame) {
         if (this.state != null) receiveInfo(state);
         applyControlRailLayout();
     }// setAsGui() END
+
+    /**
+     * The original help topics stay in the XML as source text but are now
+     * presented as scrollable, screen-size-aware native Android dialogs.
+     */
+    private void showHelpTopicsDialog() {
+        final String[] topics = {
+                "Winning and scoring", "Starting a game", "Building",
+                "Development cards", "Trading", "The robber"
+        };
+        final int[] headings = {
+                R.id.winning_help_menu_title_text_view,
+                R.id.set_up_phase_help_menu_title_text_view,
+                R.id.building_help_menu_title_text_view,
+                R.id.development_card_help_menu_title_text_view,
+                R.id.trading_help_menu_title_text_view,
+                R.id.robber_help_menu_title_text_view
+        };
+        final int[] bodies = {
+                R.id.winning_help_menu_text,
+                R.id.set_up_phase_help_menu_text,
+                R.id.building_help_menu_text,
+                R.id.development_card_help_menu_text,
+                R.id.trading_help_menu_text,
+                R.id.robber_help_menu_text
+        };
+        new AlertDialog.Builder(myActivity)
+                .setTitle("How to play Catan")
+                .setItems(topics, (dialog, which) -> {
+                    TextView titleView = myActivity.findViewById(headings[which]);
+                    TextView bodyView = myActivity.findViewById(bodies[which]);
+                    CharSequence heading = titleView == null ? topics[which] : titleView.getText();
+                    CharSequence body = bodyView == null ? topics[which] : bodyView.getText();
+                    new AlertDialog.Builder(myActivity)
+                            .setTitle(heading)
+                            .setMessage(body)
+                            .setPositiveButton("Close", null)
+                            .show();
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    /**
+     * Spinners, labels and buttons sit inside a native, scrollable dialog.
+     * Android sizes it to the landscape window; selections still invoke the
+     * existing bank/port trading logic and engine-level validation.
+     */
+    private void showTradeDialog() {
+        if (myActivity == null) return;
+        final String[] resources = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
+        final boolean viaPort = selectedIntersections.size() == 1;
+
+        LinearLayout contents = new LinearLayout(myActivity);
+        contents.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (18 * myActivity.getResources().getDisplayMetrics().density);
+        contents.setPadding(pad, pad / 2, pad, pad / 2);
+
+        TextView explanation = new TextView(myActivity);
+        explanation.setText(viaPort
+                ? "Port trade: choose what to give and receive. Your selected settlement must own this port."
+                : "Bank trade: give 4 of one resource to receive 1 of another.");
+        explanation.setTextSize(15f);
+        contents.addView(explanation);
+
+        TextView giveLabel = new TextView(myActivity);
+        giveLabel.setText("You give");
+        giveLabel.setPadding(0, pad / 2, 0, 0);
+        contents.addView(giveLabel);
+        Spinner give = new Spinner(myActivity);
+        give.setAdapter(new ArrayAdapter<String>(myActivity,
+                android.R.layout.simple_spinner_dropdown_item, resources));
+        contents.addView(give);
+
+        TextView receiveLabel = new TextView(myActivity);
+        receiveLabel.setText("You receive");
+        receiveLabel.setPadding(0, pad / 2, 0, 0);
+        contents.addView(receiveLabel);
+        Spinner receive = new Spinner(myActivity);
+        receive.setAdapter(new ArrayAdapter<String>(myActivity,
+                android.R.layout.simple_spinner_dropdown_item, resources));
+        receive.setSelection(1);
+        contents.addView(receive);
+
+        ScrollView scrolling = new ScrollView(myActivity);
+        scrolling.setFillViewport(false);
+        scrolling.addView(contents);
+
+        new AlertDialog.Builder(myActivity)
+                .setTitle(viaPort ? "Trade with port" : "Trade with bank")
+                .setView(scrolling)
+                .setPositiveButton("Trade", (dialog, which) -> {
+                    int giving = give.getSelectedItemPosition();
+                    int receiving = receive.getSelectedItemPosition();
+                    boolean accepted = viaPort
+                            ? tryTradeWithPort(giving, receiving)
+                            : tryTradeWithBank(giving, receiving);
+                    if (accepted) {
+                        selectedIntersections.clear();
+                        tradeGiveSelection = -1;
+                        tradeReceiveSelection = -1;
+                    } else {
+                        Toast.makeText(myActivity, "Trade not available. Check the port and resources.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
 
     /**
      * The original controls remain functional. Only their visibility and
