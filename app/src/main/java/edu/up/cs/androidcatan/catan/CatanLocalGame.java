@@ -151,13 +151,10 @@ public class CatanLocalGame extends LocalGame {
             // update the setup phase
             if (state.isSetupPhase()) this.state.setSetupPhase(this.state.updateSetupPhase());
 
-            state.setLastSetupSettlementId(-1);
             state.setActionPhase(false); // set action phase to false
-            state.setFreeRoadsRemaining(0);
+            state.setFreeRoadsRemaining(0); // free roads expire at turn end
             state.setDevelopmentCardPlayedThisTurn(false);
             state.setCurrentSetupSettlement(-1);
-            state.setFreeRoadsRemaining(0); // unused Road Building placements expire at turn end
-            state.setDevelopmentCardPlayedThisTurn(false);
             state.getCurrentPlayer().setDevCardsBuiltThisTurn(new ArrayList<Integer>());
             Log.i(TAG, "makeMove: It is now " + state.getCurrentPlayerId() + "'s turn.");
             return true;
@@ -439,17 +436,6 @@ public class CatanLocalGame extends LocalGame {
      * @return a message that tells who has won the game, or null if the
      * game is not over
      */
-    // An action development card can be played only once per turn and never
-    // on the same turn it was purchased. Victory Point cards are different:
-    // they are secret points, rather than action cards.
-    private boolean canPlayActionCard(int cardId) {
-        return !state.isSetupPhase()
-                && !state.isRobberPhase()
-                && !state.hasPlayedDevelopmentCardThisTurn()
-                && state.getCurrentPlayer().getPlayableDevCards().contains(cardId);
-    }
-
-
     private int ownedRoads(int owner) {
         int count = 0;
         for (Road road : state.getBoard().getRoads()) {
