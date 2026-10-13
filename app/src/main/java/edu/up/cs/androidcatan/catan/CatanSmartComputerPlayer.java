@@ -130,11 +130,24 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
             if (!buildingsBuiltOnThisTurn.contains(1)) {
                 Log.i(TAG, "receiveInfo: Player has not built a settlement, will attempt now. playerNum=" + this.playerNum);
                 sleep(1000);
-                int randSettlementIntersection = random.nextInt(53);
-                // generate random intersection until we find a valid location to build our settlement
-                while (!(gs.getBoard().validBuildingLocation(this.playerNum, true, randSettlementIntersection) && checkIntersectionResource(randSettlementIntersection, gs) && checkSetupPhaseIntersection(randSettlementIntersection))) {
-                    Log.d(TAG, "receiveInfo: generating new building location" + " " + this.playerNum);
-                    randSettlementIntersection = random.nextInt(53);
+                // Evaluate every *legal* intersection rather than randomly choosing
+                // only from the small subset permitted by the old bot.
+                int randSettlementIntersection = -1;
+                double bestOpeningScore = Double.NEGATIVE_INFINITY;
+                for (int candidate = 0; candidate < gs.getBoard().getBuildings().length; candidate++) {
+                    if (!gs.getBoard().validBuildingLocation(this.playerNum, true, candidate)) {
+                        continue;
+                    }
+                    double score = CatanStrategy.scoreIntersection(gs, candidate, this.playerNum)
+                            + random.nextDouble() * 0.25;
+                    if (score > bestOpeningScore) {
+                        randSettlementIntersection = candidate;
+                        bestOpeningScore = score;
+                    }
+                }
+                if (randSettlementIntersection < 0) {
+                    Log.e(TAG, "No legal starting settlement found");
+                    return;
                 }
                 Log.e(TAG, "receiveInfo: exiting settlement look for " + this.playerNum);
 
@@ -153,23 +166,24 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
                 Log.d(TAG, "receiveInfo: intersectionsToChooseFrom: " + intersectionsToChooseFrom + " " + this.playerNum);
 
-                // choose a random intersection from those intersections
-                int randomRoadIntersection = random.nextInt(intersectionsToChooseFrom.size());
-                int count = 0;
-                sleep(1000);
-                // generate random intersection until we find a valid location to build our settlement
-                while (!gs.getBoard().validRoadPlacement(this.playerNum, gs.isSetupPhase(), lastSettlementIntersectionId, intersectionsToChooseFrom.get(randomRoadIntersection))) {
-                    if (count > 5) {
-                        Log.e(TAG, "receiveInfo: CANNOT PLACE ROAD" + " " + this.playerNum);
-                        break;
+                int bestRoadDestination = -1;
+                double bestRoadValue = Double.NEGATIVE_INFINITY;
+                for (Integer candidate : intersectionsToChooseFrom) {
+                    if (!gs.getBoard().validRoadPlacement(this.playerNum, true,
+                            lastSettlementIntersectionId, candidate)) continue;
+                    double value = CatanStrategy.scoreRoadDestination(gs, candidate, this.playerNum)
+                            + random.nextDouble() * 0.1;
+                    if (value > bestRoadValue) {
+                        bestRoadValue = value;
+                        bestRoadDestination = candidate;
                     }
-                    Log.e(TAG, "receiveInfo: generating new road intersection" + " " + this.playerNum);
-                    randomRoadIntersection = random.nextInt(intersectionsToChooseFrom.size());
-                    count++;
                 }
-                // send the game a build road action
-                Log.i(TAG, "receiveInfo: sending a CatanBuildRoadAction to the game." + " " + this.playerNum);
-                game.sendAction(new CatanBuildRoadAction(this, gs.isSetupPhase(), this.playerNum, lastSettlementIntersectionId, intersectionsToChooseFrom.get(randomRoadIntersection)));
+                if (bestRoadDestination < 0) {
+                    Log.e(TAG, "No legal opening road found");
+                    return;
+                }
+                game.sendAction(new CatanBuildRoadAction(this, true,
+                        this.playerNum, lastSettlementIntersectionId, bestRoadDestination));
                 buildingsBuiltOnThisTurn.add(0);
                 sleep(1000); // sleep
                 Log.i(TAG, "receiveInfo() returned: void");
@@ -335,42 +349,43 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
             /******Looks to build a settlement****/
             if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(Settlement.resourceCost)) {
-                Log.d(TAG, "receiveInfo: Valid amount of resources to building");
-                for (int n = 0; n < getPlayerRoadIntersection(getPlayerRoads(gs)).size(); n++) {
-
-                    //cycling through the amount, not the proper value at the intersection
-                    if (gs.getBoard().validBuildingLocation(this.playerNum, false, getPlayerRoadIntersection(getPlayerRoads(gs)).get(n))) {
-                        Log.d(TAG, "receiveInfo: validBuildingLocation for a settlement");
-                        game.sendAction(new CatanBuildSettlementAction(this, false, this.playerNum, getPlayerRoadIntersection(getPlayerRoads(gs)).get(n)));
-                        Log.d(TAG, "receiveInfo: CatanBuildSettlementAction sent");
-                        game.sendAction(new CatanEndTurnAction(this));
-                        sleep(2000);
-                        Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
-                        return;
+                int bestSite = -1;
+                double bestSiteScore = Double.NEGATIVE_INFINITY;
+                for (Integer candidate : getPlayerRoadIntersection(getPlayerRoads(gs))) {
+                    if (!gs.getBoard().validBuildingLocation(this.playerNum, false, candidate)) continue;
+                    double score = CatanStrategy.scoreIntersection(gs, candidate, this.playerNum);
+                    if (score > bestSiteScore) {
+                        bestSiteScore = score;
+                        bestSite = candidate;
                     }
+                }
+                if (bestSite >= 0) {
+                    game.sendAction(new CatanBuildSettlementAction(this, false, this.playerNum, bestSite));
+                    game.sendAction(new CatanEndTurnAction(this));
+                    sleep(2000);
+                    return;
                 }
             }
 
             /*****Looks to build a city from a settlement****/
-            Building building = null;
-            //Build a city if proper amount of resources
+            // Upgrade the settlement that doubles the most expected production.
             if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(City.resourceCost)) {
-                Log.d(TAG, "receiveInfo: Valid amount of resources to build city");
+                int bestCitySite = -1;
+                double bestCityScore = Double.NEGATIVE_INFINITY;
                 for (int n = 0; n < gs.getBoard().getBuildings().length; n++) {
-                    if (gs.getBoard().getBuildings()[n] == null) {
-                        Log.d(TAG, "receiveInfo: Nothing at this location on board");
-                    } else if (gs.getBoard().getBuildings()[n].getOwnerId() == this.playerNum) {
-                        Log.d(TAG, "receiveInfo: valid owner id");
-                        building = gs.getBoard().getBuildings()[n];
-                        if (building instanceof Settlement) {
-                            game.sendAction(new CatanBuildCityAction(this, false, this.playerNum, n));
-                            Log.d(TAG, "receiveInfo: CatanBuildCityAction sent");
-                            game.sendAction(new CatanEndTurnAction(this));
-                            sleep(2000);
-                            Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
-                            return;
-                        }
+                    Building building = gs.getBoard().getBuildings()[n];
+                    if (!(building instanceof Settlement) || building.getOwnerId() != this.playerNum) continue;
+                    double score = CatanStrategy.scoreIntersection(gs, n, this.playerNum);
+                    if (score > bestCityScore) {
+                        bestCityScore = score;
+                        bestCitySite = n;
                     }
+                }
+                if (bestCitySite >= 0) {
+                    game.sendAction(new CatanBuildCityAction(this, false, this.playerNum, bestCitySite));
+                    game.sendAction(new CatanEndTurnAction(this));
+                    sleep(2000);
+                    return;
                 }
             }
 
@@ -639,18 +654,12 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
     }
 
     private int playerLeastResource(CatanGameState gs) {
-        int minPosition = 999;
-
-        //Iterate through players and see who has the least resources
-        for (int n = 0; n < gs.getPlayerList().get(this.playerNum).getResourceCards().length; n++) {
-            if (gs.getPlayerList().get(this.playerNum).getResourceCards()[n] < minPosition) {
-                minPosition = n;
-            }
+        int[] cards = gs.getPlayerList().get(this.playerNum).getResourceCards();
+        int leastIndex = 0;
+        for (int i = 1; i < cards.length; i++) {
+            if (cards[i] < cards[leastIndex]) leastIndex = i;
         }
-        if (minPosition == 999) {
-            minPosition = 0;
-        }
-        return minPosition;
+        return leastIndex;
     }
 
     /**
