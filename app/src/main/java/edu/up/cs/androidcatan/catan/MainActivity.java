@@ -120,21 +120,35 @@ public class MainActivity extends GameMainActivity {
         if (!resumeSessionPending || !(launched instanceof CatanLocalGame)) return;
         resumeSessionPending = false;
         final CatanLocalGame resumed = (CatanLocalGame) launched;
-        new android.os.Handler(android.os.Looper.getMainLooper())
-                .postDelayed(new Runnable() {
-                    @Override public void run() {
-                        if (isFinishing() || isDestroyed()) return;
-                        if (resumed.isSessionReady()
-                                && findViewById(edu.up.cs.androidcatan.R.id.board) != null)
-                            return;
-                        new android.app.AlertDialog.Builder(MainActivity.this)
-                                .setTitle("Unable to finish restoring")
-                                .setMessage("The saved match is still safe, but the game "
-                                        + "did not reconnect all four players. "
-                                        + "Please close and reopen Catan, then try Continue again.")
-                                .setPositiveButton("OK", null)
-                                .show();
-                    }
-                }, 10000L);
+        final android.os.Handler watcher = new android.os.Handler(android.os.Looper.getMainLooper());
+        final long deadline = android.os.SystemClock.uptimeMillis() + 10000L;
+        watcher.postDelayed(new Runnable() {
+            @Override public void run() {
+                if (isFinishing() || isDestroyed()) return;
+                GamePlayer gui = getActiveGuiPlayer();
+                boolean boardDisplayed = gui instanceof CatanHumanPlayer
+                        && ((CatanHumanPlayer) gui).isInitialStateDisplayed();
+                if (resumed.isSessionReady() && boardDisplayed) {
+                    // Only now may the resumed game replace the last known-good save.
+                    resumed.confirmResumeDisplayed();
+                    return;
+                }
+                if (android.os.SystemClock.uptimeMillis() < deadline) {
+                    watcher.postDelayed(this, 250L);
+                    return;
+                }
+                String stage = resumed.describeStartup();
+                android.util.Log.e("CatanResume", "Incomplete restore: "
+                        + stage + ", boardDisplayed=" + boardDisplayed);
+                new android.app.AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Unable to finish restoring")
+                        .setMessage("Your original saved game has been kept. "
+                                + "Catan did not finish reconnecting the match. "
+                                + "Close and reopen the app to try again.\\n\\n"
+                                + "Diagnostic: " + stage + "; board=" + boardDisplayed)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+        }, 250L);
     }
 }
