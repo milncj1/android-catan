@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import edu.up.cs.androidcatan.R;
 import edu.up.cs.androidcatan.game.config.GameConfig;
 import edu.up.cs.androidcatan.game.config.GamePlayerType;
-import edu.up.cs.androidcatan.game.util.IPCoder;
 import edu.up.cs.androidcatan.game.util.MessageBox;
 
 /**
@@ -458,10 +457,10 @@ View.OnClickListener {
 		v.setOnClickListener(this);
 
 
-		String ipCode = IPCoder.encodeLocalIP();
-		String ipAddress = IPCoder.getLocalIpAddress();
+		// Offline-only personal app: no network IP lookup at startup.
+		// The old IP widget belongs to the original multiplayer framework.
 		TextView ipText = findViewById(R.id.ipCodeLabel);
-		ipText.setText(ipText.getText()+ipCode+" ("+ipAddress+") ");
+		if (ipText != null) ipText.setVisibility(View.GONE);
 	}// initStarterGui
 
 	@Override
