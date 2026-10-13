@@ -162,7 +162,11 @@ public class Board implements Serializable {
         for (Hexagon hexagon : b.hexagons) {
             this.hexagons.add(new Hexagon(hexagon));
         }
-        generatePorts(); // generate ports
+        // Copy the exact match layout! A game-state update must never
+        // reshuffle ports, even though a new game starts with random ports.
+        for (Port port : b.portList) {
+            this.portList.add(new Port(port));
+        }
     } // end Board deep copy constructor
 
     /* ----- validate building methods ----- */
@@ -1259,15 +1263,23 @@ public class Board implements Serializable {
      * Creates ports along the given intersection, and assigns them proper ge values
      */
     private void generatePorts() {
-        portList.add(new Port(25, 26, 3, 3)); //Ore
-        portList.add(new Port(29, 30, 2, 1)); //Grain
-        portList.add(new Port(32, 33, 3, -1)); //Anything
-        portList.add(new Port(35, 36, 2, 2)); //Lumber
-        portList.add(new Port(39, 40, 2, 0)); //Brick
-        portList.add(new Port(42, 43, 3, -1)); //anything
-        portList.add(new Port(45, 46, 3, -1)); //anything
-        portList.add(new Port(52, 53, 3, -1)); //anything
-        portList.add(new Port(49, 50, 2, 4));  //Wool
+        portList.clear();
+        // The coastal positions stay fixed. The nine port types are shuffled
+        // once for a new game: one 2:1 port per resource and four 3:1 ports.
+        int[][] coast = {
+                {25, 26}, {29, 30}, {32, 33},
+                {35, 36}, {39, 40}, {42, 43},
+                {45, 46}, {52, 53}, {49, 50}
+        };
+        ArrayList<Integer> tradeTypes = new ArrayList<>();
+        for (int i = 0; i < 5; i++) tradeTypes.add(i);
+        for (int i = 0; i < 4; i++) tradeTypes.add(-1);
+        Collections.shuffle(tradeTypes);
+        for (int i = 0; i < coast.length; i++) {
+            int resource = tradeTypes.get(i);
+            portList.add(new Port(coast[i][0], coast[i][1],
+                    resource < 0 ? 3 : 2, resource));
+        }
     }
 
     /* ----- generic getter methods ----- */
