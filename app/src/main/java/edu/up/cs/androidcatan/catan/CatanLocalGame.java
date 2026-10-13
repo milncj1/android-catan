@@ -92,6 +92,12 @@ public class CatanLocalGame extends LocalGame {
     }
 
     @Override protected void onMatchFinished() {
+        // Never discard the original snapshot for a resumed game that failed
+        // to reach the human display, even if CPUs reached the victory condition.
+        if (resumedFromSave && !restoredBoardDisplayed) {
+            Log.w(TAG, "Resumed game ended before GUI restoration; keeping original save");
+            return;
+        }
         if (autosaveContext != null) CatanSaveStore.clear(autosaveContext);
     }
 
