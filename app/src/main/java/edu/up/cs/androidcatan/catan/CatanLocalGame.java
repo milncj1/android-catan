@@ -47,6 +47,8 @@ public class CatanLocalGame extends LocalGame {
 
     private CatanGameState state;
     private GameAction lastAcceptedCandidate;
+    // Per-roll snapshots are transient and never added to saved-game data.
+    private int[][] lastRollHandsBefore;
     private static final String[] RESOURCE_NAMES = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
 
     private Context autosaveContext;
@@ -81,6 +83,7 @@ public class CatanLocalGame extends LocalGame {
 
     @Override protected void onAcceptedMove() {
         publishAcceptedMove(lastAcceptedCandidate);
+        lastRollHandsBefore = null;
         // Resumed CPUs may act before the UI is connected. Keep the original
         // snapshot intact until the human can see the board again.
         if (!resumedFromSave || restoredBoardDisplayed) persistMatch();
@@ -154,6 +157,26 @@ public class CatanLocalGame extends LocalGame {
                     + " = " + state.getCurrentDiceSum()
                     + (state.getCurrentDiceSum() == 7 ? " — robber activated" : "");
             roll = true;
+            if (state.getCurrentDiceSum() != 7 && lastRollHandsBefore != null) {
+                StringBuilder yields = new StringBuilder();
+                for (int p = 0; p < 4; p++) {
+                    StringBuilder gained = new StringBuilder();
+                    int[] now = state.getPlayerList().get(p).getResourceCards();
+                    for (int res = 0; res < 5; res++) {
+                        int delta = now[res] - lastRollHandsBefore[p][res];
+                        if (delta <= 0) continue;
+                        if (gained.length() > 0) gained.append(", ");
+                        gained.append("+").append(delta).append(" ").append(RESOURCE_NAMES[res]);
+                    }
+                    if (gained.length() > 0) {
+                        if (yields.length() > 0) yields.append("; ");
+                        yields.append(playerNames[p]).append(" ").append(gained);
+                    }
+                }
+                description += yields.length() > 0
+                        ? " — production: " + yields
+                        : " — no resources produced";
+            }
         } else if (action instanceof CatanBuildSettlementAction) {
             description = actor + " placed a settlement";
         } else if (action instanceof CatanBuildRoadAction) {
@@ -251,6 +274,14 @@ public class CatanLocalGame extends LocalGame {
     @Override
     protected synchronized boolean makeMove(GameAction action) {
         lastAcceptedCandidate = action;
+        lastRollHandsBefore = null;
+        if (action instanceof CatanRollDiceAction) {
+            lastRollHandsBefore = new int[state.getPlayerList().size()][5];
+            for (int p = 0; p < state.getPlayerList().size(); p++) {
+                int[] resources = state.getPlayerList().get(p).getResourceCards();
+                System.arraycopy(resources, 0, lastRollHandsBefore[p], 0, 5);
+            }
+        }
         Log.d(TAG, "makeMove() called with: action = [" + action + "]");
         Log.d(TAG, "makeMove: state: " + state.toString());
         /* --------------------------- Turn Actions --------------------------------------- */
