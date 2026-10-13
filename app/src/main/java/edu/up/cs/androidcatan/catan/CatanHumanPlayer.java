@@ -280,6 +280,12 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private GameMainActivity myActivity;  // the android activity that we are running
     public CatanGameState state = null; // game state
     private BoardSurfaceView boardSurfaceView;
+    private volatile boolean initialStateDisplayed;
+
+    /** True only once the initial game state has populated the board display. */
+    public boolean isInitialStateDisplayed() {
+        return initialStateDisplayed && boardSurfaceView != null && state != null;
+    }
     private boolean controlsCollapsed = false;
 
 
@@ -1728,6 +1734,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
 
         myActivity = activity; // remember the activity
+        initialStateDisplayed = false;
 
         activity.setContentView(R.layout.catan_main_activity); // Load the layout resource for our GUI
 
@@ -2296,6 +2303,7 @@ if(newGame) {
         this.boardSurfaceView.draw(boardSurfaceView.getCanvas());
 
         boardSurfaceView.invalidate();
+        initialStateDisplayed = true;
     } // drawGraphics END
 
     /**
