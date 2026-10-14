@@ -90,6 +90,33 @@
             android:letterSpacing="0.06"
             android:textSize="11sp"
             android:textColor="#FFF1CE89" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <Button
+                android:id="@+id/start_career_button"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:text="My Catan Career"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:background="@drawable/start_secondary_button"/>
+            <Button
+                android:id="@+id/start_experience_button"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:text="Settings"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:background="@drawable/start_secondary_button"/>
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Right side is a card; the player list scrolls separately from actions. -->
