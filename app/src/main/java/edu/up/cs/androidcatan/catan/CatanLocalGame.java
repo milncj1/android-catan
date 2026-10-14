@@ -65,6 +65,8 @@ public class CatanLocalGame extends LocalGame {
     private int[] autosaveTypes;
     private final boolean resumedFromSave;
     private boolean restoredBoardDisplayed;
+    private boolean appForeground = true;
+    private long lastActiveTick = -1L;
 
     /** Called before starting new/resumed match; never persists UI objects. */
     public void configureAutosave(Context context, int[] playerTypes) {
@@ -82,6 +84,7 @@ public class CatanLocalGame extends LocalGame {
 
     @Override protected void onMatchReady() {
         sessionReady = true;
+        lastActiveTick = android.os.SystemClock.elapsedRealtime();
         // Start a fresh turn diary only for a NEW match. Continue leaves it intact.
         if (!resumedFromSave) {
             CatanMatchHistory.clear(autosaveContext);
@@ -92,6 +95,7 @@ public class CatanLocalGame extends LocalGame {
     }
 
     @Override protected void onAcceptedMove() {
+        recordActiveTime();
         recordAcceptedStats(lastAcceptedCandidate);
         publishAcceptedMove(lastAcceptedCandidate);
         lastRollHandsBefore = null;
@@ -131,6 +135,37 @@ public class CatanLocalGame extends LocalGame {
         if (action instanceof CatanEndTurnAction) stats.recordRound(state);
     }
 
+    /** Active play clock: paused with the app, including when no moves occur. */
+    private void recordActiveTime() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (appForeground && lastActiveTick > 0 && now >= lastActiveTick) {
+            long remaining = now - lastActiveTick;
+            while (remaining > 0) {
+                long portion = Math.min(60_000L, remaining);
+                state.getMatchStats().addActiveMillis(portion);
+                remaining -= portion;
+            }
+        }
+        lastActiveTick = now;
+    }
+
+    public void onAppPaused() {
+        if (!sessionReady || state.getMatchStats().isCompleted()) return;
+        postToGameThread(() -> {
+            recordActiveTime();
+            appForeground = false;
+            persistMatch();
+        });
+    }
+
+    public void onAppResumed() {
+        if (!sessionReady) return;
+        postToGameThread(() -> {
+            lastActiveTick = android.os.SystemClock.elapsedRealtime();
+            appForeground = true;
+        });
+    }
+
     /** Called after the resumed board and score display have been populated. */
     public void confirmResumeDisplayed() {
         if (!resumedFromSave) return;
@@ -145,6 +180,7 @@ public class CatanLocalGame extends LocalGame {
     }
 
     @Override protected void onMatchFinished() {
+        recordActiveTime();
         // Never discard the original snapshot for a resumed game that failed
         // to reach the human display, even if CPUs reached the victory condition.
         if (resumedFromSave && !restoredBoardDisplayed) {
