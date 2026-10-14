@@ -23,17 +23,23 @@ final class CatanTradeAi {
 
     static Decision evaluate(CatanGameState game, int self, CatanAiDifficulty difficulty,
                              CatanTradeInfo proposal) {
-        CatanTradeResponsesInfo.Response result = CatanNegotiationAI.evaluate(
+        // Expert respects public victory threats without knowing private hands.
+        if (difficulty == CatanAiDifficulty.EXPERT
+                && game.getPlayerList().get(proposal.getProposerId())
+                        .getVictoryPoints() >= 9)
+            return new Decision(CatanTradeReplyActionStatus.DECLINE, null, null);
+
+        // Use the SAME goal-based valuation and independent personality in
+        // unsolicited offers, responses and counteroffers.
+        CatanTradeResponsesInfo.Response answer = CatanNegotiationAI.evaluate(
                 game, self, difficulty.playerType,
                 proposal.getGiving(), proposal.getReceiving());
-        int verdict = result.getVerdict() == CatanTradeResponsesInfo.ACCEPT
-                ? CatanTradeReplyActionStatus.ACCEPT
-                : result.getVerdict() == CatanTradeResponsesInfo.COUNTER
-                    ? CatanTradeReplyActionStatus.COUNTER
-                    : CatanTradeReplyActionStatus.DECLINE;
-        return new Decision(verdict,
-                verdict == CatanTradeReplyActionStatus.COUNTER ? result.getGive() : null,
-                verdict == CatanTradeReplyActionStatus.COUNTER ? result.getWant() : null);
+        if (answer.getVerdict() == CatanTradeResponsesInfo.ACCEPT)
+            return new Decision(CatanTradeReplyActionStatus.ACCEPT, null, null);
+        if (answer.getVerdict() == CatanTradeResponsesInfo.COUNTER)
+            return new Decision(CatanTradeReplyActionStatus.COUNTER,
+                    answer.getGive(), answer.getWant());
+        return new Decision(CatanTradeReplyActionStatus.DECLINE, null, null);
     }
 
     /** Route private trade requests on each CPU's own player thread. */
