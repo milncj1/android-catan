@@ -1,5 +1,10 @@
 package edu.up.cs.androidcatan.catan;
 
+import edu.up.cs.androidcatan.catan.actions.CatanTradeOfferAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeReplyAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeChooseAction;
+import edu.up.cs.androidcatan.game.Game;
+import edu.up.cs.androidcatan.game.GamePlayer;
 import edu.up.cs.androidcatan.catan.gamestate.DevelopmentCard;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.City;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Road;
@@ -61,6 +66,46 @@ final class CatanTradeAi {
         int[] counterReceive = toGive.clone();
         counterGive[desirable] += 1;
         return new Decision(CatanTradeReplyActionStatus.COUNTER, counterGive, counterReceive);
+    }
+
+    /** Route private trade requests on each CPU's own player thread. */
+    static void onTradeInfo(CatanTradeInfo info, CatanGameState lastSeen,
+                            GamePlayer computer, Game game, int playerId,
+                            CatanAiDifficulty difficulty) {
+        if (lastSeen == null || game == null) return;
+        if (info.getKind() == CatanTradeInfo.REQUEST) {
+            if (info.getProposerId() == playerId
+                    || lastSeen.getCurrentPlayerId() != info.getProposerId()) return;
+            Decision choice = evaluate(lastSeen, playerId, difficulty, info);
+            game.sendAction(new CatanTradeReplyAction(computer, info.getOfferId(),
+                    choice.response, choice.giving, choice.receiving));
+        } else if (info.getKind() == CatanTradeInfo.RESULTS
+                && info.getProposerId() == playerId) {
+            int best = -1;
+            int[] statuses = info.getStatus();
+            if (statuses != null) {
+                for (int i = 0; i < statuses.length; i++)
+                    if (statuses[i] == CatanTradeNegotiation.ACCEPTED) {
+                        best = i;
+                        break;
+                    }
+                if (best < 0) {
+                    int[][] counterGiving = info.getCounterGiving();
+                    int[][] counterReceiving = info.getCounterReceiving();
+                    for (int i = 0; i < statuses.length; i++) {
+                        if (statuses[i] != CatanTradeNegotiation.COUNTERED
+                                || counterGiving == null || counterReceiving == null
+                                || !CatanTradingRules.validBundle(counterGiving[i])
+                                || !CatanTradingRules.validBundle(counterReceiving[i])
+                                || !lastSeen.getPlayerList().get(playerId)
+                                        .hasResourceBundle(counterGiving[i])) continue;
+                        best = i;
+                        break;
+                    }
+                }
+            }
+            game.sendAction(new CatanTradeChooseAction(computer, info.getOfferId(), best));
+        }
     }
 
     private static double marginalValue(int[] hand, int resource) {
