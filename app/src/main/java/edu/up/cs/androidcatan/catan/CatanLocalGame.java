@@ -385,6 +385,16 @@ public class CatanLocalGame extends LocalGame {
 
         if (action instanceof CatanTradeOfferAction) {
             CatanTradeOfferAction offer = (CatanTradeOfferAction) action;
+            // Proactive CPU invitations are LIMITED and fairly rotated.
+            // Human-initiated offers remain unrestricted on the human's turn.
+            if (actingPlayer != 0) {
+                int[] targets = offer.getTargets();
+                if (targets == null || targets.length != 1 || targets[0] != 0
+                        || state.hasCpuOfferedThisTurn()
+                        || !state.getMarketState().mayComputerOffer(
+                                actingPlayer, state.getPlayerList().size()))
+                    return false;
+            }
             CatanTradeNegotiation proposed;
             try {
                 proposed = new CatanTradeNegotiation(++offerSequence, state,
@@ -394,6 +404,10 @@ public class CatanLocalGame extends LocalGame {
             }
             pendingTrade = proposed;
             state.setTradePending(true);
+            if (actingPlayer != 0) {
+                state.setCpuOfferedThisTurn(true);
+                state.getMarketState().recordProactiveOffer();
+            }
             for (int id = 0; id < players.length; id++)
                 if (proposed.waitingFor(id)) players[id].sendInfo(proposed.requestInfo());
             return true;
@@ -432,6 +446,8 @@ public class CatanLocalGame extends LocalGame {
                 return false;
             if (!state.isSetupPhase() && (!state.isActionPhase() || state.isRobberPhase())) return false;
             Log.d(TAG, "makeMove() Player " + state.getCurrentPlayerId() + " is ending their turn.");
+            // Each CPU can propose at most once during its own turn.
+            state.setCpuOfferedThisTurn(false);
 
             // A purchased development card becomes playable next turn.
             // Clear the cards bought by the player whose turn is ENDING,
