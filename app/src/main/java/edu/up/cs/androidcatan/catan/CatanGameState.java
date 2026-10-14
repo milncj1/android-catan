@@ -33,6 +33,10 @@ public class CatanGameState extends GameState {
     private ArrayList<Player> playerList = new ArrayList<>(); // list of player objects
     private ArrayList<Integer> developmentCards = new ArrayList<>(); // ArrayList of the development card in the deck
 
+    // Optional market data is nullable for Build 010 and earlier serialized saves.
+    // Never change CatanGameState.serialVersionUID.
+    private CatanMarketState marketState;
+
     private int currentPlayerId; // id of player who is the current playing player
     private int currentDiceSum; // the sum of the dice at this very moment
 
@@ -137,6 +141,8 @@ public class CatanGameState extends GameState {
         System.arraycopy(cgs.robberDiscardedResources, 0,
                 this.robberDiscardedResources, 0, this.robberDiscardedResources.length);
         this.developmentCards.addAll(cgs.getDevelopmentCards());
+        this.marketState = cgs.marketState == null ? null
+                : new CatanMarketState(cgs.marketState);
         this.currentPlayerId = cgs.currentPlayerId;
         this.setupPhaseTurnCounter = cgs.setupPhaseTurnCounter;
         this.currentSetupSettlement = cgs.currentSetupSettlement;
@@ -601,6 +607,17 @@ public class CatanGameState extends GameState {
 
     public void setCurrentDiceSum(int currentDiceSum) {
         this.currentDiceSum = currentDiceSum;
+    }
+
+    /** A null state means a legacy save with normal Catan trading. */
+    public CatanMarketState getMarketState() {
+        if (marketState == null) marketState = new CatanMarketState();
+        return marketState;
+    }
+
+    /** Called for a NEW match before saving or starting CPU turns. */
+    public void configureMarketEvents(boolean enabled) {
+        getMarketState().enable(enabled);
     }
 
     public int getCurrentPlayerId() {
