@@ -286,6 +286,15 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private Group tradeGroup = (Group) null;
     private Group robberDiscardGroup = (Group) null;
     private Group robberChooseHexGroup = (Group) null;
+
+    // Robber UI is transient; the authoritative CatanGameState stores progress
+    // across Continue Game. Do not serialize dialogs or a second game state.
+    private android.app.AlertDialog robberStageDialog;
+    private CatanRobberSteps.Step renderedRobberStage = CatanRobberSteps.Step.NONE;
+    private boolean robberActionPending;
+    private View robberFlowPanel;
+    private TextView robberFlowStatus;
+    private Button robberFlowMoveButton;
     private Group pickResourceGroup = (Group) null;
 
     //Music
@@ -1097,6 +1106,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
             HexagonGrid grid = boardSurfaceView.getGrid();
             if (grid == null) return;
+            // Robber tile picking must not accidentally snap to the nearest
+            // road junction, especially when zoomed near a hexagon edge.
+            if (CatanRobberSteps.current(state, playerNum)
+                    == CatanRobberSteps.Step.MOVE_TILE) {
+                if (!selectRobberHexAt(x, y, grid))
+                    messageTextView.setText("Tap inside a different hexagon.");
+                return;
+            }
             if (grid.getIntersections() == null) return;
             Log.d("TAG", "onLongClick: x = " + x + ", y = " + y); // x, y position
 
@@ -1183,6 +1200,123 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             }
         }
     }; // clickListener END
+
+    /** One clear, resumable robber flow. State changes come from the engine. */
+    private void refreshRobberFlow() {
+        if (myActivity == null || state == null || robberFlowPanel == null) return;
+        final CatanRobberSteps.Step now = CatanRobberSteps.current(state, playerNum);
+        myActivity.runOnUiThread(() -> {
+            if (myActivity == null || myActivity.isFinishing() || state == null) return;
+            if (now != renderedRobberStage) {
+                if (robberStageDialog != null) {
+                    robberStageDialog.dismiss();
+                    robberStageDialog = null;
+                }
+                robberActionPending = false;
+                renderedRobberStage = now;
+            }
+            // The original image-based robber controls are retained only for
+            // XML/game-save compatibility. They must never appear again.
+            if (robberDiscardGroup != null)
+                robberDiscardGroup.setVisibility(View.GONE);
+            if (robberChooseHexGroup != null)
+                robberChooseHexGroup.setVisibility(View.GONE);
+            if (now == CatanRobberSteps.Step.NONE) {
+                robberFlowPanel.setVisibility(View.GONE);
+                return;
+            }
+            if (now == CatanRobberSteps.Step.DISCARD) {
+                robberFlowPanel.setVisibility(View.GONE);
+                if (robberStageDialog == null && !robberActionPending) {
+                    int[] hand = state.getPlayerList().get(playerNum).getResourceCards();
+                    robberStageDialog = CatanRobberUi.discard(myActivity, hand, selected -> {
+                        if (robberActionPending || state == null
+                                || CatanRobberSteps.current(state, playerNum)
+                                        != CatanRobberSteps.Step.DISCARD) return;
+                        robberActionPending = true;
+                        game.sendAction(new CatanRobberDiscardAction(
+                                CatanHumanPlayer.this, playerNum, selected));
+                    });
+                }
+                return;
+            }
+            if (now == CatanRobberSteps.Step.WAIT_FOR_DISCARDS) {
+                robberFlowPanel.setVisibility(View.VISIBLE);
+                robberFlowMoveButton.setVisibility(View.GONE);
+                robberFlowStatus.setText("ROBBER  ·  Waiting for discards…");
+                return;
+            }
+            if (now == CatanRobberSteps.Step.MOVE_TILE) {
+                robberFlowPanel.setVisibility(View.VISIBLE);
+                robberFlowMoveButton.setVisibility(View.VISIBLE);
+                boolean valid = selectedHexagonId >= 0
+                        && selectedHexagonId < state.getBoard().getHexagons().size()
+                        && selectedHexagonId != state.getBoard().getRobber().getHexagonId();
+                robberFlowMoveButton.setEnabled(valid && !robberActionPending);
+                robberFlowStatus.setText(robberActionPending
+                        ? "ROBBER  ·  Moving…"
+                        : valid ? "ROBBER  ·  2/3  Selected hex " + (selectedHexagonId + 1)
+                        : "ROBBER  ·  2/3  Tap a different hexagon");
+                robberFlowMoveButton.setText(valid ? "Move robber here" : "Select hexagon first");
+                return;
+            }
+            if (now == CatanRobberSteps.Step.PICK_VICTIM) {
+                robberFlowPanel.setVisibility(View.GONE);
+                java.util.List<Integer> targets = CatanRobberSteps.victims(state, playerNum);
+                if (targets.isEmpty()) {
+                    if (!robberActionPending) {
+                        robberActionPending = true;
+                        CatanExperienceFeedback.notice(myActivity,
+                                "No opponents beside the robber. Continue playing.", false);
+                        game.sendAction(new CatanRobberStealAction(
+                                CatanHumanPlayer.this, playerNum, -1));
+                    }
+                    return;
+                }
+                if (robberStageDialog == null && !robberActionPending) {
+                    int[] handSizes = new int[state.getPlayerList().size()];
+                    for (int p = 0; p < handSizes.length; p++)
+                        handSizes[p] = state.getPlayerList().get(p)
+                                .getTotalResourceCardCount();
+                    robberStageDialog = CatanRobberUi.victims(myActivity,
+                            targets, getAllPlayerNames(), handSizes, target -> {
+                                if (robberActionPending || state == null
+                                        || CatanRobberSteps.current(state, playerNum)
+                                                != CatanRobberSteps.Step.PICK_VICTIM) return;
+                                robberActionPending = true;
+                                game.sendAction(new CatanRobberStealAction(
+                                        CatanHumanPlayer.this, playerNum, target));
+                            });
+                }
+            }
+        });
+    }
+
+    /** During Step 2 tile selection takes priority over junction snapping. */
+    private boolean selectRobberHexAt(float x, float y, HexagonGrid grid) {
+        if (grid == null || state == null || !state.allPlayersHaveDiscarded()) return false;
+        java.util.ArrayList<HexagonDrawable> visible = grid.getDrawingHexagons();
+        java.util.ArrayList<Hexagon> logical = state.getBoard().getHexagonListForDrawing();
+        for (int index = 0; index < Math.min(visible.size(), logical.size()); index++) {
+            if (CatanRobberSteps.containsHexPoint(
+                    x, y, visible.get(index).getHexagonPoints())) {
+                int hexId = logical.get(index).getHexagonId();
+                if (hexId == state.getBoard().getRobber().getHexagonId()) {
+                    messageTextView.setText("Choose another hexagon; the robber is already here.");
+                    return true;
+                }
+                selectedHexagonId = hexId;
+                selectedIntersections.clear();
+                grid.clearHighLightedIntersections();
+                grid.setHighlightedHexagon(hexId);
+                boardSurfaceView.invalidate();
+                messageTextView.setText("Robber destination selected. Tap Move robber here.");
+                refreshRobberFlow();
+                return true;
+            }
+        }
+        return false;
+    }
 
     /*--------------------------------------- Action Validation Methods ---------------------------------*/
 
@@ -2263,6 +2397,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             fitPopupOnScreen(pickResourceGroup);
             drawGraphics();
             showBoardProgress(previousState, next);
+            refreshRobberFlow();
             if (buildConfirmation != null) {
                 messageTextView.setText(buildConfirmation);
                 Toast.makeText(myActivity, buildConfirmation, Toast.LENGTH_SHORT).show();
@@ -2387,6 +2522,20 @@ if(newGame) {
         robberHexMessage = activity.findViewById(R.id.robber_choosehex_message);
         //robberHexMessage.setText(R.string.choose_robber_tile);
         robberChooseHexGroup = activity.findViewById(R.id.robber_choosehex_menu);
+        robberFlowPanel = activity.findViewById(R.id.robber_flow_panel);
+        robberFlowStatus = activity.findViewById(R.id.robber_flow_status);
+        robberFlowMoveButton = activity.findViewById(R.id.robber_flow_move_button);
+        if (robberFlowMoveButton != null) robberFlowMoveButton.setOnClickListener(v -> {
+            if (state == null || robberActionPending
+                    || CatanRobberSteps.current(state, playerNum)
+                            != CatanRobberSteps.Step.MOVE_TILE) return;
+            if (!tryMoveRobber(selectedHexagonId)) return;
+            robberActionPending = true;
+            robberFlowMoveButton.setEnabled(false);
+            robberFlowStatus.setText("Moving the robber…");
+            game.sendAction(new CatanRobberMoveAction(
+                    CatanHumanPlayer.this, playerNum, selectedHexagonId));
+        });
 
         robberBrickPlus.setOnClickListener(this);
         robberBrickMinus.setOnClickListener(this);
