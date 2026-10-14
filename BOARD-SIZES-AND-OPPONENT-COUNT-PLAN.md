@@ -56,3 +56,13 @@ Grand board/resource bag/harbours, and seven total players are explicitly custom
 - Expected counts checked independently: Classic 19 hex/54 vertices/72 edges/30 coast edges; Expanded 30/81/110/40; Grand 37/96/132/42.
 - Eleven static source requirements checked successfully. **No Gradle/JUnit tests or APK builds have yet been executed** for this feature; this is foundation only and should not be described as playable.
 - Still needed: tile resource distributions, port layout, rendering, real game rules, 2–7 player AI/scoreboard/turn setup, variable-count save compatibility, and new-game UI choices.
+
+## Build 009 delivered for device test — 14 October 2026
+- Owner explicitly authorised implementation, and one snapshot `apk-build/009-configurable-islands` was created at source commit `ac140440aa8ad8110776d3a62e3e978e78e1d52e`.
+- [GitHub Actions run 38531305808](https://github.com/milncj1/android-catan/actions/runs/38531305808), build number 12: first run **SUCCESS**, XML checks, JUnit unit tests (including 2, 3, 4, 6 and 7-player snake setup) and APK compilation all passed. No reruns.
+- `Catan_Build_009_Permanent_Signed.apk`: 27,237,971 bytes. SHA-256 `3520bb41d280513000edc375270ae5dd45717257dcfaabd0725ac09bb51c42db`.
+- `jarsigner -verify` returned success, all APK zip CRC checks passed, and certificate SHA-256 matches permanently signed Build 008 exactly: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`.
+- Expected Android package `edu.up.cs.androidcatan`, `versionCode=12` derived from GitHub run number (Build 008 versionCode 11). Original signing keystore/password temporarily materialised privately and deleted from working copy after signing. Authoritative secure originals remain in user Library.
+- Original save file `catan-current-match-v1.dat` and serialVersionUIDs preserved; snapshot validation now accepts 2–7 players and 19/30/37 tiles while retaining original classic save support.
+- UI provides choice of 19/30/37 tiles and 1–6 computer opponents; run a new match only after confirming existing saved game loads, because starting a new match replaces the unfinished match by design.
+- **Not yet installed or accepted on Samsung.** Build 007 remains confirmed-installed working baseline; Build 008 delivered but user has not explicitly confirmed it works. No merge into `master`.
