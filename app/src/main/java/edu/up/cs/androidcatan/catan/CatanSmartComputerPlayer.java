@@ -174,9 +174,9 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
         //If the player has not yet rolled yet AND it is this players turn, make them roll the dice
         if (!gs.isSetupPhase() && !gs.isActionPhase() && !gs.isRobberPhase() && gs.getCurrentPlayerId() == playerNum) {
-            sleep(300);
+            sleep(CatanExperienceSettings.pauseMillis(300));
             game.sendAction(new CatanRollDiceAction(this));
-            sleep(300);
+            sleep(CatanExperienceSettings.pauseMillis(300));
             return;
         }
         /*-------------------------------CPUs Robber Actions--------------------------------------*/
@@ -184,7 +184,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
         //Robber phase accessible for any turn, due to them possibly needing to discard
         if (gs.isRobberPhase()) {
             Log.i(TAG, "receiveInfo: Computer has reached the Robber Phase");
-            sleep(500);
+            sleep(CatanExperienceSettings.pauseMillis(500));
             /*--------------------Discard Phase--------------------*/
 
             //1. Check if this player has discarded
@@ -275,7 +275,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                             }
                         }
                     }
-                    sleep(250);
+                    sleep(CatanExperienceSettings.pauseMillis(250));
                     game.sendAction(new CatanRobberMoveAction(this, playerNum, hexId));
                     return;
 
@@ -284,7 +284,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 /*----------------Steal Resource Phase--------------*/
 
                 //11. Now Steal from the selected intersection
-                sleep(250);
+                sleep(CatanExperienceSettings.pauseMillis(250));
                 if (difficulty.looksAhead())
                     playerWithMostVPs = gs.getPlayerWithMostVPsExcludingCurrentPlayer(playerNum);
                 int victim = -1;
@@ -299,7 +299,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     }
                 }
                 game.sendAction(new CatanRobberStealAction(this, playerNum, victim));
-                sleep(500);
+                sleep(CatanExperienceSettings.pauseMillis(500));
                 return;
             }//End of Robber Phases after Discard phase
         }//End of Robber Phase
@@ -319,7 +319,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 return;
             }
 
-            sleep(200);
+            sleep(CatanExperienceSettings.pauseMillis(200));
 
             // A played Road Building card grants two free road placements.
             // Place them before considering any paid action or ending the turn.
@@ -395,7 +395,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     // Advanced players can build again if they still have resources.
                     // The authoritative game callback decides what is legal next.
                     if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
-                    sleep(350);
+                    sleep(CatanExperienceSettings.pauseMillis(350));
                     return;
                 }
             }
@@ -417,7 +417,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 if (bestCitySite >= 0) {
                     game.sendAction(new CatanBuildCityAction(this, false, this.playerNum, bestCitySite));
                     if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
-                    sleep(350);
+                    sleep(CatanExperienceSettings.pauseMillis(350));
                     return;
                 }
             }
@@ -437,7 +437,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                         game.sendAction(new CatanUseKnightCardAction(this));
                         Log.d(TAG, "receiveInfo: CatanUseKnightCardAction sent");
                         game.sendAction(new CatanEndTurnAction(this));
-                        sleep(350);
+                        sleep(CatanExperienceSettings.pauseMillis(350));
                         Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
@@ -469,7 +469,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                         game.sendAction(new CatanUseMonopolyCardAction(this, difficulty.looksAhead()
                                 ? mostProductiveOpponentResource(gs) : playerLeastResource(gs))); //change chosenResource
                         game.sendAction(new CatanEndTurnAction(this));
-                        sleep(350);
+                        sleep(CatanExperienceSettings.pauseMillis(350));
                         Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
@@ -490,7 +490,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 game.sendAction(new CatanBuyDevCardAction(this));
                 Log.d(TAG, "receiveInfo: CatanBuyDevCardAction sent");
                 if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
-                sleep(350);
+                sleep(CatanExperienceSettings.pauseMillis(350));
                 return;
             }
 
@@ -513,7 +513,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
             //End turn if no other action can be taken
             game.sendAction(new CatanEndTurnAction(this));
             Log.d(TAG, "receiveInfo: CatanEndTurnAction sent: Nothing was built");
-            sleep(350);
+            sleep(CatanExperienceSettings.pauseMillis(350));
             return;
             //not setup phase if statement END
         }
