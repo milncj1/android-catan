@@ -445,6 +445,22 @@
         app:layout_constraintTop_toTopOf="@+id/hud_toggle"
         app:layout_constraintEnd_toStartOf="@+id/hud_toggle" />
 
+    <!-- Always-available route home. Unlike the old Help/Menu button this
+         safely saves the current match before opening the start screen. -->
+    <Button
+        android:id="@+id/match_main_menu_button"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="98dp"
+        android:layout_height="34dp"
+        android:layout_marginEnd="4dp"
+        android:background="@drawable/sidebar_button"
+        android:text="Main Menu"
+        android:textColor="#FFF8F2E1"
+        android:textSize="11sp"
+        android:textAllCaps="false"
+        app:layout_constraintTop_toTopOf="@+id/board_reset_view"
+        app:layout_constraintEnd_toStartOf="@+id/board_reset_view" />
+
     <!-- Four scores on a parchment-sea overlay instead of a black panel. -->
     <View
         android:id="@+id/score_panel"
@@ -715,7 +731,7 @@
         android:layout_height="37dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:text="@string/menu"
+        android:text="Help"
         android:textAlignment="center"
         app:layout_constraintBottom_toTopOf="@+id/bottom_buildmenu"
         app:layout_constraintEnd_toStartOf="@+id/guideline_right_sidebar"
