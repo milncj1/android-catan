@@ -133,6 +133,39 @@ public final class CatanNegotiationAI {
         return new int[][] {give, want};
     }
 
+    /** Choose another CPU using public production, never its hidden hand. */
+    public static int bestComputerTradingPartner(CatanGameState game,
+                                                 int self, int resourceNeeded) {
+        int players = game.getPlayerList().size();
+        if (players < 3 || resourceNeeded < 0 || resourceNeeded > 4) return -1;
+        int[] pips = {0, 0, 1, 2, 3, 4, 5, 0, 5, 4, 3, 2, 1};
+        int best = -1;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (int cpu = 1; cpu < players; cpu++) {
+            if (cpu == self) continue;
+            double score = 0;
+            for (int vertex = 0; vertex < game.getBoard().getBuildings().length;
+                    vertex++) {
+                edu.up.cs.androidcatan.catan.gamestate.buildings.Building house =
+                        game.getBoard().getBuildings()[vertex];
+                if (house == null || house.getOwnerId() != cpu) continue;
+                for (Integer hexId : game.getBoard().getIntToHexIdMap().get(vertex)) {
+                    edu.up.cs.androidcatan.catan.gamestate.Hexagon hex =
+                            game.getBoard().getHexagonFromId(hexId);
+                    if (hex.getResourceId() == resourceNeeded
+                            && hex.getChitValue() >= 0 && hex.getChitValue() < pips.length)
+                        score += pips[hex.getChitValue()]
+                                * (house instanceof City ? 2 : 1);
+                }
+            }
+            // Avoid handing the win to an opponent based on public points.
+            if (game.getPlayerList().get(cpu).getVictoryPoints() >= 9) score -= 30;
+            score += ((cpu + game.getMarketState().getCompletedRounds()) % 5) * .01;
+            if (score > bestScore) { bestScore = score; best = cpu; }
+        }
+        return best;
+    }
+
     /** A single CPU reply to a human's counteroffer while CPU remains active. */
     public static boolean acceptsCounterOnOwnTurn(CatanGameState game, int cpuId,
             int difficultyType, int[] cpuGives, int[] cpuReceives) {
