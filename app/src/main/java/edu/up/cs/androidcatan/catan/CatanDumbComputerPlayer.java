@@ -141,16 +141,6 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
         // illegal road or loops on missing options.
         if (!gs.isSetupPhase() && gs.isActionPhase()
                 && gs.getCurrentPlayerId() == playerNum && !gs.isRobberPhase()) {
-            if (!gs.hasCpuOfferedThisTurn()
-                    && gs.getMarketState().mayComputerOffer(
-                            playerNum, gs.getPlayerList().size())) {
-                int[][] proposal = CatanNegotiationAI.proposeOnOwnTurn(gs, playerNum);
-                if (proposal != null) {
-                    game.sendAction(new CatanTradeOfferAction(this,
-                            new int[]{0}, proposal[0], proposal[1]));
-                    return;
-                }
-            }
             playEasyTurn(gs, random);
             return;
         }
