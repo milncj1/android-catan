@@ -273,6 +273,15 @@ public final class CatanCareerUi {
                 selected.add(match);
             }
             int wins = 0, streak = 0, best = 0;
+            long totalPlayMillis = 0L, fastestWin = Long.MAX_VALUE;
+            int mostTrades = 0, highestScore = 0;
+            for (CatanCareerRecord match : selected) {
+                totalPlayMillis += match.activeMillis;
+                mostTrades = Math.max(mostTrades, match.playerTrades()[0]);
+                highestScore = Math.max(highestScore, match.finalScores()[0]);
+                if (match.winner == 0 && match.activeMillis > 0)
+                    fastestWin = Math.min(fastestWin, match.activeMillis);
+            }
             ArrayList<CatanCareerRecord> order = new ArrayList<>(selected);
             Collections.sort(order, (x, y) -> Long.compare(x.finishedAt, y.finishedAt));
             for (CatanCareerRecord match : order) {
@@ -283,6 +292,14 @@ public final class CatanCareerUi {
                     + (selected.isEmpty() ? "0" : String.format(Locale.UK, "%.1f",
                     (100.0 * wins) / selected.size())) + "% win rate");
             line(a, summary, "Best streak: " + best + " · Current streak: " + streak);
+            if (!selected.isEmpty()) {
+                line(a, summary, "Average active match: "
+                        + duration(totalPlayMillis / selected.size())
+                        + " · Fastest victory: "
+                        + (fastestWin == Long.MAX_VALUE ? "—" : duration(fastestWin)));
+                line(a, summary, "Most trades in one game: " + mostTrades
+                        + " · Highest finishing score: " + highestScore + " VP");
+            }
             if (selected.isEmpty()) {
                 line(a, history, "No completed matches for these filters yet.");
                 return;
