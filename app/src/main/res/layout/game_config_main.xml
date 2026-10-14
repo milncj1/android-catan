@@ -179,6 +179,18 @@
             android:textSize="10sp"
             android:textColor="#FF655B46"
             android:layout_marginBottom="5dp"/>
+        <!-- A single compact option, in the existing New Game card. -->
+        <Switch
+            android:id="@+id/new_game_market_events"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="34dp"
+            android:gravity="center_vertical"
+            android:text="SURPRISE MARKET EVENTS"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#FF254B3F"
+            android:checked="true" />
         <TextView android:id="@+id/new_game_island_hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
