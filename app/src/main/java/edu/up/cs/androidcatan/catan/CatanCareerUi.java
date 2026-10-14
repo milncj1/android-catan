@@ -257,7 +257,8 @@ public final class CatanCareerUi {
         title(a, root, "Completed matches");
         root.addView(history);
         final int[] showing = {0};
-        Runnable refresh = () -> {
+        final Runnable[] refresh = new Runnable[1];
+        refresh[0] = () -> {
             summary.removeAllViews();
             history.removeAllViews();
             ArrayList<CatanCareerRecord> selected = new ArrayList<>();
@@ -309,7 +310,7 @@ public final class CatanCareerUi {
                                                 try {
                                                     CatanCareerStore.delete(a, match.id);
                                                     all.remove(match);
-                                                    refresh.run();
+                                                    refresh[0].run();
                                                 } catch (IOException error) {
                                                     new AlertDialog.Builder(a)
                                                             .setMessage(error.getMessage())
@@ -322,18 +323,18 @@ public final class CatanCareerUi {
                 Button more = new Button(a);
                 more.setText("Show older matches");
                 history.addView(more);
-                more.setOnClickListener(v -> { showing[0] += 25; refresh.run(); });
+                more.setOnClickListener(v -> { showing[0] += 25; refresh[0].run(); });
             }
         };
         AdapterView.OnItemSelectedListener changed = new AdapterView.OnItemSelectedListener() {
             public void onNothingSelected(AdapterView<?> parent) { }
             public void onItemSelected(AdapterView<?> parent, android.view.View view,
-                    int position, long id) { showing[0] = 0; refresh.run(); }
+                    int position, long id) { showing[0] = 0; refresh[0].run(); }
         };
         level.setOnItemSelectedListener(changed);
         board.setOnItemSelectedListener(changed);
         rivals.setOnItemSelectedListener(changed);
-        refresh.run();
+        refresh[0].run();
         dialog(a, "My Catan Career", root);
     }
 }
