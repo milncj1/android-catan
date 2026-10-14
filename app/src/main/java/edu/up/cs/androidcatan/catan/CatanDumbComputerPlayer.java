@@ -16,7 +16,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberMoveAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanBuyDevCardAction;
-import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseMonopolyCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
@@ -291,16 +291,23 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
         }
         int[] hand = me.getResourceCards();
         int spare = -1, missing = -1;
+        int mostSpare = -1;
         for (int resource = 0; resource < 5; resource++) {
-            if (hand[resource] >= 4 && (spare < 0 || hand[resource] > hand[spare]))
-                spare = resource;
-            if (gs.getBankResourceCount(resource) > 0
-                    && (missing < 0 || hand[resource] < hand[missing]))
-                missing = resource;
+            for (int requested = 0; requested < 5; requested++) {
+                int rate = CatanTradingRules.bestRate(gs, playerNum,
+                        resource, requested);
+                if (rate <= 0 || hand[resource] < rate) continue;
+                int surplus = hand[resource] - rate;
+                if (surplus > mostSpare) {
+                    mostSpare = surplus;
+                    spare = resource;
+                    missing = requested;
+                }
+            }
         }
-        if (legal.isEmpty() && spare >= 0 && missing >= 0 && spare != missing
+        if (legal.isEmpty() && spare >= 0 && missing >= 0
                 && random.nextInt(2) == 0) {
-            game.sendAction(new CatanTradeWithBankAction(this, spare, missing));
+            game.sendAction(new CatanTradeWithAutoBankAction(this, spare, missing));
         }
         game.sendAction(new CatanEndTurnAction(this));
     }
