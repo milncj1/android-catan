@@ -2658,6 +2658,8 @@ if(newGame) {
         LinearLayout playersPanel = new LinearLayout(myActivity);
         playersPanel.setOrientation(LinearLayout.VERTICAL);
         panels.addView(playersPanel);
+        final TextView[] offerDisplays = new TextView[5];
+        final TextView[] wantDisplays = new TextView[5];
         TextView headings = new TextView(myActivity);
         headings.setText("RESOURCE                 YOU GIVE                     YOU WANT");
         headings.setTextSize(11f);
@@ -2673,8 +2675,8 @@ if(newGame) {
                     .get(playerNum).getResourceCards()[r] + ")");
             title.setTextSize(12f);
             line.addView(title, new LinearLayout.LayoutParams(0, -2, 1.5f));
-            addTradeCounter(line, offer, r, true, pad);
-            addTradeCounter(line, want, r, false, pad);
+            offerDisplays[r] = addTradeCounter(line, offer, r, true, pad);
+            wantDisplays[r] = addTradeCounter(line, want, r, false, pad);
             playersPanel.addView(line);
         }
         TextView help = new TextView(myActivity);
@@ -2682,6 +2684,27 @@ if(newGame) {
         help.setTextSize(12f);
         help.setPadding(0, pad, 0, pad / 2);
         playersPanel.addView(help);
+        Button suggest = new Button(myActivity);
+        suggest.setText("Suggest a useful trade");
+        suggest.setAllCaps(false);
+        suggest.setOnClickListener(v -> {
+            int[][] suggestion = CatanNegotiationAI.proposeOnOwnTurn(state, playerNum);
+            if (suggestion == null) {
+                Toast.makeText(myActivity,
+                        "No useful trade suggestion from your current cards.",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+            for (int r = 0; r < 5; r++) {
+                offer[r] = suggestion[0][r];
+                want[r] = suggestion[1][r];
+                offerDisplays[r].setText(String.valueOf(offer[r]));
+                wantDisplays[r].setText(String.valueOf(want[r]));
+            }
+            help.setText("Suggested from your next possible build. "
+                    + "You can adjust it before sending; acceptance is not guaranteed.");
+        });
+        playersPanel.addView(suggest);
 
         ArrayList<String> targets = new ArrayList<>();
         ArrayList<Integer> targetIds = new ArrayList<>();
@@ -2834,7 +2857,7 @@ if(newGame) {
         dialog.show();
     }
 
-    private void addTradeCounter(LinearLayout row, int[] quantities, int resource,
+    private TextView addTradeCounter(LinearLayout row, int[] quantities, int resource,
                                  boolean spending, int pad) {
         LinearLayout control = new LinearLayout(myActivity);
         control.setOrientation(LinearLayout.HORIZONTAL);
@@ -2866,6 +2889,7 @@ if(newGame) {
             count.setText(String.valueOf(quantities[resource]));
         });
         row.addView(control, new LinearLayout.LayoutParams(0, -2, 2f));
+        return count;
     }
 
     private static String tradeBundleDescription(int[] cards) {
