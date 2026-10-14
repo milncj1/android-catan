@@ -68,6 +68,15 @@ public final class CatanExperienceFeedback {
             if (activity.isFinishing()) return;
             final Object token = new Object();
             display.setTag(token);
+            display.setContentDescription("Dice rolling. Tap to show the result now.");
+            display.setOnClickListener(v -> {
+                if (display.getTag() == token) {
+                    display.setTag(null);
+                    display.setText(result);
+                    display.setContentDescription(result);
+                    display.setOnClickListener(null);
+                }
+            });
             final int duration = CatanExperienceSettings.animationMillis(activity, 650);
             final String[] faces = {"⚃ ⚅", "⚁ ⚄", "⚂ ⚀"};
             Handler handler = new Handler(Looper.getMainLooper());
@@ -80,6 +89,8 @@ public final class CatanExperienceFeedback {
             handler.postDelayed(() -> {
                 if (display.getTag() == token) {
                     display.setText(result);
+                    display.setContentDescription(result);
+                    display.setOnClickListener(null);
                     pulse(activity, display, 220);
                 }
             }, duration);
