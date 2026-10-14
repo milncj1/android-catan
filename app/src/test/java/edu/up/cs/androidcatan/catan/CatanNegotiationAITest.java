@@ -24,6 +24,7 @@ public class CatanNegotiationAITest {
     @Test public void easyCanAcceptButExpertCanCounterSameDeal() {
         CatanGameState state = game();
         state.getPlayerList().get(1).addResourceCard(3, 1);
+        state.getPlayerList().get(1).addResourceCard(0, 2); // brick is less scarce to this CPU
         int[] brick = {1, 0, 0, 0, 0};
         int[] ore = {0, 0, 0, 1, 0};
         CatanTradeResponsesInfo.Response easy =
