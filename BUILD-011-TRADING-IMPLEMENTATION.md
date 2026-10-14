@@ -55,3 +55,12 @@ Status: **Development in progress — source not yet compiled or phone-tested. N
 - Added unit tests that explicitly protect card totals and reject invalid proposals/counters. Tests are authored, not yet rerun for these new commits.
 - Prevented Android Back/outside dismissal on the final trade confirmation from stranding an open comparison negotiation. Players must finish or return to offers.
 - Build 010 remains owner-confirmed; Build 011 is not yet owner-accepted on device.
+
+
+## Updated owner test APK — 14 October 2026, QA trade guards
+- Single additional snapshot `apk-build/011-qa-trading-guard` from development commit `257d6dfcedc0612939c85f12a95e9f35aa405caf`.
+- GitHub Actions [run 38560580205](https://github.com/milncj1/android-catan/actions/runs/38560580205), **completed successfully**: Android XML validation, all JVM tests and `:app:assembleDebug`.
+- Signed outside GitHub with the owner's same permanent PKCS#12 key. Signed APK `Catan_Build_011_QA_Permanent_Signed.apk`, **27,268,187 bytes**, SHA256 `f621060780cdf0eb1dcefe6a9e58c69becb11a184df1c55104b72427b4e4cd79`. Signature verified with `jarsigner`; ZIP CRC/integrity verified.
+- Signature certificate SHA256 `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`, matches prior Build 010 APK exactly. Package remains an upgrade, **not an uninstall**.
+- Includes additional rules protection against offers/counters requesting and giving the SAME resource type, plus a confirmation dialog that cannot be dismissed accidentally, avoiding stuck negotiations.
+- This is a **test APK**, not an owner-approved stable release. Still needs on-device confirmation of existing saves, full trade interactions, market timings, and screen sizing. Do not merge to master.
