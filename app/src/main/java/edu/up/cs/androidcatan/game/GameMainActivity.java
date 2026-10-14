@@ -604,20 +604,46 @@ View.OnClickListener {
 	private String startGame() {
         onNewMatchRequested();
 		GameConfig finalConfig = scrapeData();
-		if (!finalConfig.isLocal() || finalConfig.getNumPlayers() != 4)
-			return "This offline game needs you and three computer players.";
+		if (!finalConfig.isLocal() || finalConfig.getNumPlayers() < 2
+                || finalConfig.getNumPlayers() > 7)
+			return "Choose between 1 and 6 computer opponents.";
 		GamePlayerType[] options = finalConfig.getAvailTypes();
 		// Stop configurations without a human GUI from showing the original
 		// blank No GUI screen. Keep the Easy/Smart computer choices available.
 		if (finalConfig.getSelType(0) != options[0])
 			return "Choose Local Human Player for the first player (you).";
-		for (int i = 1; i < 4; i++) {
+		for (int i = 1; i < finalConfig.getNumPlayers(); i++) {
 			if (finalConfig.getSelType(i) != options[1]
 					&& finalConfig.getSelType(i) != options[2])
-				return "Players 2–4 must be computer opponents.";
+				return "Every additional player must be a computer opponent.";
 		}
 		return launchGame(finalConfig);
 	}
+
+    /** New offline options control the same existing per-player setup rows. */
+    protected final void configureComputerOpponentRows(int opponents) {
+        if (opponents < 1 || opponents > 6) return;
+        int total = opponents + 1;
+        while (tableRows.size() < total) {
+            if (addPlayer() == null) break;
+        }
+        while (tableRows.size() > total) {
+            TableRow row = tableRows.get(tableRows.size() - 1);
+            removePlayer(row);
+        }
+        for (int i = 1; i < tableRows.size(); i++) {
+            TableRow row = tableRows.get(i);
+            Spinner type = row.findViewById(R.id.playerTypeSpinner);
+            EditText name = row.findViewById(R.id.playerNameEditText);
+            type.setSelection(2);
+            name.setText("Computer " + i);
+        }
+        if (playerTable != null) playerTable.invalidate();
+    }
+
+    protected final int currentComputerOpponentRows() {
+        return Math.max(1, Math.min(6, tableRows.size() - 1));
+    }
 
 	/**
 	 * removePlayer
