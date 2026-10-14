@@ -311,6 +311,10 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     }
     private boolean controlsCollapsed = false;
     private boolean hudExpanded = false;
+    // In-memory quick repeat; a new match never inherits an old draft.
+    private int[] previousPlayerTradeGive;
+    private int[] previousPlayerTradeWant;
+
 
 
 
@@ -2726,6 +2730,21 @@ if(newGame) {
                     + "You can adjust it before sending; acceptance is not guaranteed.");
         });
         playersPanel.addView(suggest);
+        if (previousPlayerTradeGive != null && previousPlayerTradeWant != null) {
+            Button repeat = new Button(myActivity);
+            repeat.setText("Repeat last offer");
+            repeat.setAllCaps(false);
+            repeat.setOnClickListener(v -> {
+                for (int r = 0; r < 5; r++) {
+                    offer[r] = previousPlayerTradeGive[r];
+                    want[r] = previousPlayerTradeWant[r];
+                    offerDisplays[r].setText(String.valueOf(offer[r]));
+                    wantDisplays[r].setText(String.valueOf(want[r]));
+                }
+                help.setText("Previous offer loaded. Check your current hand before sending.");
+            });
+            playersPanel.addView(repeat);
+        }
 
         ArrayList<String> targets = new ArrayList<>();
         ArrayList<Integer> targetIds = new ArrayList<>();
@@ -2858,6 +2877,8 @@ if(newGame) {
                         for (int id = 0; id < state.getPlayerList().size(); id++)
                             if (id != playerNum) invited[count++] = id;
                     }
+                    previousPlayerTradeGive = offer.clone();
+                    previousPlayerTradeWant = want.clone();
                     game.sendAction(new CatanTradeOfferAction(this, invited, offer, want));
                 } else {
                     int giving = give.getSelectedItemPosition();
