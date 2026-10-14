@@ -41,6 +41,23 @@ public final class CatanRobberSteps {
         return sum;
     }
 
+    /** True polygon test; selecting a robber hex must not snap to its junctions. */
+    public static boolean containsHexPoint(float x, float y, int[][] vertices) {
+        if (vertices == null || vertices.length < 3) return false;
+        boolean inside = false;
+        for (int i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+            if (vertices[i] == null || vertices[j] == null
+                    || vertices[i].length < 2 || vertices[j].length < 2)
+                return false;
+            float xi = vertices[i][0], yi = vertices[i][1];
+            float xj = vertices[j][0], yj = vertices[j][1];
+            if ((yi > y) != (yj > y)
+                    && x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+                inside = !inside;
+        }
+        return inside;
+    }
+
     public static boolean discardReady(int[] selected, int[] available, int required) {
         if (available == null || available.length != 5
                 || selectedTotal(selected) != required) return false;
