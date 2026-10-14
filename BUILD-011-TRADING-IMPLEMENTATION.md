@@ -64,3 +64,15 @@ Status: **Development in progress — source not yet compiled or phone-tested. N
 - Signature certificate SHA256 `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`, matches prior Build 010 APK exactly. Package remains an upgrade, **not an uninstall**.
 - Includes additional rules protection against offers/counters requesting and giving the SAME resource type, plus a confirmation dialog that cannot be dismissed accidentally, avoiding stuck negotiations.
 - This is a **test APK**, not an owner-approved stable release. Still needs on-device confirmation of existing saves, full trade interactions, market timings, and screen sizing. Do not merge to master.
+
+
+## Build 011 QA3 — 14 October 2026 (current test candidate)
+- Development branch: `dev/build-011-trading`; source commit `e21983a4097eac7b8cec3c16fc4d3c22522e19a8`.
+- Made Market Event announcement Toast dispatch explicitly on Android UI thread, eliminating a possible background-thread display issue.
+- Bound the full five-resource human counteroffer dialog to 88% width and 86% height in landscape, retaining scrolling so Send/Decline controls stay accessible.
+- Added `CatanMarketRulesRegressionTest`: six new JUnit tests for Market Day once-per-player discounts; Merchant Caravan's give-side 2:1; bank-only Merchant Shortage; Harbour Festival ownership; no consecutive shortages; and classic mode without Market Events.
+- Owner-approved validation snapshot `apk-build/011-qa-3-regressions` triggered a SINGLE GitHub Actions run: [38566014695](https://github.com/milncj1/android-catan/actions/runs/38566014695) — **SUCCESS**. Android XML validation, local JVM test suite, Android assembleDebug passed.
+- Downloaded CI artifact `catan-build-21-for-permanent-signing`. Signed it locally using the ORIGINAL permanent PKCS#12 key, no keys or passwords uploaded to GitHub. Verified JAR signature and ZIP CRC.
+- QA3 APK `Catan_Build_011_QA3_Permanent_Signed.apk`, 27,269,610 bytes, SHA256 `a678432b47c74cd42482637a74508811c0fa0ed62763117afcb5e0d7eb38cb86`, package `edu.up.cs.androidcatan`, versionCode `21`, versionName `1.2-preview`.
+- Signing certificate SHA256 exactly unchanged: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`. Existing installation can be upgraded WITHOUT uninstalling. Keep the last owner-confirmed stable Build 010 and its saved state intact.
+- **Still awaiting owner phone test**: loading existing saves, player-vs-CPU trades, selected broadcast acceptance, counteroffers, proactive CPU offers and decline/mute, all five market events, small-screen landscape fit. Do NOT merge to `master` or label as stable until owner confirms.
