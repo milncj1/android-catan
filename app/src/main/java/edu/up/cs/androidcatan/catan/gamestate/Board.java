@@ -871,6 +871,8 @@ public class Board implements Serializable {
      * @return An array list of reorganized hexagons
      */
     public ArrayList<Hexagon> getHexagonListForDrawing() {
+        if (getIsland() != CatanBoardTopology.Island.CLASSIC)
+            return new ArrayList<>(hexagons);
         ArrayList<Hexagon> result = new ArrayList<>();
 
         // row 1
