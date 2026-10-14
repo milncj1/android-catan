@@ -58,11 +58,17 @@ public final class LongestRoadCalculator {
      * award on a tie; without a current eligible holder, a tie leaves it unclaimed.
      */
     public static int findHolder(List<Road> roads, Building[] buildings, int previousHolder) {
-        int[] lengths = new int[4];
+        int totalPlayers = 4;
+        if (roads != null) for (Road r : roads)
+            if (r != null) totalPlayers = Math.max(totalPlayers, r.getOwnerId() + 1);
+        if (buildings != null) for (Building b : buildings)
+            if (b != null) totalPlayers = Math.max(totalPlayers, b.getOwnerId() + 1);
+        totalPlayers = Math.max(totalPlayers, previousHolder + 1);
+        int[] lengths = new int[Math.max(4, Math.min(7, totalPlayers))];
         int best = 4;
         int bestPlayer = -1;
         int countBest = 0;
-        for (int p = 0; p < 4; p++) {
+        for (int p = 0; p < lengths.length; p++) {
             lengths[p] = longestLength(roads, buildings, p);
             if (lengths[p] > best) {
                 best = lengths[p];
@@ -73,7 +79,7 @@ public final class LongestRoadCalculator {
             }
         }
         if (best <= 4) return -1;
-        if (previousHolder >= 0 && previousHolder < 4 && lengths[previousHolder] == best) {
+        if (previousHolder >= 0 && previousHolder < lengths.length && lengths[previousHolder] == best) {
             return previousHolder;
         }
         return countBest == 1 ? bestPlayer : -1;
