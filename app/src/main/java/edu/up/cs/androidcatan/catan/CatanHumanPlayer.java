@@ -2879,6 +2879,120 @@ if(newGame) {
         return out.toString();
     }
 
+    /** A CPU may initiate a trade on its OWN turn; the human can respond. */
+    private void showIncomingTradeOffer(CatanTradeInfo request) {
+        if (myActivity == null || state == null || request.getProposerId() < 0
+                || request.getProposerId() >= state.getPlayerList().size()) return;
+        String other = allPlayerNames[request.getProposerId()];
+        String deal = other + " offers " + tradeBundleDescription(request.getGiving())
+                + "\nYou would give " + tradeBundleDescription(request.getReceiving());
+        AlertDialog prompt = new AlertDialog.Builder(myActivity)
+                .setTitle(other + " wants to trade")
+                .setMessage(deal)
+                .setPositiveButton("Accept", null)
+                .setNeutralButton("Counter", (dialog, option) -> showHumanTradeCounter(request))
+                .setNegativeButton("Decline", (dialog, option) ->
+                        game.sendAction(new CatanTradeReplyAction(
+                                this, request.getOfferId(),
+                                CatanTradeReplyAction.DECLINE, null, null)))
+                .setCancelable(false)
+                .create();
+        prompt.setOnShowListener(ignored ->
+                prompt.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    if (!state.getPlayerList().get(playerNum)
+                            .hasResourceBundle(request.getReceiving())) {
+                        Toast.makeText(myActivity, "You do not have the cards requested.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    game.sendAction(new CatanTradeReplyAction(this, request.getOfferId(),
+                            CatanTradeReplyAction.ACCEPT, null, null));
+                    prompt.dismiss();
+                }));
+        prompt.show();
+    }
+
+    /** One editable counteroffer; quantities are from the COMPUTER's perspective. */
+    private void showHumanTradeCounter(CatanTradeInfo request) {
+        LinearLayout content = new LinearLayout(myActivity);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (10 * myActivity.getResources().getDisplayMetrics().density);
+        TextView hint = new TextView(myActivity);
+        hint.setText("RESOURCE                COMPUTER GIVES                YOU GIVE");
+        hint.setTextSize(11f);
+        content.addView(hint);
+        final int[] cpuGives = request.getGiving();
+        final int[] humanGives = request.getReceiving();
+        String[] resources = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
+        for (int i = 0; i < 5; i++) {
+            LinearLayout row = new LinearLayout(myActivity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            TextView name = new TextView(myActivity);
+            name.setText(resources[i]);
+            row.addView(name, new LinearLayout.LayoutParams(0, -2, 1.5f));
+            addTradeCounterWithCount(row, cpuGives, i, false, pad);
+            addTradeCounterWithCount(row, humanGives, i, true, pad);
+            content.addView(row);
+        }
+        ScrollView scroll = new ScrollView(myActivity);
+        scroll.addView(content);
+        AlertDialog counter = new AlertDialog.Builder(myActivity)
+                .setTitle("Counteroffer")
+                .setView(scroll)
+                .setPositiveButton("Send counter", null)
+                .setNegativeButton("Decline", (dialog, option) ->
+                        game.sendAction(new CatanTradeReplyAction(this, request.getOfferId(),
+                                CatanTradeReplyAction.DECLINE, null, null)))
+                .setCancelable(false)
+                .create();
+        counter.setOnShowListener(ignored ->
+            counter.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (!CatanTradingRules.validBundle(cpuGives)
+                        || !CatanTradingRules.validBundle(humanGives)
+                        || !state.getPlayerList().get(playerNum)
+                                .hasResourceBundle(humanGives)) {
+                    Toast.makeText(myActivity, "Choose an exchange you can afford.",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                game.sendAction(new CatanTradeReplyAction(this, request.getOfferId(),
+                        CatanTradeReplyAction.COUNTER, cpuGives, humanGives));
+                counter.dismiss();
+            }));
+        counter.show();
+    }
+
+    /** Use the existing small resource counter, but honour starting quantities. */
+    private void addTradeCounterWithCount(LinearLayout row, int[] quantities,
+                                          int resource, boolean spending, int pad) {
+        LinearLayout control = new LinearLayout(myActivity);
+        control.setOrientation(LinearLayout.HORIZONTAL);
+        control.setGravity(Gravity.CENTER_VERTICAL);
+        Button minus = new Button(myActivity), plus = new Button(myActivity);
+        TextView amount = new TextView(myActivity);
+        minus.setText("−");
+        plus.setText("+");
+        minus.setPadding(0, 0, 0, 0);
+        plus.setPadding(0, 0, 0, 0);
+        amount.setText(String.valueOf(quantities[resource]));
+        amount.setGravity(Gravity.CENTER);
+        control.addView(minus, new LinearLayout.LayoutParams(pad * 3, pad * 4));
+        control.addView(amount, new LinearLayout.LayoutParams(pad * 2, pad * 4));
+        control.addView(plus, new LinearLayout.LayoutParams(pad * 3, pad * 4));
+        minus.setOnClickListener(v -> {
+            quantities[resource] = Math.max(0, quantities[resource] - 1);
+            amount.setText(String.valueOf(quantities[resource]));
+        });
+        plus.setOnClickListener(v -> {
+            int limit = spending ? state.getPlayerList().get(playerNum)
+                    .getResourceCards()[resource] : 20;
+            quantities[resource] = Math.min(limit, quantities[resource] + 1);
+            amount.setText(String.valueOf(quantities[resource]));
+        });
+        row.addView(control, new LinearLayout.LayoutParams(0, -2, 2f));
+    }
+
     /** View every CPU response before selecting one. Declining costs nothing. */
     private void showTradeComparisons(CatanTradeResponsesInfo results) {
         if (myActivity == null || state == null) return;
@@ -2900,6 +3014,7 @@ if(newGame) {
         }
         new AlertDialog.Builder(myActivity)
                 .setTitle("Compare all offers")
+                .setCancelable(false)
                 .setItems(choices, (dialog, which) -> {
                     CatanTradeResponsesInfo.Response picked = responses.get(which);
                     if (picked.getVerdict() == CatanTradeResponsesInfo.DECLINE) {
