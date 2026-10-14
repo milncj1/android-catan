@@ -28,6 +28,7 @@ public final class CatanCareerUi {
     private static final String[] LEVELS = {"All difficulties", "Easy", "Normal", "Hard", "Expert"};
     private static final String[] ISLANDS = {"All islands", "CLASSIC", "EXPANDED", "GRAND"};
     private static final String[] OPPONENTS = {"All opponents", "1", "2", "3", "4", "5", "6"};
+    private static final String[] DATES = {"All dates", "Last 30 days", "Last 90 days", "This year"};
     private CatanCareerUi() { }
 
     private static int dp(Activity a, int x) {
@@ -142,9 +143,15 @@ public final class CatanCareerUi {
         title(a, root, "Public victory-point progression");
         root.addView(new CatanCareerGraph(a, stats.getPublicScoreHistory(), names),
                 new LinearLayout.LayoutParams(-1, dp(a, 164)));
-        int index = 1;
-        for (int[] row : stats.getPublicScoreHistory()) {
-            StringBuilder points = new StringBuilder("Round " + index++ + ": ");
+        java.util.ArrayList<int[]> rounds = stats.getPublicScoreHistory();
+        // A years-long unfinished match must not create thousands of Android
+        // TextViews in one dialog. The graph above still covers every round.
+        int first = Math.max(0, rounds.size() - 40);
+        if (first > 0) line(a, root, "Showing the latest 40 of " + rounds.size()
+                + " recorded rounds; graph includes the complete history.");
+        for (int index = first; index < rounds.size(); index++) {
+            int[] row = rounds.get(index);
+            StringBuilder points = new StringBuilder("Round " + (index + 1) + ": ");
             for (int p = 0; p < row.length; p++) {
                 if (p > 0) points.append(" · ");
                 points.append(names[p]).append(" ").append(row[p]);
@@ -186,9 +193,14 @@ public final class CatanCareerUi {
         root.addView(new CatanCareerGraph(a,
                 java.util.Arrays.asList(record.publicScoreHistory()), names),
                 new LinearLayout.LayoutParams(-1, dp(a, 164)));
-        int round = 0;
-        for (int[] score : record.publicScoreHistory()) {
-            StringBuilder line = new StringBuilder("Round " + (++round) + ": ");
+        int[][] fullHistory = record.publicScoreHistory();
+        int firstRound = Math.max(0, fullHistory.length - 40);
+        if (firstRound > 0)
+            line(a, root, "Showing the latest 40 of " + fullHistory.length
+                    + " rounds; the graph includes the full match.");
+        for (int round = firstRound; round < fullHistory.length; round++) {
+            int[] score = fullHistory[round];
+            StringBuilder line = new StringBuilder("Round " + (round + 1) + ": ");
             for (int p = 0; p < score.length; p++)
                 line.append(p > 0 ? " · " : "").append(names[p]).append(" ").append(score[p]);
             line(a, root, line.toString());
@@ -250,11 +262,12 @@ public final class CatanCareerUi {
         LinearLayout filters = new LinearLayout(a);
         filters.setOrientation(LinearLayout.HORIZONTAL);
         Spinner level = spinner(a, LEVELS), board = spinner(a, ISLANDS);
-        Spinner rivals = spinner(a, OPPONENTS);
+        Spinner rivals = spinner(a, OPPONENTS), date = spinner(a, DATES);
         filters.addView(level, new LinearLayout.LayoutParams(0, dp(a, 40), 1));
         filters.addView(board, new LinearLayout.LayoutParams(0, dp(a, 40), 1));
         filters.addView(rivals, new LinearLayout.LayoutParams(0, dp(a, 40), 1));
         root.addView(filters);
+        root.addView(date, new LinearLayout.LayoutParams(-1, dp(a, 38)));
 
         LinearLayout summary = new LinearLayout(a), history = column(a);
         summary.setOrientation(LinearLayout.VERTICAL);
@@ -267,6 +280,10 @@ public final class CatanCareerUi {
             summary.removeAllViews();
             history.removeAllViews();
             ArrayList<CatanCareerRecord> selected = new ArrayList<>();
+            long now = System.currentTimeMillis();
+            java.util.Calendar localCalendar = java.util.Calendar.getInstance();
+            localCalendar.setTimeInMillis(now);
+            int currentYear = localCalendar.get(java.util.Calendar.YEAR);
             for (CatanCareerRecord match : all) {
                 if (level.getSelectedItemPosition() > 0
                         && (match.computerTypes().length < 2
@@ -275,6 +292,16 @@ public final class CatanCareerUi {
                         && !match.island.equals(ISLANDS[board.getSelectedItemPosition()])) continue;
                 if (rivals.getSelectedItemPosition() > 0
                         && match.players() - 1 != rivals.getSelectedItemPosition()) continue;
+                int when = date.getSelectedItemPosition();
+                if (when == 1 && (match.finishedAt > now
+                        || now - match.finishedAt > 30L * 86400000L)) continue;
+                if (when == 2 && (match.finishedAt > now
+                        || now - match.finishedAt > 90L * 86400000L)) continue;
+                if (when == 3) {
+                    localCalendar.setTimeInMillis(match.finishedAt);
+                    if (localCalendar.get(java.util.Calendar.YEAR) != currentYear)
+                        continue;
+                }
                 selected.add(match);
             }
             int wins = 0, streak = 0, best = 0;
@@ -356,6 +383,7 @@ public final class CatanCareerUi {
         level.setOnItemSelectedListener(changed);
         board.setOnItemSelectedListener(changed);
         rivals.setOnItemSelectedListener(changed);
+        date.setOnItemSelectedListener(changed);
         refresh[0].run();
         dialog(a, "My Catan Career", root);
     }
