@@ -23,15 +23,17 @@ public final class CatanMatchStats implements Serializable {
     private final int[] playerTrades, bankTrades, roads, settlements, cities, developmentCards;
     private final ArrayList<int[]> publicScoreHistory = new ArrayList<>();
     private int completedRounds;
+    private int lastGlobalRound;
     private long activeMillis;
     private boolean completed;
 
-    public CatanMatchStats(int players, boolean partial) {
+    public CatanMatchStats(int players, boolean partial, int initialGlobalRound) {
         if (players < 2 || players > 7) throw new IllegalArgumentException("players");
         matchId = UUID.randomUUID().toString();
         startedAt = System.currentTimeMillis();
         playerCount = players;
         partialHistory = partial;
+        lastGlobalRound = Math.max(0, initialGlobalRound);
         resourceProduction = new int[players][5];
         playerTrades = new int[players];
         bankTrades = new int[players];
@@ -59,6 +61,7 @@ public final class CatanMatchStats implements Serializable {
         for (int[] round : source.publicScoreHistory)
             publicScoreHistory.add(round.clone());
         completedRounds = source.completedRounds;
+        lastGlobalRound = source.lastGlobalRound;
         activeMillis = source.activeMillis;
         completed = source.completed;
     }
@@ -128,6 +131,9 @@ public final class CatanMatchStats implements Serializable {
     /** Called after a completed round, not once per player turn. */
     void recordRound(CatanGameState state) {
         if (completed) return;
+        int globalRound = state.getMarketState().getCompletedRounds();
+        if (globalRound <= lastGlobalRound) return;
+        lastGlobalRound = globalRound;
         completedRounds++;
         int[] publicScores = new int[playerCount];
         for (int p = 0; p < playerCount; p++) {
