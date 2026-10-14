@@ -2149,9 +2149,12 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
             updateTextViews();
             updateGameplayHud();
-            if (newMarketEvent && myActivity != null)
-                Toast.makeText(myActivity, next.getMarketState().announcement(),
-                        Toast.LENGTH_LONG).show();
+            if (newMarketEvent && myActivity != null) {
+                final String announcement = next.getMarketState().announcement();
+                myActivity.runOnUiThread(() ->
+                        Toast.makeText(myActivity, announcement,
+                                Toast.LENGTH_LONG).show());
+            }
             fitPopupOnScreen(robberDiscardGroup);
             fitPopupOnScreen(robberChooseHexGroup);
             fitPopupOnScreen(developmentGroup);
@@ -3028,7 +3031,15 @@ if(newGame) {
                                 muteThisRound)))
                 .setCancelable(false)
                 .create();
-        counter.setOnShowListener(ignored ->
+        counter.setOnShowListener(ignored -> {
+            // The counteroffer has five rows of controls. Bound the dialog
+            // to the landscape window, scrolling inside rather than cutting
+            // off Cancel/Send or obscuring the game permanently.
+            if (counter.getWindow() != null) {
+                counter.getWindow().setLayout(
+                        (int) (myActivity.getResources().getDisplayMetrics().widthPixels * .88f),
+                        (int) (myActivity.getResources().getDisplayMetrics().heightPixels * .86f));
+            }
             counter.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 if (!CatanTradingRules.validBundle(cpuGives)
                         || !CatanTradingRules.validBundle(humanGives)
@@ -3044,7 +3055,8 @@ if(newGame) {
                         CatanTradeReplyAction.COUNTER, cpuGives, humanGives,
                         muteThisRound));
                 counter.dismiss();
-            }));
+            });
+        });
         counter.show();
     }
 
