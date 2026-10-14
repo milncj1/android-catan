@@ -38,7 +38,9 @@ public class CatanGameState extends GameState {
     private CatanMarketState marketState;
     // Waiting for a human's response must never survive an app restart.
     private transient boolean waitingForCpuTradeReply;
-    private transient boolean cpuOfferedThisTurn;
+    // Persist which CPU has already approached the human this turn.
+    // The unfinished OFFER remains transient and is cancelled upon restore.
+    private boolean cpuOfferedThisTurn;
 
     // Only the live game engine owns a pending trade. A saved/reloaded match
     // intentionally cancels it; no stale trade can be completed after restart.
