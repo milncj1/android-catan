@@ -27,6 +27,10 @@ public class MainActivity extends GameMainActivity {
     private CatanBoardTopology.Island chosenIsland = CatanBoardTopology.Island.CLASSIC;
     private boolean suppressBoardSelection;
     private boolean manuallyChosenBoard;
+    private boolean newGameMarketEvents = true;
+    private static final String MARKET_PREFERENCES = "catan_011_options";
+    private static final String MARKET_ENABLED_KEY = "market_events_enabled";
+
 
     @Override
     protected boolean hasSavedMatch() {
@@ -76,6 +80,7 @@ public class MainActivity extends GameMainActivity {
             // The game instance exists already but no player threads are running yet.
             // This replaces its default state only for a NEW game.
             catan.setState(new CatanGameState(options.getNumPlayers(), chosenIsland));
+            catan.configureMarketEvents(newGameMarketEvents);
         }
         catan.configureAutosave(getApplicationContext(), types);
         // createLocalGame() has already installed the restored position.
@@ -148,6 +153,20 @@ public class MainActivity extends GameMainActivity {
                         "4 computers", "5 computers", "6 computers"});
         computerChoices.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         opponents.setAdapter(computerChoices);
+
+        final android.widget.Switch events =
+                findViewById(edu.up.cs.androidcatan.R.id.new_game_market_events);
+        if (events != null) {
+            // Default on for the chosen 011 mode, but remember future choices.
+            newGameMarketEvents = getSharedPreferences(MARKET_PREFERENCES, MODE_PRIVATE)
+                    .getBoolean(MARKET_ENABLED_KEY, true);
+            events.setChecked(newGameMarketEvents);
+            events.setOnCheckedChangeListener((button, enabled) -> {
+                newGameMarketEvents = enabled;
+                getSharedPreferences(MARKET_PREFERENCES, MODE_PRIVATE).edit()
+                        .putBoolean(MARKET_ENABLED_KEY, enabled).apply();
+            });
+        }
 
         final android.widget.Spinner difficulty =
                 findViewById(edu.up.cs.androidcatan.R.id.new_game_difficulty);
