@@ -3,7 +3,6 @@ package edu.up.cs.androidcatan.catan;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.SoundEffectConstants;
 import android.view.View;
 import android.widget.TextView;
 
@@ -31,8 +30,17 @@ public final class CatanExperienceFeedback {
             int transition = CatanExperienceSettings.animationMillis(activity, 200);
             if (transition > 0)
                 banner.animate().alpha(1f).setDuration(transition).start();
-            if (important && CatanExperienceSettings.soundEffects(activity))
-                banner.playSoundEffect(SoundEffectConstants.CLICK);
+            if (important) {
+                CatanExperienceSounds.Cue cue = message.toLowerCase().contains("market")
+                        ? CatanExperienceSounds.Cue.MARKET
+                        : message.toLowerCase().contains("traded")
+                        ? CatanExperienceSounds.Cue.TRADE
+                        : message.toLowerCase().contains("longest road")
+                        || message.toLowerCase().contains("largest army")
+                        ? CatanExperienceSounds.Cue.ACHIEVEMENT
+                        : CatanExperienceSounds.Cue.BUILD;
+                CatanExperienceSounds.play(activity, cue);
+            }
             int speed = CatanExperienceSettings.speed(activity);
             int linger = speed == 0 ? 3200 : speed == 2 ? 1000 : 2000;
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -75,8 +83,7 @@ public final class CatanExperienceFeedback {
                     pulse(activity, display, 220);
                 }
             }, duration);
-            if (CatanExperienceSettings.soundEffects(activity))
-                display.playSoundEffect(SoundEffectConstants.CLICK);
+            CatanExperienceSounds.play(activity, CatanExperienceSounds.Cue.DICE);
         });
     }
 
@@ -95,10 +102,12 @@ public final class CatanExperienceFeedback {
     /** Keep ordinary CPU traffic in history; surface meaningful actions only. */
     public static boolean isImportant(String text) {
         if (text == null) return false;
-        return text.contains("MARKET EVENT") || text.contains("built a road")
-                || text.contains("placed a settlement")
-                || text.contains("upgraded a settlement") || text.contains("traded with")
-                || text.contains("bought a development card")
-                || text.contains("played Knight") || text.contains("robber");
+        String event = text.toLowerCase(java.util.Locale.ROOT);
+        // Roads and routine dev-card purchases stay in History and on-board
+        // effects so a 7-player game never floods the screen with pop-ups.
+        return event.contains("market event") || event.contains("built a city")
+                || event.contains("upgraded a settlement")
+                || event.contains("traded with") || event.contains("longest road")
+                || event.contains("largest army") || event.contains("robber");
     }
 }
