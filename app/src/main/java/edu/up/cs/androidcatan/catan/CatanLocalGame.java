@@ -24,6 +24,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseVictoryPointCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseYearOfPlentyCardAction;
 import edu.up.cs.androidcatan.catan.gamestate.DevelopmentCard;
+import edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology;
 import edu.up.cs.androidcatan.catan.gamestate.LongestRoadCalculator;
 import edu.up.cs.androidcatan.catan.gamestate.Port;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.City;
@@ -121,6 +122,13 @@ public class CatanLocalGame extends LocalGame {
         state = new CatanGameState();
     }
 
+    /** New chosen configuration; the zero-argument constructor remains classic. */
+    public CatanLocalGame(int playerCount, CatanBoardTopology.Island island) {
+        super();
+        resumedFromSave = false;
+        state = new CatanGameState(playerCount, island);
+    }
+
     /**
      * Restoring a match must never create a fresh random island first.
      * Start directly from the saved rules state, before player threads start.
@@ -159,7 +167,7 @@ public class CatanLocalGame extends LocalGame {
             roll = true;
             if (state.getCurrentDiceSum() != 7 && lastRollHandsBefore != null) {
                 StringBuilder yields = new StringBuilder();
-                for (int p = 0; p < 4; p++) {
+                for (int p = 0; p < state.getPlayerList().size(); p++) {
                     StringBuilder gained = new StringBuilder();
                     int[] now = state.getPlayerList().get(p).getResourceCards();
                     for (int res = 0; res < 5; res++) {
@@ -259,7 +267,7 @@ public class CatanLocalGame extends LocalGame {
             }
         }
 
-        if (playerIdx < 0 || playerIdx > 3) Log.e(TAG, "canMove: Invalid playerIds: " + playerIdx);
+        if (playerIdx < 0 || playerIdx >= state.getPlayerList().size()) Log.e(TAG, "canMove: Invalid playerIds: " + playerIdx);
 
         Log.d(TAG, "canMove() returned: " + (playerIdx == this.state.getCurrentPlayerId()));
         return playerIdx == this.state.getCurrentPlayerId();
@@ -326,16 +334,16 @@ public class CatanLocalGame extends LocalGame {
             // if it is still the setup phase
             if (this.state.isSetupPhase()) {
                 // increment setup phase turn counter
-                if (this.state.getSetupPhaseTurnCounter() < 7) {
+                if (this.state.getSetupPhaseTurnCounter() < state.getOpeningPlacementCount() - 1) {
                     this.state.setSetupPhaseTurnCounter(this.state.getSetupPhaseTurnCounter() + 1);
-                    this.state.setCurrentPlayerId(CatanGameState.setupPhaseTurnOrder[state.getSetupPhaseTurnCounter()]);
+                    this.state.setCurrentPlayerId(state.getOpeningPlayer(state.getSetupPhaseTurnCounter()));
                 } else {
                     // if it is the last turn of the setup phase
                     this.state.setCurrentPlayerId(this.state.getCurrentPlayerId());
                 }
             } else { // if it is not the setup phase
                 // increment the current turn
-                if (this.state.getCurrentPlayerId() == 3) this.state.setCurrentPlayerId(0);
+                if (this.state.getCurrentPlayerId() == state.getPlayerList().size() - 1) this.state.setCurrentPlayerId(0);
                 else this.state.setCurrentPlayerId(this.state.getCurrentPlayerId() + 1);
             }
             // update the setup phase
@@ -458,9 +466,9 @@ public class CatanLocalGame extends LocalGame {
             state.setRobberPhase(true);
 
             //Skip the discarding phase and move to the move robber phase
-            for (int i = 0; i < state.getPlayerList().size(); i++) {
-                state.setRobberPlayerListHasDiscarded(new boolean[]{true, true, true, true});
-            }
+            boolean[] allResolved = new boolean[state.getPlayerList().size()];
+            java.util.Arrays.fill(allResolved, true);
+            state.setRobberPlayerListHasDiscarded(allResolved);
 
             //Return
             return true;
