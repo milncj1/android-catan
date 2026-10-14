@@ -246,14 +246,25 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
 
         // Easy is less enthusiastic than higher difficulties, but can still
         // approach the human when short of a resource for a real build.
-        if (!gs.hasCpuOfferedThisTurn()
-                && gs.getMarketState().mayComputerOffer(playerNum, gs.getPlayerList().size())
-                && random.nextInt(3) == 0) {
+        if (!gs.hasCpuOfferedThisTurn() && random.nextInt(3) == 0) {
             int[][] offer = CatanNegotiationAI.proposeOnOwnTurn(gs, playerNum);
             if (offer != null) {
-                game.sendAction(new CatanTradeOfferAction(
-                        this, new int[]{0}, offer[0], offer[1]));
-                return;
+                int needed = 0;
+                for (int r = 0; r < 5; r++)
+                    if (offer[1][r] > 0) { needed = r; break; }
+                boolean inviteHuman = gs.getMarketState()
+                        .mayComputerOffer(playerNum, gs.getPlayerList().size())
+                        && (gs.getPlayerList().size() == 2 || random.nextInt(3) != 0);
+                int partner = inviteHuman ? 0
+                        : CatanNegotiationAI.bestComputerTradingPartner(
+                                gs, playerNum, needed);
+                if (partner < 0 && gs.getMarketState().mayComputerOffer(
+                        playerNum, gs.getPlayerList().size())) partner = 0;
+                if (partner >= 0) {
+                    game.sendAction(new CatanTradeOfferAction(
+                            this, new int[]{partner}, offer[0], offer[1]));
+                    return;
+                }
             }
         }
 
