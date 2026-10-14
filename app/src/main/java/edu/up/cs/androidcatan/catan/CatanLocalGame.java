@@ -149,6 +149,46 @@ public class CatanLocalGame extends LocalGame {
         lastActiveTick = now;
     }
 
+    private boolean menuExitScheduled;
+
+    /**
+     * Save the current rules/statistics after every already-queued action,
+     * then stop the previous match's threads. The existing Continue Game
+     * snapshot is never deleted here. The UI may navigate ONLY on success.
+     */
+    public void returnToMainMenu(Runnable savedAndStopped, Runnable saveFailed) {
+        if (!sessionReady || autosaveContext == null || autosaveTypes == null
+                || playerNames == null) {
+            if (saveFailed != null) saveFailed.run();
+            return;
+        }
+        postToGameThread(() -> {
+            if (menuExitScheduled) return;
+            menuExitScheduled = true;
+            boolean completed = state.getMatchStats().isCompleted();
+            boolean saved;
+            if (completed) {
+                // Finished games already have a separate career record.
+                saved = true;
+            } else if (resumedFromSave && !restoredBoardDisplayed) {
+                // A resumed game's original snapshot must not be replaced
+                // until the restored board actually becomes visible.
+                saved = CatanSaveStore.load(autosaveContext) != null;
+            } else {
+                recordActiveTime();
+                saved = CatanSaveStore.save(autosaveContext, state,
+                        playerNames, autosaveTypes);
+            }
+            if (!saved) {
+                menuExitScheduled = false;
+                if (saveFailed != null) saveFailed.run();
+                return;
+            }
+            stopWorkersForMenu();
+            if (savedAndStopped != null) savedAndStopped.run();
+        });
+    }
+
     public void onAppPaused() {
         if (!sessionReady || state.getMatchStats().isCompleted()) return;
         postToGameThread(() -> {
