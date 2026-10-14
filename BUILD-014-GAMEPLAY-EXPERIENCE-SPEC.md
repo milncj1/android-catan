@@ -2,13 +2,13 @@
 **Status:** DESIGN FROZEN — source implementation and automated validation completed, 14 October 2026. FINAL INTEGRATION AND PHONE ACCEPTANCE PENDING.
 
 ## Purpose
-Make the existing offline Android Catan game feel like a polished, lively board game without modifying classic Catan rules, weakening computer decision-making, cluttering landscape gameplay, or jeopardising saved games. Build 014 follows the trading/market work in 011, the ongoing 012 work, and the owner-reported completed 013 work.
+Make the existing offline Android Catan game feel like a polished, lively board game without modifying classic Catan rules, weakening computer decision-making, cluttering landscape gameplay, or jeopardising saved games. Build 014 follows the trading/market work in 011 and the ongoing 012 work. Build 013 was deliberately skipped by owner instruction because relevant AI improvements had already been implemented in earlier builds; no separate Build 013 deliverable is required.
 
 ## Repo, branch and integration contract
 - Repository: milncj1/android-catan.
 - Dedicated preparation branch: dev/build-014-gameplay-experience.
 - Initial base at branch creation: dev/build-011-trading @ dfbe91a766983a1aa4780e80a9899d5b08b0e56d (Build 011 QA3 source is at e21983a4097eac7b8cec3c16fc4d3c22522e19a8; later 011 branch commit is a documentation update).
-- As of 14 October, no distinct Build 012 or 013 branch or commits were identifiable in the GitHub repository. **Do not assume their code has been integrated.** Obtain exact final source refs for both builds before the integration stage and review diffs, preserving both.
+- As of 14 October, no distinct Build 012 branch or commits were identifiable in the GitHub repository. **Do not assume its code has been integrated.** Obtain the exact final source ref for Build 012 before release integration and review diffs, preserving its changes. Build 013 was intentionally skipped, not lost.
 - Never push into, reset, or merge into master unless the owner specifically approves it. Do not modify the live 012 work or completed 013 work.
 - Development branch creation and documentation do not trigger APK CI. Never create an apk-build/* snapshot until its run is justified/owner approved.
 - Never change application ID edu.up.cs.androidcatan, signing identity, or the installed user's app data. Install updates over prior APKs, not via uninstall. Version code must exceed any version installed at release time; QA3 code was 21.
@@ -75,7 +75,7 @@ Make the existing offline Android Catan game feel like a polished, lively board 
 - Backups must be schema-versioned and reject malicious, oversized or unexpected data safely.
 
 ## Engineering work packages — after preparation
-1. Establish final integration base by inspecting completed Build 013 and final Build 012 source. Resolve conflicts without discarding established 011 features.
+1. Establish the final integration base by inspecting final Build 012 source. Resolve conflicts without discarding established 011 features. No separate Build 013 integration is needed.
 2. Build authoritative, idempotent statistics capture and its persistence; add game-continuation tests, privacy tests and legacy-save coverage.
 3. Implement in-game stats, completed-match summary, career/history views and personal records; verify all three island sizes and 2–7 total-player configurations.
 4. Implement gameplay speed, animation/notification pipeline and optional audio controls, default silent, without blocking game engine.
@@ -83,7 +83,7 @@ Make the existing offline Android Catan game feel like a polished, lively board 
 6. Run Android XML and JVM tests, conduct focused end-to-end checks and obtain owner's approval for one candidate APK snapshot. Permanently sign outside GitHub with original owner key and verify install/update identity. Test on Samsung before declaring Build 014 complete.
 
 ## Acceptance gate
-- Builds 012 and 013 preserved and their actual source integrated/reconciled before shipment.
+- Build 012 preserved and its final source integrated/reconciled before shipment. Build 013 intentionally skipped; no separate 013 source is expected.
 - Existing Build 011 trading, proactive CPU offers, events, settlements, victory rules and saves behave as before.
 - Dice/resource/trade/construction stats reflect accepted engine actions across Save/Continue.
 - Mid-game stats do not leak private opposing hands or private VP.
@@ -107,7 +107,7 @@ Any new rules, substantial extra features, analytics expansion, achievements, ne
 - CatanExperienceSettings: Relaxed / Normal / Fast presentation-only pause scaling, animations switch and independently toggled audio (all music and sound effects OFF by default); preserves AI strategy.
 - CatanExperienceFeedback: nonblocking short event/turn/resource messages, transient landscape banner, decorative dice faces settled on authoritative engine result.
 - Programmatic setup and in-game entry points, native Android export/import picker, and JUnit regression tests for ledger copies, older saves, backup integrity and merge.
-- **No changes to master, Build 012 or Build 013. No original signing credentials were uploaded.**
+- **No changes to master or Build 012. Build 013 was intentionally skipped and has no separate implementation. No original signing credentials were uploaded.**
 
 **Automated validation:** Two justified GitHub Actions snapshot builds:
 - [Run 38592299235](https://github.com/milncj1/android-catan/actions/runs/38592299235), source SHA aeb15086e6a8feadbbce44a0be3c6937b1080cf1 — SUCCESS.
@@ -115,7 +115,11 @@ Any new rules, substantial extra features, analytics expansion, achievements, ne
 - CI output is a **debug/unsigned-for-delivery artifact**, not a permanently signed upgrade APK. Do not install it over an existing original-key-signed app.
 
 **Release blockers and remaining manual QA:**
-1. User says Build 012 is ongoing and Build 013 is done. No actual 012/013 code branches, commits, or files were found in this repository or Catan Library as of this checkpoint. Obtain their real implementation refs; incorporate both with conflict review, not by deleting/replacing them. Build 014 was intentionally created from 011 only to avoid interfering with the other work.
+1. Build 012 remains ongoing; no distinct 012 code branch or commit was identifiable at this checkpoint. Obtain the actual final Build 012 implementation ref and incorporate it with conflict review before releasing 014. **Owner clarified Build 013 was intentionally skipped** because AI work was already handled previously. Do not search for or invent a separate 013 branch; no 013 integration gate. Build 014 was intentionally created from 011 to avoid interfering with 012.
 2. Verify on Samsung in landscape: dialogs, imported backup, saved-game compatibility, statistics after pause/restart, dice/resource and computer trading behaviour, CPU speed modes, sound-off initial startup, market events, victory summary and prolonged matches.
 3. More sophisticated on-board placement/achievement animations and differentiated offline sound effects require a final presentation pass; current implemented feedback is decorative dice, pulses, notices and optional system sound cues. Do not overclaim these as fully device-polished.
 4. Produce a final APK with a versionCode higher than the owner's installed Builds 012/013, signed **outside public GitHub** with the original permanent signing certificate. Never recommend uninstall or clearing data. Obtain owner confirmation before release/master merge.
+
+## Owner correction — 14 October 2026
+- Build 013 was deliberately skipped; relevant AI work had already been undertaken previously. No standalone Build 013 source, APK or merge is required. Remove Build 013 as a release blocker.
+- Build 012 remains ongoing and must be preserved and integrated when its finished source becomes available. Continue Build 014 on its isolated branch until that integration.
