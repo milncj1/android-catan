@@ -84,6 +84,26 @@ public class CatanTradingRulesTest {
         assertEquals(0, rival.getResourceCards()[3]);
     }
 
+    @Test public void cannotTradeTheSameResourceOnBothSidesOrCreateCards() {
+        CatanGameState game = actionGame();
+        Player first = game.getPlayerList().get(0);
+        Player second = game.getPlayerList().get(1);
+        first.addResourceCard(0, 4);
+        first.addResourceCard(3, 2);
+        second.addResourceCard(0, 4);
+        second.addResourceCard(4, 2);
+        assertTrue(CatanTradingRules.overlaps(
+                new int[]{2,0,0,1,0}, new int[]{1,0,0,0,1}));
+        assertFalse(CatanTradingRules.exchangeBetweenPlayers(game, 0, 1,
+                new int[]{2,0,0,1,0}, new int[]{1,0,0,0,1}));
+        assertEquals(4, first.getResourceCards()[0]);
+        assertEquals(2, first.getResourceCards()[3]);
+        assertEquals(4, second.getResourceCards()[0]);
+        assertEquals(2, second.getResourceCards()[4]);
+        assertFalse(CatanTradingRules.overlaps(
+                new int[]{2,0,0,0,0}, new int[]{0,0,0,0,1}));
+    }
+
     @Test public void firstEventBeginsInRoundFourAndExpiresAfterEveryonePlays() {
         CatanGameState game = actionGame();
         CatanMarketState market = game.getMarketState();
