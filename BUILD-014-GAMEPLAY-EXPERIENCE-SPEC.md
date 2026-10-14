@@ -185,3 +185,19 @@ Owner asked to continue implementing 014; no additional change of specification.
 - **Verified** GitHub Actions [run 38612311374](https://github.com/milncj1/android-catan/actions/runs/38612311374) (source snapshot `97a7ed730632ee4d59f37393d74370b32275e9e1`): status **SUCCESS**, including Android XML validation, JVM unit tests and `assembleDebug`; build number/versionCode **27**.
 - Retrieved the CI APK and signed **outside GitHub** with the owner's original private Catan permanent PKCS12 key. Output `Catan_Build_014_Intersection_Fix_Permanent_Signed.apk`, size **27,302,120 bytes**, SHA256 `c90be92abe6a6537736c00080b19f6caf8c5da65be52d196392555fff4e4eb2e`. JAR signature and ZIP CRC validated; matching original signing certificate SHA256 `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97` confirmed. Temporary extracted signing secrets were deleted after signing.
 - This APK is an in-place QA update (no uninstall / no clear data). **Device test still required**: enter/edit name, resume existing match, take several turns through seven/robber/trading, tap and select intersections, zoom/pan, verify no regression. No Build 012 merge performed.
+
+## Build 014 QA28 — landscape New Game layout repair (14 October 2026)
+
+**Owner device report after QA27:** The highlighted name row forced the bottom buttons off-screen; screenshot showed Continue saved game cut off and Start new game / Save setup not visible in Samsung Galaxy S24+ landscape.
+
+**Root cause:** The redesigned game_config_main.xml kept name, board size, opponent count, difficulty and market events in a non-scrollable fixed-height vertical layout. A `ScrollView` holding only a *legacy hidden* TabHost consumed the remaining layout_weight space while the critical footer overflowed below the screen.
+
+**Fix implemented:** 
+- Move the **visible setup options** (numbered player name, island, opponents, difficulty, market events, hints) into a `ScrollView` with `layout_height="0dp"` and `layout_weight="1"`, so it shrinks and scrolls as necessary on landscape screens.
+- Keep Continue saved game, Save setup and Start new game as **fixed siblings outside the scrolling section**, always remaining at the bottom of the New Game card rather than being clipped.
+- Keep `game_config_tabhost` inflated for backward compatibility with GameMainActivity's player rows/config spinners, but set the include `visibility="gone"` so that hidden legacy UI cannot claim visible vertical space.
+- Remove redundant subtitle and slightly compact the highlighted name control (50dp high, still bold and editable) to make more options visible at once.
+- Add `CatanStartLayoutTest` structural JVM tests checking that the primary options are in the weighted scroll, that critical action buttons are outside it, and that the legacy TabHost remains mounted but hidden.
+- Validation snapshot `apk-build/014-home-layout-fix-qa` source `d249f177fc6349d9624da729a0517d9cc0d45e32`: [GitHub Actions run 38613423805](https://github.com/milncj1/android-catan/actions/runs/38613423805) **SUCCESS** (layout validation, JVM tests, assembleDebug).
+- Signed CI build **28** locally with original owner's protected permanent PKCS#12 key, without uploading it or passwords to public GitHub. Result: `Catan_Build_014_Home_Layout_Fix_Permanent_Signed.apk`, **27,302,156 bytes**, SHA256 `99947f323b1ebfae7d5c06d2a6af606a0cd3773672bad7ceaf3003ab9fbe8c5a`. ZIP integrity and JAR signature verified; original signing certificate fingerprint preserved. Verified binary APK manifest: applicationId `edu.up.cs.androidcatan`, versionCode **28**, versus QA27 versionCode **27**; both versionName `1.2-preview`.
+- **Still requires owner screenshot / on-device verification.** Compile and structural layout tests do not prove final screen rendering. Install only as an update, do not uninstall/clear data. No Build 012 integration yet; Build 013 intentionally skipped.
