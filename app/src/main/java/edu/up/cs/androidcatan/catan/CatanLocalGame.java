@@ -325,7 +325,11 @@ public class CatanLocalGame extends LocalGame {
         }
         Log.d(TAG, "makeMove() called with: action = [" + action + "]");
         Log.d(TAG, "makeMove: state: " + state.toString());
-        int actingPlayer = players == null ? -1 : getPlayerIdx(action.getPlayer());
+        // In a running app, identify the actual registered player object.
+        // Standalone rules tests call makeMove before LocalGame.start() binds
+        // any players; their simulated actor is the current turn owner.
+        int actingPlayer = players == null
+                ? state.getCurrentPlayerId() : getPlayerIdx(action.getPlayer());
         if (actingPlayer < 0) return false;
 
         // Live negotiation has its own restricted action protocol. The active
