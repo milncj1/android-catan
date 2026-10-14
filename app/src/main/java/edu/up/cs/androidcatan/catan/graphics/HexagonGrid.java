@@ -14,6 +14,7 @@ import java.util.ArrayList;
 
 import edu.up.cs.androidcatan.R;
 import edu.up.cs.androidcatan.catan.gamestate.Board;
+import edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology;
 import edu.up.cs.androidcatan.catan.gamestate.Hexagon;
 import edu.up.cs.androidcatan.catan.gamestate.Port;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Building;
@@ -44,7 +45,7 @@ public class HexagonGrid extends BoardSurfaceView {
     protected int[] colors = {Color.argb(255, 165, 63, 4), Color.argb(255, 255, 225, 0), Color.argb(255, 0, 102, 25), Color.argb(255, 68, 86, 85), Color.argb(255, 123, 206, 107), Color.argb(255, 192, 193, 141)};
 
     // colors for each player, the last color is for no player (highlighting)
-    public static int[] playerColors = {Color.RED, Color.WHITE, Color.argb(255, 255, 128, 17), Color.BLUE, Color.CYAN};
+    public static int[] playerColors = {Color.RED, Color.WHITE, Color.argb(255, 255, 128, 17), Color.BLUE, 0xFFD75BA6, 0xFF2DB5AC, 0xFFF1CD3C, Color.CYAN};
 
     public static int[] settlementPictures = {R.drawable.settlement_red, R.drawable.settlement_white, R.drawable.settlement_orange, R.drawable.settlement_blue, R.drawable.city_selected};
 
@@ -59,6 +60,10 @@ public class HexagonGrid extends BoardSurfaceView {
     private ArrayList<Integer> highlightedIntersections = new ArrayList<>();
 
     private boolean debugMode = false;
+
+    private int dynamicHexSize() {
+        return board.getIsland() == CatanBoardTopology.Island.GRAND ? 123 : 137;
+    }
 
     /* ---------- Constructor ------------ */
 
@@ -84,6 +89,7 @@ public class HexagonGrid extends BoardSurfaceView {
         this.margin = margin;
         this.board = board;
         this.debugMode = debugMode;
+        this.intersections = new IntersectionDrawable[board.getBuildings().length];
         generateIntersections();
         this.board = board;
     }
@@ -251,6 +257,25 @@ public class HexagonGrid extends BoardSurfaceView {
      * @param size Size of the hexagons.
      */
     public void generateDrawableHexagons(int x, int y, int size) {
+        if (board.getIsland() != CatanBoardTopology.Island.CLASSIC) {
+            CatanBoardTopology graph = new CatanBoardTopology(board.getIsland());
+            int tileSize = dynamicHexSize();
+            drawingHexagons = new ArrayList<>();
+            for (CatanBoardTopology.Hex cell : graph.getHexes()) {
+                Hexagon hex = board.getHexagonFromId(cell.id);
+                int centerX = 887 + (int) Math.round((2 * cell.q + cell.r)
+                        * Math.sqrt(3) * tileSize / 2.0);
+                int centerY = 756 + 3 * cell.r * tileSize / 2;
+                drawingHexagons.add(new HexagonDrawable(getContext(),
+                        centerX, centerY, tileSize,
+                        colors[hex.getResourceId()],
+                        board.getRobber().getHexagonId() == cell.id,
+                        hex.getResourceId() == 5,
+                        hex.getChitValue(), cell.id,
+                        highlightedHexagon == cell.id, hex.getResourceId()));
+            }
+            return;
+        }
         ArrayList<Hexagon> dataHexagons = board.getHexagonListForDrawing();
         drawingHexagons = new ArrayList<>();
         int[] rows = {1, 1, 0, 1, 1};
@@ -281,6 +306,21 @@ public class HexagonGrid extends BoardSurfaceView {
      */
     private void drawPorts(Canvas canvas) {
         ArrayList<Port> ports = this.board.getPortList();
+        if (board.getIsland() != CatanBoardTopology.Island.CLASSIC) {
+            for (Port port : ports) {
+                IntersectionDrawable a = intersections[port.getIntersectionA()];
+                IntersectionDrawable b = intersections[port.getIntersectionB()];
+                int midX = (a.getXPos() + b.getXPos()) / 2;
+                int midY = (a.getYPos() + b.getYPos()) / 2;
+                // Move the harbour's centre towards the sea.
+                int dx = midX - 887, dy = midY - 756;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+                int px = midX + (int) (dx / Math.max(1, distance) * 50);
+                int py = midY + (int) (dy / Math.max(1, distance) * 50);
+                port.drawPort(canvas, px, py, 35, getContext(), a, b, debugMode);
+            }
+            return;
+        }
 
         ports.get(0).drawPort(canvas, this.intersections[ports.get(0).getIntersectionA()].getXPos(), this.intersections[ports.get(0).getIntersectionA()].getYPos() - 100, 40, this.getContext(), this.intersections[ports.get(0).getIntersectionA()], this.intersections[ports.get(0).getIntersectionB()], debugMode);
         ports.get(1).drawPort(canvas, this.intersections[ports.get(1).getIntersectionB()].getXPos() + 100, this.intersections[ports.get(1).getIntersectionB()].getYPos() + 10, 25, this.getContext(), this.intersections[ports.get(1).getIntersectionA()], this.intersections[ports.get(1).getIntersectionB()], debugMode);
@@ -297,6 +337,16 @@ public class HexagonGrid extends BoardSurfaceView {
      * Generates locations of intersections for drawing.
      */
     public void generateIntersections() {
+        if (board.getIsland() != CatanBoardTopology.Island.CLASSIC) {
+            CatanBoardTopology graph = new CatanBoardTopology(board.getIsland());
+            int tileSize = dynamicHexSize();
+            for (CatanBoardTopology.Vertex vertex : graph.getVertices()) {
+                int px = 887 + (int) Math.round(vertex.x * Math.sqrt(3) * tileSize / 2.0);
+                int py = 756 + vertex.y * tileSize / 2;
+                intersections[vertex.id] = new IntersectionDrawable(vertex.id, px, py);
+            }
+            return;
+        }
         intersections[0] = new IntersectionDrawable(0, 1049, 642);
         intersections[1] = new IntersectionDrawable(1, 887, 574);
         intersections[2] = new IntersectionDrawable(2, 726, 642);
