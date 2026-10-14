@@ -391,10 +391,14 @@ public class CatanLocalGame extends LocalGame {
             // Human-initiated offers remain unrestricted on the human's turn.
             if (actingPlayer != 0) {
                 int[] targets = offer.getTargets();
-                if (targets == null || targets.length != 1 || targets[0] != 0
-                        || state.hasCpuOfferedThisTurn()
-                        || !state.getMarketState().mayComputerOffer(
-                                actingPlayer, state.getPlayerList().size()))
+                if (targets == null || targets.length != 1
+                        || targets[0] < 0 || targets[0] >= state.getPlayerList().size()
+                        || targets[0] == actingPlayer || state.hasCpuOfferedThisTurn())
+                    return false;
+                // Human-directed offers consume a shared interruption slot;
+                // CPU-to-CPU offers are quiet and do not consume that quota.
+                if (targets[0] == 0 && !state.getMarketState().mayComputerOffer(
+                        actingPlayer, state.getPlayerList().size()))
                     return false;
             }
             CatanTradeNegotiation proposed;
@@ -408,7 +412,8 @@ public class CatanLocalGame extends LocalGame {
             state.setTradePending(true);
             if (actingPlayer != 0) {
                 state.setCpuOfferedThisTurn(true);
-                state.getMarketState().recordProactiveOffer();
+                if (offer.getTargets()[0] == 0)
+                    state.getMarketState().recordProactiveOffer();
             }
             for (int id = 0; id < players.length; id++)
                 if (proposed.waitingFor(id)) players[id].sendInfo(proposed.requestInfo());
