@@ -18,6 +18,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanBuyDevCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeOfferAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeOfferAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseMonopolyCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
@@ -251,6 +252,19 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
             }
             game.sendAction(new CatanEndTurnAction(this));
             return;
+        }
+
+        // Easy is less enthusiastic than higher difficulties, but can still
+        // approach the human when short of a resource for a real build.
+        if (!gs.hasCpuOfferedThisTurn()
+                && gs.getMarketState().mayComputerOffer(playerNum, gs.getPlayerList().size())
+                && random.nextInt(3) == 0) {
+            int[][] offer = CatanNegotiationAI.proposeOnOwnTurn(gs, playerNum);
+            if (offer != null) {
+                game.sendAction(new CatanTradeOfferAction(
+                        this, new int[]{0}, offer[0], offer[1]));
+                return;
+            }
         }
 
         if (!gs.hasPlayedDevelopmentCardThisTurn() && random.nextInt(3) == 0) {
