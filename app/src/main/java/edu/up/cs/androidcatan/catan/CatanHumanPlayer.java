@@ -502,8 +502,11 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             return;
         }
         // Score button on the sidebar.
-        if (button.getId() == R.id.sidebar_button_score)
-            toggleGroupVisibilityAllowTapping(scoreBoardGroup);
+        if (button.getId() == R.id.sidebar_button_score) {
+            if (state.getPlayerList().size() != 4) showAllPlayersScoreboard();
+            else toggleGroupVisibilityAllowTapping(scoreBoardGroup);
+            return;
+        }
 
         /*--------------------------------- Robber onClick --------------------------------*/
 
@@ -1574,6 +1577,29 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             hudLatestAction.setText("Latest: " + CatanMatchHistory.latest(myActivity));
     }
 
+    /** Full scoreboard for optional matches with 2–7 total players. */
+    private void showAllPlayersScoreboard() {
+        if (state == null || myActivity == null) return;
+        StringBuilder details = new StringBuilder();
+        for (int i = 0; i < state.getPlayerList().size(); i++) {
+            Player contender = state.getPlayerList().get(i);
+            int bonus = (state.getCurrentLargestArmyPlayerId() == i ? 2 : 0)
+                    + (state.getCurrentLongestRoadPlayerId() == i ? 2 : 0);
+            int points = contender.getVictoryPoints() + bonus;
+            if (i == playerNum) points += contender.getVictoryPointsPrivate();
+            details.append(i == state.getCurrentPlayerId() ? "➤ " : "  ");
+            details.append(allPlayerNames[i]).append(" — ").append(points);
+            details.append(" VP");
+            if (i == playerNum) details.append(" (your private total)");
+            details.append('\n');
+        }
+        new AlertDialog.Builder(myActivity)
+                .setTitle("Scoreboard · " + state.getPlayerList().size() + " players")
+                .setMessage(details.toString())
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
     private void showGameplayHistory() {
         if (myActivity == null) return;
         String history = CatanMatchHistory.history(myActivity);
@@ -1711,7 +1737,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             // Classic four-player snake order: 0,1,2,3,3,2,1,0.
             // Spell out that the human must wait for a SECOND free placement.
             final int placementNumber = state.getSetupPhaseTurnCounter() + 1;
-            final boolean secondRound = placementNumber > 4;
+            final boolean secondRound = placementNumber > state.getPlayerList().size();
             final boolean isMyPlacement = state.getCurrentPlayerId() == playerNum;
             // get settlement and road count for the current turn
             // Setup progress must survive an app restart or Continue Game.
@@ -1761,7 +1787,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (!isMyPlacement) {
                 String computerName = allPlayerNames[state.getCurrentPlayerId()];
                 this.messageTextView.setText("Opening placement " + placementNumber
-                        + " of 8 — " + computerName
+                        + " of " + state.getOpeningPlacementCount() + " — " + computerName
                         + " is placing. Your second free settlement comes after the computers.");
             } else if (settlements == 0) {
                 this.messageTextView.setText(secondRound
@@ -1859,7 +1885,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (turnChip != null) {
             String who = getAllPlayerNames()[state.getCurrentPlayerId()];
             String stage = state.isSetupPhase()
-                    ? "Opening " + (state.getSetupPhaseTurnCounter() + 1) + "/8"
+                    ? "Opening " + (state.getSetupPhaseTurnCounter() + 1)
+                        + "/" + state.getOpeningPlacementCount()
                     : state.isRobberPhase() ? "Robber"
                     : state.isActionPhase() ? "Build / trade" : "Roll";
             turnChip.setText(who + " · " + stage);
@@ -1881,7 +1908,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
 
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < Math.min(4, state.getPlayerList().size()); i++) {
             //First check if player has any trophies
             int addToThisPlayer = 0;
             if (i == state.getCurrentLargestArmyPlayerId()) addToThisPlayer += 2;
@@ -1896,6 +1923,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         // go through each player name
         for (int i = 0; i < this.playerNameTextViews.length; i++) {
+            if (i >= state.getPlayerList().size()) {
+                this.playerNameTextViews[i].setText("");
+                this.playerScores[i].setText("");
+                this.playerNameTextViews[i].setBackgroundColor(Color.TRANSPARENT);
+                this.playerScores[i].setBackgroundColor(Color.TRANSPARENT);
+                continue;
+            }
             this.playerNameTextViews[i].setText(getAllPlayerNames()[i]); // set text to name
             this.playerNameTextViews[i].setTextColor(HexagonGrid.playerColors[i]); // set color of player
             if (i == state.getCurrentPlayerId()) {
@@ -1971,7 +2005,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (piece instanceof edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement
                     && piece.getOwnerId() == playerNum)
                 confirmation = next.isSetupPhase()
-                        ? "Opening settlement " + (next.getSetupPhaseTurnCounter() > 3 ? "2" : "1")
+                        ? "Opening settlement " + (next.getSetupPhaseTurnCounter() >= next.getPlayerList().size() ? "2" : "1")
                             + " of 2 placed. Now select the adjoining road."
                         : "Settlement built at junction " + pendingIntersection + ".";
         } else if (pendingBuild == PENDING_CITY) {
@@ -1987,7 +2021,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                             || (road.getIntersectionAId() == pendingRoadTo
                                     && road.getIntersectionBId() == pendingRoadFrom))) {
                     confirmation = next.isSetupPhase()
-                            ? next.getSetupPhaseTurnCounter() > 3
+                            ? next.getSetupPhaseTurnCounter() >= next.getPlayerList().size()
                                 ? "Second starting pair complete! Tap END TURN to start the match."
                                 : "First starting pair complete! Tap END TURN. The computers place their pairs, then you place your second."
                             : "Road built between junctions "
@@ -2753,7 +2787,8 @@ if(newGame) {
             Log.w(TAG, "showLongestArmyTrophy: no player has the largest army trophy");
             return;
         }
-        armyTrophyImages[playerNum].setVisibility(View.VISIBLE);
+        if (playerNum < armyTrophyImages.length)
+            armyTrophyImages[playerNum].setVisibility(View.VISIBLE);
 
         if (largestArmyPrevPlayer == -1) {
             return;
@@ -2778,7 +2813,8 @@ if(newGame) {
             Log.w(TAG, "showLongestRoadTrophy: no player has the longest road trophy");
             return;
         }
-        roadTrophyImages[playerNum].setVisibility(View.VISIBLE);
+        if (playerNum < roadTrophyImages.length)
+            roadTrophyImages[playerNum].setVisibility(View.VISIBLE);
 
         if (LongestRoadPrevPlayer == -1) {
             return;
