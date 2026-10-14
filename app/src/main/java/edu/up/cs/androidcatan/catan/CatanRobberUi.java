@@ -68,6 +68,18 @@ public final class CatanRobberUi {
         return dialog;
     }
 
+    /** Allow returning to a saved match even from non-cancelable robber stages. */
+    private static void addMainMenuAction(Activity a, LinearLayout content) {
+        if (!(a instanceof MainActivity)) return;
+        Button home = new Button(a);
+        home.setAllCaps(false);
+        home.setText("Main Menu");
+        home.setContentDescription("Save game and return to main menu");
+        content.addView(home, new LinearLayout.LayoutParams(-1, dp(a, 42)));
+        home.setOnClickListener(v ->
+                ((MainActivity) a).confirmReturnToMainMenu());
+    }
+
     /** Discard exactly half only if holding eight or more cards. */
     public static AlertDialog discard(Activity a, int[] hand, DiscardCallback callback) {
         if (a == null || hand == null || hand.length != 5)
@@ -141,6 +153,7 @@ public final class CatanRobberUi {
                 + "skip this step when you hold more than seven cards.", 11, false);
         note.setPadding(0, dp(a, 5), 0, 0);
         content.addView(note);
+        addMainMenuAction(a, content);
         AlertDialog dialog = show(a, "ROBBER  ·  1/3  Discard", content, false);
         discard.setOnClickListener(v -> {
             if (!CatanRobberSteps.discardReady(selected, held, required)) return;
@@ -179,6 +192,7 @@ public final class CatanRobberUi {
                 callback.choose(id);
             });
         }
+        addMainMenuAction(a, content);
         return dialog;
     }
 }
