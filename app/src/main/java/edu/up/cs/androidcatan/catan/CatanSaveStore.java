@@ -46,15 +46,28 @@ public final class CatanSaveStore {
         public boolean isValid() {
             if (format != FORMAT || state == null || state.getBoard() == null
                     || state.getBoard().getHexagons() == null
-                    || state.getBoard().getHexagons().size() != 19
                     || state.getBoard().getPortList() == null
-                    || state.getBoard().getPortList().size() != 9
                     || state.getBoard().getRobber() == null
-                    || state.getPlayerList() == null || state.getPlayerList().size() != 4
-                    || names == null || names.length != 4 || types == null || types.length != 4
-                    || state.getCurrentPlayerId() < 0 || state.getCurrentPlayerId() > 3
-                    || types[0] != 0) return false;
-            for (int i = 0; i < 4; i++) {
+                    || state.getPlayerList() == null || names == null || types == null)
+                return false;
+            int players = state.getPlayerList().size();
+            if (players < 2 || players > 7 || names.length != players
+                    || types.length != players || types[0] != 0
+                    || state.getCurrentPlayerId() < 0 || state.getCurrentPlayerId() >= players)
+                return false;
+            edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology.Island shape =
+                    state.getBoard().getIsland();
+            int tiles = shape.getHexCount();
+            int ports = shape == edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology.Island.CLASSIC
+                    ? 9 : shape == edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology.Island.EXPANDED
+                        ? 11 : 13;
+            if (state.getBoard().getHexagons().size() != tiles
+                    || state.getBoard().getPortList().size() != ports
+                    || state.getBoard().getBuildings() == null
+                    || state.getBoard().getRoadMatrix() == null
+                    || state.getRobberPlayerListHasDiscarded().length != players)
+                return false;
+            for (int i = 0; i < players; i++) {
                 if (names[i] == null || names[i].trim().isEmpty()
                         || names[i].length() > 120) return false;
                 if (i > 0 && types[i] != 1 && types[i] != 2) return false;
