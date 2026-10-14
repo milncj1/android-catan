@@ -172,6 +172,33 @@ public class HexagonGrid extends BoardSurfaceView {
                 int xPos = this.intersections[i].getXPos();
                 int yPos = this.intersections[i].getYPos();
 
+                // The original bitmap pieces only contain four colours.
+                // Use a readable coloured marker for opponents five through seven.
+                if (buildings[i].getOwnerId() >= 4) {
+                    Paint marker = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    int colour = playerColors[buildings[i].getOwnerId()];
+                    marker.setColor(0xFF263034);
+                    canvas.drawCircle(xPos, yPos, buildings[i] instanceof City ? 46f : 39f, marker);
+                    marker.setColor(colour);
+                    if (buildings[i] instanceof City)
+                        canvas.drawRoundRect(xPos - 33, yPos - 33,
+                                xPos + 33, yPos + 33, 7, 7, marker);
+                    else
+                        canvas.drawCircle(xPos, yPos, 31f, marker);
+                    marker.setTextAlign(Paint.Align.CENTER);
+                    marker.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                    marker.setTextSize(35f);
+                    marker.setColor(0xFF17262E);
+                    canvas.drawText(buildings[i] instanceof City ? "C" : "S",
+                            xPos, yPos + 12, marker);
+                    if (highlightedIntersections.contains(i)) {
+                        marker.setColor(Color.CYAN);
+                        marker.setStyle(Paint.Style.STROKE);
+                        marker.setStrokeWidth(6f);
+                        canvas.drawCircle(xPos, yPos, 49f, marker);
+                    }
+                    continue;
+                }
                 Drawable buildingPicture;
                 if (buildings[i] instanceof Settlement) {
 
