@@ -2666,7 +2666,13 @@ if(newGame) {
         LinearLayout panels = new LinearLayout(myActivity);
         panels.setOrientation(LinearLayout.VERTICAL);
         scroll.addView(panels);
-        outer.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        // A wrap-content AlertDialog may measure a 0dp weighted child at
+        // zero height in landscape. Give the content a real, bounded height,
+        // and scroll *inside* it instead of covering the board or buttons.
+        int screenHeight = myActivity.getResources().getDisplayMetrics().heightPixels;
+        int contentHeight = Math.max(pad * 12,
+                (int) (screenHeight * 0.50f));
+        outer.addView(scroll, new LinearLayout.LayoutParams(-1, contentHeight));
 
         // Players tab: five compact rows, one per resource, with offer/want
         // quantities side by side. No ten-screen resource pickers or overlays.
