@@ -140,6 +140,8 @@ public final class CatanCareerUi {
                     + settlements[p] + " settlements, " + cities[p] + " cities, "
                     + development[p] + " dev cards bought");
         title(a, root, "Public victory-point progression");
+        root.addView(new CatanCareerGraph(a, stats.getPublicScoreHistory(), names),
+                new LinearLayout.LayoutParams(-1, dp(a, 164)));
         int index = 1;
         for (int[] row : stats.getPublicScoreHistory()) {
             StringBuilder points = new StringBuilder("Round " + index++ + ": ");
@@ -181,6 +183,9 @@ public final class CatanCareerUi {
                     + settlers[p] + " settlements, " + cities[p] + " cities, "
                     + dev[p] + " dev cards");
         title(a, root, "Public points by round");
+        root.addView(new CatanCareerGraph(a,
+                java.util.Arrays.asList(record.publicScoreHistory()), names),
+                new LinearLayout.LayoutParams(-1, dp(a, 164)));
         int round = 0;
         for (int[] score : record.publicScoreHistory()) {
             StringBuilder line = new StringBuilder("Round " + (++round) + ": ");
