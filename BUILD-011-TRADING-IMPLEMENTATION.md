@@ -47,3 +47,11 @@ Status: **Development in progress — source not yet compiled or phone-tested. N
 - Test file: `Catan_Build_011_Test_Permanent_Signed.apk`, size **27,268,031 bytes**, SHA256 `b4ec46cd3ba29bfc85f60c6ac74ef35fc2bdad0e5a669cfc7de579a399a2ed48`. No release merge to `master`; previous Build 010 untouched.
 - **Not owner-installed or accepted yet.** Main test priorities on Samsung: upgrade without uninstall; Continue prior game; new match with Market Events switched on and off; confirm entire two-tab Trade dialog fits in landscape; offer mixed resource bundles to one/all CPUs; compare all responses and choose exactly one; counter/decline computer offers on CPU's turn; CPU-to-CPU exchanges; Market Events activate from round four; close/reopen before/during a trade; correct bank/harbour rates, shortage rules, and no AI stalls.
 - After phone testing, review UI size/legibility, intelligent trade suggestion relevance, CPU personalities, oversize offer interruptions and rare Market Event behaviour; release Build 011 as working only after owner confirms.
+
+## Additional QA — 14 October 2026
+
+- Confirmed GitHub Actions validation run 38555086196 completed successfully at source commit `29cb68a87b...`. It is a **prior** Build 011 snapshot, not evidence that newer QA commits compile.
+- Closed an engine-level rules loophole: trade offers and counteroffers cannot include the same resource type on BOTH sides. Added authoritative validation in `CatanTradingRules` and `CatanTradeNegotiation`, plus matching inline human counteroffer feedback.
+- Added unit tests that explicitly protect card totals and reject invalid proposals/counters. Tests are authored, not yet rerun for these new commits.
+- Prevented Android Back/outside dismissal on the final trade confirmation from stranding an open comparison negotiation. Players must finish or return to offers.
+- Build 010 remains owner-confirmed; Build 011 is not yet owner-accepted on device.
