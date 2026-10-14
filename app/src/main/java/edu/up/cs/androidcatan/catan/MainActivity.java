@@ -136,7 +136,14 @@ public class MainActivity extends GameMainActivity {
 
     @Override
     protected void initStarterGui() {
+        CatanExperienceSettings.load(this);
         super.initStarterGui();
+        android.view.View career = findViewById(edu.up.cs.androidcatan.R.id.start_career_button);
+        if (career != null) career.setOnClickListener(v -> CatanCareerUi.showCareer(this));
+        android.view.View settings = findViewById(
+                edu.up.cs.androidcatan.R.id.start_experience_button);
+        if (settings != null) settings.setOnClickListener(v ->
+                CatanExperienceSettings.show(this, null));
         final android.widget.Spinner island = findViewById(edu.up.cs.androidcatan.R.id.new_game_island);
         final android.widget.Spinner opponents = findViewById(edu.up.cs.androidcatan.R.id.new_game_opponents);
         final android.widget.TextView hint = findViewById(edu.up.cs.androidcatan.R.id.new_game_island_hint);
@@ -250,6 +257,58 @@ public class MainActivity extends GameMainActivity {
         view.setText(chosenIsland.getTitle() + " · "
                 + chosenIsland.getRowLengths().length + " rows · "
                 + chosenIsland.getHexCount() + " tiles · " + status);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (requestCode == CatanCareerUi.EXPORT_REQUEST) {
+            try {
+                CatanCareerStore.exportTo(this, data.getData());
+                android.widget.Toast.makeText(this, "Career backup exported",
+                        android.widget.Toast.LENGTH_LONG).show();
+            } catch (java.io.IOException error) {
+                new android.app.AlertDialog.Builder(this).setTitle("Backup unsuccessful")
+                        .setMessage(error.getMessage()).setPositiveButton("OK", null).show();
+            }
+        } else if (requestCode == CatanCareerUi.IMPORT_REQUEST) {
+            try {
+                CatanCareerStore.ImportPlan plan =
+                        CatanCareerStore.previewImport(this, data.getData());
+                CatanCareerCodec.Preview preview = plan.preview;
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Merge Career Backup")
+                        .setMessage("Matches in backup: " + preview.total
+                                + "\nNew records: " + preview.added
+                                + "\nDuplicates to skip: " + preview.duplicates
+                                + "\nConflicting IDs: " + preview.conflicts
+                                + "\n\nYour saved game and existing career records will not be replaced.")
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Smart Merge", (dialog, which) -> {
+                            try {
+                                CatanCareerCodec.Preview result =
+                                        CatanCareerStore.commitImport(this, plan);
+                                new android.app.AlertDialog.Builder(this)
+                                        .setTitle("Import complete")
+                                        .setMessage(result.added + " matches added, "
+                                                + result.duplicates + " duplicates skipped.")
+                                        .setPositiveButton("OK", null).show();
+                            } catch (java.io.IOException error) {
+                                new android.app.AlertDialog.Builder(this)
+                                        .setTitle("Import cancelled safely")
+                                        .setMessage(error.getMessage())
+                                        .setPositiveButton("OK", null).show();
+                            }
+                        }).show();
+            } catch (java.io.IOException error) {
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Invalid backup")
+                        .setMessage(error.getMessage() + "\nYour existing records are unchanged.")
+                        .setPositiveButton("OK", null).show();
+            }
+        }
     }
 
     @Override
