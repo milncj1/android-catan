@@ -5,6 +5,7 @@ import android.util.Log;
 import android.content.Context;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import edu.up.cs.androidcatan.catan.actions.CatanBuildCityAction;
 import edu.up.cs.androidcatan.catan.actions.CatanBuildRoadAction;
@@ -16,6 +17,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberMoveAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithCustomPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
@@ -129,6 +131,11 @@ public class CatanLocalGame extends LocalGame {
         state = new CatanGameState(playerCount, island);
     }
 
+    /** Configure optional events on a new match before starting any turns. */
+    public void configureMarketEvents(boolean enabled) {
+        if (!resumedFromSave) state.configureMarketEvents(enabled);
+    }
+
     /**
      * Restoring a match must never create a fresh random island first.
      * Start directly from the saved rules state, before player threads start.
@@ -213,6 +220,11 @@ public class CatanLocalGame extends LocalGame {
             int from = ((CatanRobberStealAction) action).getStealingFromPlayerId();
             description = from < 0 ? actor + " found nobody to steal from"
                     : actor + " stole from " + playerNames[from];
+        } else if (action instanceof CatanTradeWithAutoBankAction) {
+            CatanTradeWithAutoBankAction exchange = (CatanTradeWithAutoBankAction) action;
+            description = actor + " traded " + exchange.getExecutedRate() + " "
+                    + RESOURCE_NAMES[exchange.getGiving()] + " for 1 "
+                    + RESOURCE_NAMES[exchange.getReceiving()] + " (bank/harbour)";
         } else if (action instanceof CatanTradeWithBankAction) {
             CatanTradeWithBankAction trade = (CatanTradeWithBankAction) action;
             description = actor + " traded 4 " + RESOURCE_NAMES[trade.getResourceIdGiving()]
@@ -224,6 +236,11 @@ public class CatanLocalGame extends LocalGame {
         } else if (action instanceof CatanEndTurnAction) {
             description = actor + " finished their turn — " + playerNames[state.getCurrentPlayerId()]
                     + " is next";
+            if (state.getCurrentPlayerId() == 0 && !state.isSetupPhase()
+                    && state.getMarketState().getActiveEvent() != null
+                    && state.getMarketState().getActiveFromRound()
+                        == state.getMarketState().getCompletedRounds() + 1)
+                description += " — MARKET EVENT: " + state.getMarketState().announcement();
         }
         if (description != null) {
             CatanPublicEventInfo notice = new CatanPublicEventInfo(description, roll);
@@ -343,8 +360,14 @@ public class CatanLocalGame extends LocalGame {
                 }
             } else { // if it is not the setup phase
                 // increment the current turn
-                if (this.state.getCurrentPlayerId() == state.getPlayerList().size() - 1) this.state.setCurrentPlayerId(0);
-                else this.state.setCurrentPlayerId(this.state.getCurrentPlayerId() + 1);
+                if (this.state.getCurrentPlayerId() == state.getPlayerList().size() - 1) {
+                    this.state.setCurrentPlayerId(0);
+                    // All players have had exactly one turn. An event may
+                    // start ONLY now, with an equal chance for every player.
+                    this.state.getMarketState().onRoundCompleted(state, new Random());
+                } else {
+                    this.state.setCurrentPlayerId(this.state.getCurrentPlayerId() + 1);
+                }
             }
             // update the setup phase
             if (state.isSetupPhase()) this.state.setSetupPhase(this.state.updateSetupPhase());
@@ -585,13 +608,27 @@ public class CatanLocalGame extends LocalGame {
 
         /*---------------------------------- Trade Actions ---------------------------------------*/
 
+        // One action for automatic 4:1 / 3:1 / 2:1 and market discounts.
+        // Market use is charged only after the entire exchange succeeds.
+        if (action instanceof CatanTradeWithAutoBankAction) {
+            if (!canTradeNow()) return false;
+            CatanTradeWithAutoBankAction request = (CatanTradeWithAutoBankAction) action;
+            int rate = CatanTradingRules.exchangeWithBank(state,
+                    state.getCurrentPlayerId(), request.getGiving(), request.getReceiving());
+            if (rate == CatanTradingRules.INVALID_RATE) return false;
+            request.setExecutedRate(rate);
+            return true;
+        }
+
+
         // Trade with bank or an occupied port only after rolling the dice.
         if (action instanceof CatanTradeWithBankAction) {
             if (!canTradeNow()) return false;
             CatanTradeWithBankAction trade = (CatanTradeWithBankAction) action;
             int give = trade.getResourceIdGiving(), receive = trade.getResourceIdRec();
             if (!validResource(give) || !validResource(receive) || give == receive
-                    || state.getBankResourceCount(receive) < 1) return false;
+                    || state.getBankResourceCount(receive) < 1
+                    || state.getMarketState().blocksBankReceipt(receive)) return false;
             if (!state.getCurrentPlayer().removeResourceCard(give, 4)) return false;
             state.getCurrentPlayer().addResourceCard(receive, 1);
             return true;
@@ -605,7 +642,8 @@ public class CatanLocalGame extends LocalGame {
             if (port == null || !validResource(received) || port.getTradeRatio() != 2
                     || !validResource(port.getResourceId())
                     || received == port.getResourceId() || !ownsPort(port, state.getCurrentPlayerId())
-                    || state.getBankResourceCount(received) < 1)
+                    || state.getBankResourceCount(received) < 1
+                    || state.getMarketState().blocksBankReceipt(received))
                 return false;
             if (!state.getCurrentPlayer().removeResourceCard(port.getResourceId(), 2)) return false;
             state.getCurrentPlayer().addResourceCard(received, 1);
@@ -626,6 +664,7 @@ public class CatanLocalGame extends LocalGame {
                 }
             }
             if (!hasGeneralPort || state.getBankResourceCount(receive) < 1
+                    || state.getMarketState().blocksBankReceipt(receive)
                     || !state.getCurrentPlayer().removeResourceCard(give, 3))
                 return false;
             state.getCurrentPlayer().addResourceCard(receive, 1);
