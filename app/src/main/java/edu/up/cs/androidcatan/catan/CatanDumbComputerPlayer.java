@@ -38,6 +38,7 @@ import edu.up.cs.androidcatan.game.infoMsg.GameInfo;
  **/
 public class CatanDumbComputerPlayer extends GameComputerPlayer implements Serializable {
     private static final String TAG = "CatanDumbComputerPlayer";
+    private CatanGameState lastTradeSnapshot;
 
     private int lastSettlementIntersectionId = -1;
     private int[] robberResourcesDiscard = new int[]{0, 0, 0, 0, 0};
@@ -54,7 +55,14 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
     protected void receiveInfo(GameInfo info) {
         Log.i(TAG, "receiveInfo() of player " + this.playerNum + " called.");
 
+        if (info instanceof CatanTradeInfo) {
+            CatanTradeAi.onTradeInfo((CatanTradeInfo) info, lastTradeSnapshot,
+                    this, game, playerNum, CatanAiDifficulty.EASY);
+            return;
+        }
         if (!(info instanceof CatanGameState)) return; // must do this check at start of method!
+        lastTradeSnapshot = (CatanGameState) info;
+        if (lastTradeSnapshot.isTradePending()) return;
 
         //creates a new game state object
         CatanGameState gs = (CatanGameState) info;
