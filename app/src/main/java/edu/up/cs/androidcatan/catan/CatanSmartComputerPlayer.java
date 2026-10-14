@@ -15,6 +15,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberMoveAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeOfferAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseMonopolyCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
@@ -326,6 +327,19 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 if (buildBestRoad(gs)) return;
                 game.sendAction(new CatanEndTurnAction(this));
                 return;
+            }
+
+            // Initiate one useful player trade on this CPU's turn, at most.
+            // Do not interrupt free-road placement or exceed the per-round cap.
+            if (!gs.hasCpuOfferedThisTurn()
+                    && gs.getMarketState().mayComputerOffer(
+                            playerNum, gs.getPlayerList().size())) {
+                int[][] proposal = CatanNegotiationAI.proposeOnOwnTurn(gs, playerNum);
+                if (proposal != null) {
+                    game.sendAction(new CatanTradeOfferAction(this,
+                            new int[]{0}, proposal[0], proposal[1]));
+                    return;
+                }
             }
 
             // The harder levels combine legal moves within one turn.
