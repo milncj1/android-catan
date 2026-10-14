@@ -15,6 +15,9 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberDiscardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberMoveAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
+import edu.up.cs.androidcatan.catan.actions.CatanBuyDevCardAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
+import edu.up.cs.androidcatan.catan.gamestate.DevelopmentCard;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Building;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.City;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Road;
@@ -225,6 +228,29 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
                         move[1], move[2]));
             // One action at most per Easy turn keeps it approachable.
             // An accepted move precedes End Turn on the same game queue.
+            game.sendAction(new CatanEndTurnAction(this));
+            return;
+        }
+        // Development cards and simple bank exchanges prevent Easy from
+        // passing indefinitely while holding resources it cannot use.
+        if (me.hasResourceBundle(DevelopmentCard.resourceCost)
+                && gs.hasDevelopmentCardsAvailable() && random.nextInt(3) == 0) {
+            game.sendAction(new CatanBuyDevCardAction(this));
+            game.sendAction(new CatanEndTurnAction(this));
+            return;
+        }
+        int[] hand = me.getResourceCards();
+        int spare = -1, missing = -1;
+        for (int resource = 0; resource < 5; resource++) {
+            if (hand[resource] >= 4 && (spare < 0 || hand[resource] > hand[spare]))
+                spare = resource;
+            if (gs.getBankResourceCount(resource) > 0
+                    && (missing < 0 || hand[resource] < hand[missing]))
+                missing = resource;
+        }
+        if (legal.isEmpty() && spare >= 0 && missing >= 0 && spare != missing
+                && random.nextInt(2) == 0) {
+            game.sendAction(new CatanTradeWithBankAction(this, spare, missing));
         }
         game.sendAction(new CatanEndTurnAction(this));
     }
