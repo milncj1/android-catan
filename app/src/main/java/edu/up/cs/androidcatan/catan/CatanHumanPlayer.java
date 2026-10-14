@@ -41,7 +41,9 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
-import edu.up.cs.androidcatan.catan.actions.CatanPlayerTradeAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeOfferAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeReplyAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeChooseAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithCustomPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
@@ -2072,14 +2074,17 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (debugMode)
             Log.i(TAG, "receiveInfo() called with: info: \n" + info.toString() + "----------------------------");
 
-        if (info instanceof CatanTradeResponsesInfo) {
-            CatanTradeResponsesInfo offers = (CatanTradeResponsesInfo) info;
+        if (info instanceof CatanTradeInfo) {
+            CatanTradeInfo trade = (CatanTradeInfo) info;
             if (myActivity != null) myActivity.runOnUiThread(() -> {
-                if (offers.isConfirmation()) {
-                    Toast.makeText(myActivity, "Trade completed.", Toast.LENGTH_SHORT).show();
-                } else {
-                    showTradeComparisons(offers);
-                }
+                if (trade.getKind() == CatanTradeInfo.REQUEST
+                        && trade.getProposerId() != playerNum) showIncomingTradeOffer(trade);
+                else if (trade.getKind() == CatanTradeInfo.RESULTS
+                        && trade.getProposerId() == playerNum)
+                    showTradeComparisons(CatanTradeResponsesInfo.fromTradeInfo(trade));
+                else if (trade.getKind() == CatanTradeInfo.CANCELLED
+                        || trade.getKind() == CatanTradeInfo.COMPLETE)
+                    Toast.makeText(myActivity, trade.getMessage(), Toast.LENGTH_SHORT).show();
             });
             return;
         }
@@ -2800,8 +2805,16 @@ if(newGame) {
                             return;
                         }
                     }
-                    game.sendAction(CatanPlayerTradeAction.request(
-                            this, targetIds.get(target.getSelectedItemPosition()), offer, want));
+                    int selectedTarget = targetIds.get(target.getSelectedItemPosition());
+                    int[] invited;
+                    if (selectedTarget >= 0) invited = new int[]{selectedTarget};
+                    else {
+                        invited = new int[state.getPlayerList().size() - 1];
+                        int count = 0;
+                        for (int id = 0; id < state.getPlayerList().size(); id++)
+                            if (id != playerNum) invited[count++] = id;
+                    }
+                    game.sendAction(new CatanTradeOfferAction(this, invited, offer, want));
                 } else {
                     int giving = give.getSelectedItemPosition();
                     int receiving = receive.getSelectedItemPosition();
@@ -2906,15 +2919,15 @@ if(newGame) {
                             .setMessage("You give: " + tradeBundleDescription(giving)
                                     + "\nYou receive: " + tradeBundleDescription(receiving))
                             .setPositiveButton("Complete trade", (confirm, button) ->
-                                    game.sendAction(CatanPlayerTradeAction.accept(
+                                    game.sendAction(new CatanTradeChooseAction(
                                             this, results.getOfferId(), picked.getPlayerId())))
                             .setNegativeButton("Back", (confirm, button) ->
                                     showTradeComparisons(results))
                             .show();
                 })
                 .setNegativeButton("Cancel offer", (dialog, which) ->
-                        game.sendAction(CatanPlayerTradeAction.cancel(
-                                this, results.getOfferId())))
+                        game.sendAction(new CatanTradeChooseAction(
+                                this, results.getOfferId(), -1)))
                 .show();
     }
 
