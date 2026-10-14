@@ -3071,6 +3071,9 @@ if(newGame) {
                         return;
                     }
                     new AlertDialog.Builder(myActivity)
+                            // Android Back/outside tap must not silently strand
+                            // a pending trade after the comparison list closes.
+                            .setCancelable(false)
                             .setTitle("Confirm trade with Computer " + picked.getPlayerId())
                             .setMessage("You give: " + tradeBundleDescription(giving)
                                     + "\nYou receive: " + tradeBundleDescription(receiving))
