@@ -148,39 +148,57 @@
             android:textColor="#FF655B46"
             android:layout_marginBottom="4dp" />
 
-        <!-- Actual editable local-player name, independent of hidden legacy rows. -->
+        <!-- Clear, prominent, tap-to-edit human name field in landscape. -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="56dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="5dp">
-            <TextView
-                android:layout_width="90dp"
+            android:background="@drawable/start_name_emphasis"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="9dp">
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="YOUR NAME"
-                android:textStyle="bold"
-                android:textSize="11sp"
-                android:textColor="#FF254B3F" />
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="1. YOUR PLAYER NAME"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:textColor="#FF254B3F" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tap the box to edit →"
+                    android:textSize="11sp"
+                    android:textColor="#FF6B593B" />
+            </LinearLayout>
             <EditText
                 android:id="@+id/new_game_player_name"
                 android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="40dp"
+                android:layout_weight="1.15"
+                android:layout_height="42dp"
                 android:background="@drawable/start_player_field"
                 android:paddingStart="12dp"
                 android:paddingEnd="10dp"
                 android:text="You"
-                android:hint="Your player name"
+                android:hint="Type your name"
+                android:selectAllOnFocus="true"
                 android:textColor="#FF254B3F"
                 android:textColorHint="#FF777567"
-                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textSize="17sp"
                 android:singleLine="true"
                 android:maxLines="1"
                 android:maxLength="40"
                 android:inputType="textPersonName"
                 android:imeOptions="actionDone"
-                android:contentDescription="Your player name" />
+                android:contentDescription="Enter your player name; tap this box to edit" />
         </LinearLayout>
 
         <LinearLayout
