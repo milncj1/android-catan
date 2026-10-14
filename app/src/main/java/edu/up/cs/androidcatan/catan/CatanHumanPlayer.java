@@ -1534,6 +1534,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private void updateGameplayHud() {
         if (myActivity == null || state == null || playerNum < 0
                 || playerNum >= state.getPlayerList().size()) return;
+        // Small persistent indicator only; never cover the island or dice.
+        if (tradeButton != null) {
+            CatanMarketState.Event event = state.getMarketState().getActiveEvent();
+            tradeButton.setText(event == null ? "Trade" : "Trade ✦");
+            tradeButton.setContentDescription(event == null ? "Trade resources"
+                    : "Trade resources. Active market event: " + event.title);
+        }
         int[] hand = state.getPlayerList().get(playerNum).getResourceCards();
         if (hudHandFirst != null)
             hudHandFirst.setText("YOUR HAND · Brick " + hand[0]
@@ -2102,6 +2109,11 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (info instanceof CatanGameState) {
 
             CatanGameState next = new CatanGameState((CatanGameState) info);
+            CatanMarketState.Event previousEvent = state == null ? null
+                    : state.getMarketState().getActiveEvent();
+            CatanMarketState.Event arrivingEvent = next.getMarketState().getActiveEvent();
+            boolean newMarketEvent = arrivingEvent != null
+                    && arrivingEvent != previousEvent;
             String buildConfirmation = confirmPendingBuild(next);
             int cardDrawn = findNewDevelopmentCard(next);
             this.state = next;
@@ -2133,6 +2145,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
             updateTextViews();
             updateGameplayHud();
+            if (newMarketEvent && myActivity != null)
+                Toast.makeText(myActivity, next.getMarketState().announcement(),
+                        Toast.LENGTH_LONG).show();
             fitPopupOnScreen(robberDiscardGroup);
             fitPopupOnScreen(robberChooseHexGroup);
             fitPopupOnScreen(developmentGroup);
@@ -2608,12 +2623,12 @@ if(newGame) {
                         + "You cannot use a newly purchased action card until a later turn, "
                         + "and may play only one ordinary action development card each turn.";
             case 4:
-                return "Bank trading: exchange 4 of one resource for 1 of another.\n\n"
-                        + "General 3:1 port: settle on a port intersection to exchange 3 of one resource for 1.\n"
-                        + "Special 2:1 port: exchange 2 of its named resource for 1 of another.\n\n"
-                        + "For a bank trade, clear your selection and tap Trade. For a port, select "
-                        + "the port settlement first, then tap Trade.\n\n"
-                        + "Note: direct negotiations with computer opponents are still under development.";
+                return "Use Trade → Players to exchange cards with computer opponents.\n"
+                        + "You can compare all responses before selecting one deal.\n\n"
+                        + "Use Trade → Bank & Harbours for automatic exchange rates:\n"
+                        + "4:1 at the bank, 3:1 at general harbours and 2:1 at specialist harbours.\n"
+                        + "The game detects harbours you own; no board selection is required.\n\n"
+                        + "Optional surprise Market Events may temporarily change trading rates.";
             default:
                 return "A roll of 7 starts the robber phase. Any player with more than "
                         + "7 resource cards must discard half, rounded down.\n\n"
