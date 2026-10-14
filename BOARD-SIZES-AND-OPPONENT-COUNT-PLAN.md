@@ -1,6 +1,6 @@
 # CATAN — selectable island sizes and 1–6 computer opponents
 Date: 14 October 2026
-Status: requirements and architecture plan only. NOT implemented, compiled or installed.
+Status: Architecture plan plus isolated Stage 1 topology generator and JUnit test sources committed. NOT integrated into gameplay, compiled or installed.
 Last Samsung-confirmed-good baseline: Build 007; Build 008 compiled and delivered, not yet owner-accepted.
 Development branch: dev/android-modernisation. Never touch master without approval.
 Do not run a GitHub Actions build without explicit owner approval.
@@ -49,3 +49,10 @@ Grand board/resource bag/harbours, and seven total players are explicitly custom
 
 ## Open design judgement
 7 total players is beyond the official game. Start the custom Grand board at 37 hexes and tune resource/port/development-card counts and match pacing during tests. If an additional very spacious option becomes warranted, discuss separately rather than silently adding another gameplay mode.
+
+## Initial Stage 1 implementation progress
+- Added `app/src/main/java/edu/up/cs/androidcatan/catan/gamestate/CatanBoardTopology.java`: an independent, immutable integer-coordinate tile/vertex/edge graph for 19, 30 and 37 tiles. Does not mutate the current Board or legacy saved-match IDs.
+- Added `app/src/test/java/edu/up/cs/androidcatan/catan/gamestate/CatanBoardTopologyTest.java` to verify no duplicate roads, symmetric intersections/hex neighbours, coastlines and exact graph counts.
+- Expected counts checked independently: Classic 19 hex/54 vertices/72 edges/30 coast edges; Expanded 30/81/110/40; Grand 37/96/132/42.
+- Eleven static source requirements checked successfully. **No Gradle/JUnit tests or APK builds have yet been executed** for this feature; this is foundation only and should not be described as playable.
+- Still needed: tile resource distributions, port layout, rendering, real game rules, 2–7 player AI/scoreboard/turn setup, variable-count save compatibility, and new-game UI choices.
