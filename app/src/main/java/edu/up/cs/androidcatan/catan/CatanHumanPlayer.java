@@ -2006,6 +2006,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             }
             if (change.length() > 0) {
                 CatanMatchHistory.append(myActivity, "Your resources: " + change);
+                CatanExperienceFeedback.notice(myActivity, "Your resources: " + change, false);
             }
         }
         lastOwnResources = next.clone();
@@ -2106,9 +2107,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             return;
         }
         if (info instanceof CatanPublicEventInfo) {
-            if (myActivity != null)
-                CatanMatchHistory.append(myActivity,
-                        ((CatanPublicEventInfo) info).getDescription());
+            CatanPublicEventInfo notice = (CatanPublicEventInfo) info;
+            if (myActivity != null) {
+                CatanMatchHistory.append(myActivity, notice.getDescription());
+                if (CatanExperienceFeedback.isImportant(notice.getDescription()))
+                    CatanExperienceFeedback.notice(myActivity, notice.getDescription(), true);
+                if (notice.isDiceRoll())
+                    CatanExperienceFeedback.pulse(myActivity, hudLastRoll, 650);
+            }
             updateGameplayHud();
             return; // A public notice must not clear selected roads or intersections.
         }
@@ -2119,6 +2125,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (info instanceof CatanGameState) {
 
             CatanGameState next = new CatanGameState((CatanGameState) info);
+            int previousTurn = state == null ? -1 : state.getCurrentPlayerId();
             CatanMarketState.Event previousEvent = state == null ? null
                     : state.getMarketState().getActiveEvent();
             CatanMarketState.Event arrivingEvent = next.getMarketState().getActiveEvent();
@@ -2155,11 +2162,15 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
             updateTextViews();
             updateGameplayHud();
-            if (newMarketEvent && myActivity != null) {
-                final String announcement = next.getMarketState().announcement();
-                myActivity.runOnUiThread(() ->
-                        Toast.makeText(myActivity, announcement,
-                                Toast.LENGTH_LONG).show());
+            if (myActivity != null) {
+                if (newMarketEvent)
+                    CatanExperienceFeedback.notice(myActivity,
+                            next.getMarketState().announcement(), true);
+                else if (previousEvent != null && arrivingEvent == null)
+                    CatanExperienceFeedback.notice(myActivity, "Market event ended", false);
+                if (previousTurn >= 0 && previousTurn != playerNum
+                        && next.getCurrentPlayerId() == playerNum && !next.isSetupPhase())
+                    CatanExperienceFeedback.notice(myActivity, "Your turn", true);
             }
             fitPopupOnScreen(robberDiscardGroup);
             fitPopupOnScreen(robberChooseHexGroup);
