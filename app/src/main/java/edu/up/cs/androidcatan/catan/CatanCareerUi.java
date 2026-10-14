@@ -58,8 +58,15 @@ public final class CatanCareerUi {
     private static AlertDialog dialog(Activity a, String title, LinearLayout body) {
         ScrollView scroll = new ScrollView(a);
         scroll.addView(body);
-        AlertDialog d = new AlertDialog.Builder(a).setTitle(title)
-                .setView(scroll).setPositiveButton("Close", null).create();
+        AlertDialog.Builder builder = new AlertDialog.Builder(a).setTitle(title)
+                .setView(scroll).setPositiveButton("Close", null);
+        if ("Completed Match".equals(title) && a instanceof MainActivity
+                && a.findViewById(edu.up.cs.androidcatan.R.id.board) != null) {
+            builder.setNeutralButton("Main Menu",
+                    (dialog, which) ->
+                            ((MainActivity) a).confirmReturnToMainMenu());
+        }
+        AlertDialog d = builder.create();
         d.setOnShowListener(ignored -> {
             if (d.getWindow() != null) d.getWindow().setLayout(
                     (int) (a.getResources().getDisplayMetrics().widthPixels * .90f),
