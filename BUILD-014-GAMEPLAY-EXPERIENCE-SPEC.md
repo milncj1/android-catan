@@ -123,3 +123,16 @@ Any new rules, substantial extra features, analytics expansion, achievements, ne
 ## Owner correction — 14 October 2026
 - Build 013 was deliberately skipped; relevant AI work had already been undertaken previously. No standalone Build 013 source, APK or merge is required. Remove Build 013 as a release blocker.
 - Build 012 remains ongoing and must be preserved and integrated when its finished source becomes available. Continue Build 014 on its isolated branch until that integration.
+
+## Build 014 visual experience finish and validation — 14 October 2026
+
+Owner asked to continue implementing 014; no additional change of specification.
+- BoardSurfaceView: nonblocking, camera-aware cosmetic glow at actual confirmed settlement/city junctions, built road segments and robber destinations. Effects are UI-only, disabled when animations are off, and never affect engine results or board hit-testing.
+- CatanHumanPlayer: compares previous and accepted copied game state before requesting animations; failed or unaccepted moves never trigger construction feedback.
+- CatanCareerGraph and CatanCareerUi: native in-match and end-of-match public victory-point progression line charts; hidden VP development-card points stay out of the live graph.
+- CatanExperienceSounds: small unique offline synthesized effects for dice, building, trade, market, achievements and victory. Background sound worker; **ALL audio remains OFF by default**. Honours phone silent/vibrate mode and volume zero; does not play unless explicitly enabled.
+- CatanExperienceFeedback: reduces notification flooding during lengthy CPU sequences by leaving ordinary roads and routine development-card purchases in History; distinguishes noteworthy events, with banner replacement rather than stacking.
+- CatanCareerCodecTest: added explicit checks for hidden rival VP and immutable completed ledger statistics.
+- Final visual-polish validation [GitHub Actions run 38601596231](https://github.com/milncj1/android-catan/actions/runs/38601596231), snapshot apk-build/014-visual-polish-qa @ 5a076179e4176a07a4b540d3fbed1f5d68c3f0a7: **SUCCESS** (Android XML, JVM unit suite, assembleDebug). No signed delivery APK produced; source branch remains separate from owner-installed APK.
+- Only remaining pre-release integration dependency is final Build 012 source. Build 013 was explicitly skipped by the owner. Avoid inventing a missing 013 branch or requiring it.
+- Phone/owner acceptance remains mandatory, particularly landscape layout, end-game archival, import/export and sound/speed behaviour. Do not merge into master or release as production until 012 code is reconciled and tested.
