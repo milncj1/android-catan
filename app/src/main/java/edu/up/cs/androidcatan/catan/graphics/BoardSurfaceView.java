@@ -2,6 +2,9 @@ package edu.up.cs.androidcatan.catan.graphics;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.os.SystemClock;
+import edu.up.cs.androidcatan.catan.CatanExperienceSettings;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceView;
@@ -46,6 +49,68 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
     private float cameraOffsetX = 0f;
     private float cameraOffsetY = 0f;
     private static final float MAX_ZOOM = 3.25f;
+
+    // Cosmetic effects ONLY: never saved, never used for hit testing/rules.
+    private transient int flashKind = 0; // 1 junction, 2 road, 3 hex
+    private transient int flashA = -1, flashB = -1;
+    private transient long flashStartedAt;
+    private transient int flashDuration;
+
+    private void flash(int kind, int a, int b) {
+        if (!CatanExperienceSettings.animations(getContext())) return;
+        this.flashKind = kind;
+        this.flashA = a;
+        this.flashB = b;
+        this.flashStartedAt = SystemClock.uptimeMillis();
+        this.flashDuration = CatanExperienceSettings.animationMillis(getContext(),
+                kind == 2 ? 340 : kind == 3 ? 450 : 480);
+        invalidate();
+    }
+
+    /** Glow at the actual junction where a settlement or city appeared. */
+    public void flashIntersection(int intersectionId) { flash(1, intersectionId, -1); }
+
+    /** Glow along the actual road that has just been built. */
+    public void flashRoad(int from, int to) { flash(2, from, to); }
+
+    /** Briefly mark the actual robber destination tile. */
+    public void flashHex(int hexId) { flash(3, hexId, -1); }
+
+    private void drawPresentationFlash(Canvas canvas) {
+        if (flashKind == 0 || grid == null || flashDuration <= 0) return;
+        long elapsed = SystemClock.uptimeMillis() - flashStartedAt;
+        if (elapsed < 0 || elapsed >= flashDuration) {
+            flashKind = 0;
+            return;
+        }
+        float fraction = elapsed / (float) flashDuration;
+        Paint pen = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pen.setStyle(Paint.Style.STROKE);
+        pen.setStrokeWidth(12f * (1.0f - fraction * 0.4f));
+        pen.setColor(0xFFFFD57D);
+        pen.setAlpha((int) (210 * (1f - fraction)));
+        IntersectionDrawable[] intersections = grid.getIntersections();
+        if (flashKind == 1 && flashA >= 0 && flashA < intersections.length
+                && intersections[flashA] != null) {
+            IntersectionDrawable vertex = intersections[flashA];
+            canvas.drawCircle(vertex.getXPos(), vertex.getYPos(),
+                    39f + 23f * fraction, pen);
+        } else if (flashKind == 2 && flashA >= 0 && flashB >= 0
+                && flashA < intersections.length && flashB < intersections.length
+                && intersections[flashA] != null && intersections[flashB] != null) {
+            canvas.drawLine(intersections[flashA].getXPos(),
+                    intersections[flashA].getYPos(), intersections[flashB].getXPos(),
+                    intersections[flashB].getYPos(), pen);
+        } else if (flashKind == 3) {
+            for (HexagonDrawable hex : grid.getDrawingHexagons()) {
+                if (hex.hexagonId == flashA) {
+                    canvas.drawCircle(hex.x, hex.y, 65f + 30f * fraction, pen);
+                    break;
+                }
+            }
+        }
+        postInvalidateDelayed(45L);
+    }
 
     public void resetCamera() {
         userZoom = 1.0f;
@@ -160,6 +225,7 @@ public class BoardSurfaceView extends SurfaceView implements Serializable {
             canvas.scale(viewportScale() * userZoom, viewportScale() * userZoom);
             canvas.translate(-BOARD_LEFT, -BOARD_TOP);
             grid.drawGameBoard(canvas);
+            drawPresentationFlash(canvas);
             canvas.restore();
         }
     }
