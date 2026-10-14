@@ -23,6 +23,7 @@ public class MainActivity extends GameMainActivity {
     private static final int PORT_NUMBER = 2278;
 
     private CatanSaveStore.Snapshot pendingResume;
+    private CatanLocalGame activeCatan;
     private boolean resumeSessionPending;
     private CatanBoardTopology.Island chosenIsland = CatanBoardTopology.Island.CLASSIC;
     private boolean suppressBoardSelection;
@@ -56,6 +57,7 @@ public class MainActivity extends GameMainActivity {
 
     @Override
     protected void onNewMatchRequested() {
+        activeCatan = null;
         pendingResume = null;
         resumeSessionPending = false;
     }
@@ -260,6 +262,18 @@ public class MainActivity extends GameMainActivity {
     }
 
     @Override
+    protected void onPause() {
+        if (activeCatan != null) activeCatan.onAppPaused();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (activeCatan != null) activeCatan.onAppResumed();
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode,
                                     android.content.Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -321,6 +335,7 @@ public class MainActivity extends GameMainActivity {
 
     @Override
     protected void onLocalMatchLaunched(LocalGame launched) {
+        activeCatan = launched instanceof CatanLocalGame ? (CatanLocalGame) launched : null;
         if (!resumeSessionPending || !(launched instanceof CatanLocalGame)) return;
         resumeSessionPending = false;
         final CatanLocalGame resumed = (CatanLocalGame) launched;
