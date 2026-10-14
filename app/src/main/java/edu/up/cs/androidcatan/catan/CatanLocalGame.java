@@ -365,7 +365,9 @@ public class CatanLocalGame extends LocalGame {
                 }
                 String giver = playerNames[actingPlayer];
                 String receiver = playerNames[chosen];
-                lastCompletedTradeDescription = giver + " traded resources with " + receiver;
+                lastCompletedTradeDescription = giver + " traded with " + receiver
+                        + ": " + formatBundle(pendingTrade.actualGiving(chosen))
+                        + " for " + formatBundle(pendingTrade.actualReceiving(chosen));
                 players[chosen].sendInfo(new CatanTradeInfo(
                         CatanTradeInfo.COMPLETE, pendingTrade.id, actingPlayer,
                         chosen, null, null, null, null, null,
