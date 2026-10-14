@@ -2012,6 +2012,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                     && !(earlier[junction] instanceof City);
             if (newBuilding || cityUpgrade) {
                 boardSurfaceView.flashIntersection(junction);
+                CatanExperienceSounds.play(myActivity, CatanExperienceSounds.Cue.BUILD);
                 return;
             }
         }
@@ -2029,6 +2030,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 if (!found) {
                     boardSurfaceView.flashRoad(road.getIntersectionAId(),
                             road.getIntersectionBId());
+                    CatanExperienceSounds.play(myActivity, CatanExperienceSounds.Cue.BUILD);
                     return;
                 }
             }
@@ -3403,6 +3405,7 @@ if(newGame) {
         // Engine archives the result immediately after announcing victory.
         // Delay the visual summary briefly so the atomic career write finishes.
         if (myActivity != null && state != null) {
+            CatanExperienceSounds.play(myActivity, CatanExperienceSounds.Cue.VICTORY);
             final String matchId = state.getMatchStats().getMatchId();
             myActivity.runOnUiThread(() ->
                 new android.os.Handler(android.os.Looper.getMainLooper())
