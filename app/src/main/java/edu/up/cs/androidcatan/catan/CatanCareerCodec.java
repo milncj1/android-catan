@@ -60,8 +60,11 @@ public final class CatanCareerCodec {
         ArrayList<CatanCareerRecord> result = new ArrayList<>();
         for (int i = 0; i < count; i++) result.add(readRecord(in));
         if (in.available() != 0) throw new IOException("Unexpected backup contents");
-        // Avoid allowing a backup with duplicate IDs to overwrite itself.
-        preview(Collections.<CatanCareerRecord>emptyList(), result);
+        // An imported file must never contain contradictory versions of the
+        // same match; reject it before presenting a confirmation dialog.
+        Preview internal = preview(Collections.<CatanCareerRecord>emptyList(), result);
+        if (internal.conflicts > 0)
+            throw new IOException("Backup contains conflicting match IDs");
         return result;
     }
 
