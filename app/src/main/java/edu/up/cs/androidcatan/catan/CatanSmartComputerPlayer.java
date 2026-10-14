@@ -117,8 +117,11 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 double bestValue = Double.NEGATIVE_INFINITY;
                 for (int vertex = 0; vertex < gs.getBoard().getBuildings().length; vertex++) {
                     if (!gs.getBoard().validBuildingLocation(playerNum, true, vertex)) continue;
-                    double value = CatanStrategy.scoreIntersection(gs, vertex, playerNum, difficulty)
-                            + random.nextDouble() * 0.1;
+                    double value = (difficulty.looksAhead()
+                            ? CatanAiPlanner.scoreSettlement(gs, vertex, playerNum,
+                                    difficulty == CatanAiDifficulty.EXPERT)
+                            : CatanStrategy.scoreIntersection(gs, vertex, playerNum))
+                            + random.nextDouble() * (difficulty == CatanAiDifficulty.EXPERT ? 0.005 : 0.1);
                     if (value > bestValue) {
                         best = vertex;
                         bestValue = value;
@@ -135,8 +138,11 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(placedSettlement)) {
                     if (!gs.getBoard().validRoadPlacement(playerNum, true,
                             placedSettlement, to, placedSettlement)) continue;
-                    double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum, difficulty)
-                            + random.nextDouble() * 0.1;
+                    double score = (difficulty.looksAhead()
+                            ? CatanAiPlanner.scoreRoad(gs, to, playerNum,
+                                    difficulty == CatanAiDifficulty.EXPERT)
+                            : CatanStrategy.scoreRoadDestination(gs, to, playerNum))
+                            + random.nextDouble() * (difficulty == CatanAiDifficulty.EXPERT ? .005 : .1);
                     if (score > bestValue) {
                         bestValue = score;
                         bestTo = to;
@@ -211,6 +217,14 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
                 //7. Check if player has move robber; if not move to random, VALID hexagon
                 if (!gs.getHasMovedRobber()) {
+                    if (difficulty.looksAhead()) {
+                        int hex = CatanAiPlanner.chooseRobberHex(gs, playerNum,
+                                difficulty == CatanAiDifficulty.EXPERT);
+                        if (hex >= 0) {
+                            game.sendAction(new CatanRobberMoveAction(this, playerNum, hex));
+                            return;
+                        }
+                    }
 
                     //8.Check Player who has most victory points and get player ID (Cannot be this player)
                     playerWithMostVPs = gs.getPlayerWithMostVPsExcludingCurrentPlayer(playerNum);
@@ -262,6 +276,8 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
                 //11. Now Steal from the selected intersection
                 sleep(250);
+                if (difficulty.looksAhead())
+                    playerWithMostVPs = gs.getPlayerWithMostVPsExcludingCurrentPlayer(playerNum);
                 int victim = -1;
                 if (gs.isRobberVictim(playerNum, playerWithMostVPs)) {
                     victim = playerWithMostVPs;
@@ -300,6 +316,14 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
             // Place them before considering any paid action or ending the turn.
             if (gs.getFreeRoadsRemaining() > 0) {
                 if (buildBestRoad(gs)) return;
+                game.sendAction(new CatanEndTurnAction(this));
+                return;
+            }
+
+            // The harder levels combine legal moves within one turn.
+            // The old Normal AI remains unchanged as the default.
+            if (difficulty.looksAhead()) {
+                if (takeAdvancedAction(gs)) return;
                 game.sendAction(new CatanEndTurnAction(this));
                 return;
             }
@@ -490,11 +514,127 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
     }// receiveInfo() END
 
     /**
+     * One accepted action per state update. Continues building/playing until
+     * no legal improvements remain, then the caller ends the turn.
+     */
+    private boolean takeAdvancedAction(CatanGameState gs) {
+        Player me = gs.getPlayerList().get(playerNum);
+        boolean expert = difficulty == CatanAiDifficulty.EXPERT;
+        int ownSettlements = 0, ownCities = 0, ownRoads = 0;
+        for (Building piece : gs.getBoard().getBuildings()) {
+            if (piece == null || piece.getOwnerId() != playerNum) continue;
+            if (piece instanceof Settlement) ownSettlements++;
+            else if (piece instanceof City) ownCities++;
+        }
+        for (Road road : gs.getBoard().getRoads())
+            if (road.getOwnerId() == playerNum) ownRoads++;
+
+        int settlement = ownSettlements < 5
+                ? CatanAiPlanner.bestNewSettlement(gs, playerNum, expert) : -1;
+        int city = ownCities < 4 ? CatanAiPlanner.bestCity(gs, playerNum, expert) : -1;
+        boolean canSettle = settlement >= 0
+                && me.hasResourceBundle(Settlement.resourceCost);
+        boolean canUpgrade = city >= 0 && me.hasResourceBundle(City.resourceCost);
+        int points = me.getVictoryPoints() + me.getVictoryPointsPrivate()
+                + (gs.getCurrentLongestRoadPlayerId() == playerNum ? 2 : 0)
+                + (gs.getCurrentLargestArmyPlayerId() == playerNum ? 2 : 0);
+
+        // Secure an immediate win instead of buying development cards.
+        if (points >= 9) {
+            if (canSettle) {
+                game.sendAction(new CatanBuildSettlementAction(this, false, playerNum, settlement));
+                return true;
+            }
+            if (canUpgrade) {
+                game.sendAction(new CatanBuildCityAction(this, false, playerNum, city));
+                return true;
+            }
+        }
+        if (expert && canUpgrade) {
+            game.sendAction(new CatanBuildCityAction(this, false, playerNum, city));
+            return true;
+        }
+        if (canSettle) {
+            game.sendAction(new CatanBuildSettlementAction(this, false, playerNum, settlement));
+            return true;
+        }
+        if (canUpgrade) {
+            game.sendAction(new CatanBuildCityAction(this, false, playerNum, city));
+            return true;
+        }
+
+        if (!gs.hasPlayedDevelopmentCardThisTurn()) {
+            ArrayList<Integer> playable = me.getPlayableDevCards();
+            if (ownRoads < 14 && playable.contains(4)
+                    && CatanAiPlanner.bestRoad(gs, playerNum, expert) != null) {
+                game.sendAction(new CatanUseRoadBuildingCardAction(this));
+                return true;
+            }
+            if (playable.contains(2)) {
+                int resource = leastAvailableResource(gs);
+                if (resource >= 0) {
+                    game.sendAction(new CatanUseYearOfPlentyCardAction(this, resource));
+                    return true;
+                }
+            }
+            if (playable.contains(0) && (expert || ownRoads >= 4)) {
+                game.sendAction(new CatanUseKnightCardAction(this));
+                return true;
+            }
+            if (playable.contains(3) && ownRoads >= 4) {
+                game.sendAction(new CatanUseMonopolyCardAction(this,
+                        CatanAiPlanner.chooseMonopolyResource(gs, playerNum)));
+                return true;
+            }
+        }
+
+        // Expand into reachable high-quality sites.
+        if (ownRoads < 15 && me.hasResourceBundle(Road.resourceCost)
+                && buildBestRoad(gs)) return true;
+
+        // A targeted bank trade can unlock a specific next build.
+        int[] trade = CatanAiPlanner.bestBankTrade(gs, playerNum, expert);
+        if (trade != null) {
+            game.sendAction(new CatanTradeWithBankAction(this, trade[0], trade[1]));
+            return true;
+        }
+
+        if (gs.hasDevelopmentCardsAvailable()
+                && me.hasResourceBundle(DevelopmentCard.resourceCost)) {
+            game.sendAction(new CatanBuyDevCardAction(this));
+            return true;
+        }
+        return false;
+    }
+
+    private int leastAvailableResource(CatanGameState gs) {
+        int[] hand = gs.getPlayerList().get(playerNum).getResourceCards();
+        int result = -1;
+        for (int r = 0; r < 5; r++) {
+            if (gs.getBankResourceCount(r) <= 0) continue;
+            if (result == -1 || hand[r] < hand[result]) result = r;
+        }
+        return result;
+    }
+
+    /**
      * Choose a legal road with the highest future expansion value.
      * Only place the road here; the next game-state callback chooses whether
      * to place another free road or finish the turn.
      */
     private boolean buildBestRoad(CatanGameState gs) {
+        int roadsUsed = 0;
+        for (Road road : gs.getBoard().getRoads())
+            if (road.getOwnerId() == playerNum) roadsUsed++;
+        if (roadsUsed >= 15) return false;
+        if (difficulty.looksAhead()) {
+            int[] choice = CatanAiPlanner.bestRoad(gs, playerNum,
+                    difficulty == CatanAiDifficulty.EXPERT);
+            if (choice == null) return false;
+            game.sendAction(new CatanBuildRoadAction(this, false, playerNum,
+                    choice[0], choice[1]));
+            return true;
+        }
         Random random = new Random();
         int bestFrom = -1, bestTo = -1;
         double bestScore = Double.NEGATIVE_INFINITY;
