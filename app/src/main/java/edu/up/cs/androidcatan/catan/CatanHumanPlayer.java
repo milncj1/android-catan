@@ -1851,12 +1851,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         // A player who did not need to discard, or has already discarded,
         // must never have an invisible/stale discard dialog blocking the board.
-        if (robberDiscardGroup != null
-                && (!state.isRobberPhase()
-                    || state.getRobberPlayerListHasDiscarded()[playerNum]))
-            robberDiscardGroup.setVisibility(View.GONE);
-        if (robberChooseHexGroup != null && !state.isRobberPhase())
-            robberChooseHexGroup.setVisibility(View.GONE);
+        // Legacy 2018 robber image menus must stay hidden at every stage.
+        if (robberDiscardGroup != null) robberDiscardGroup.setVisibility(View.GONE);
+        if (robberChooseHexGroup != null) robberChooseHexGroup.setVisibility(View.GONE);
 
         // if it is the robber phase
         if (this.state.getRobberPhase()) {
@@ -1881,9 +1878,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             //Player Discard Phase
             if (!state.getRobberPlayerListHasDiscarded()[playerNum]) {
                 Log.d(TAG, "updateTextViews: Has not discarded cards");
-                robberDiscardMessage.setText(String.format(myActivity.getString(R.string.select_n_cards_to_discard), state.getPlayerList().get(this.playerNum).getTotalResourceCardCount() / 2));
-                robberDiscardGroup.setVisibility(View.VISIBLE);
-                messageTextView.setText(R.string.select_half);
+                messageTextView.setText("Robber: discard half your cards if you hold more than seven.");
             }
 
             // Once the engine has acknowledged an automatic/manual discard,
@@ -1893,13 +1888,11 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             //Move Robber
             else if (state.getCurrentPlayerId() == playerNum && state.allPlayersHaveDiscarded() && !state.getHasMovedRobber()) {
                 Log.d(TAG, "updateTextViews: Now needs to move Robber");
-                messageTextView.setText(R.string.move_robber_to_hex);
-                robberChooseHexGroup.setVisibility(View.VISIBLE);
+                messageTextView.setText("Robber: tap a hexagon, then confirm the new location.");
                 //Robber Steal Phase
             } else if (state.getCurrentPlayerId() == playerNum && state.getHasMovedRobber()) { // todo
                 Log.d(TAG, "updateTextViews: Now needs to steal Robber");
-                messageTextView.setText(R.string.robber_select_intersection_tosteal);
-                robberChooseHexGroup.setVisibility(View.VISIBLE);
+                messageTextView.setText("Robber: choose an adjacent opponent by name.");
             }
 
             //TextViews when NOT HumanPlayer's Turn
@@ -2414,6 +2407,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         } else if (info instanceof IllegalMoveInfo) {
             if (developmentPurchasePending) rejectDevelopmentPurchase(false);
             else rejectPendingBuild(false);
+            if (state != null && state.isRobberPhase()) {
+                if (robberStageDialog != null) {
+                    robberStageDialog.dismiss();
+                    robberStageDialog = null;
+                }
+                robberActionPending = false;
+                refreshRobberFlow();
+            }
             Log.i(TAG, "receiveInfo: Illegal move info received.");
         } else {
             Log.e(TAG, "receiveInfo: Received instanceof not anything we know. Returning void.");
@@ -2509,6 +2510,10 @@ if(newGame) {
         robberWoolPlus = activity.findViewById(R.id.robber_discard_woolAddImg);
         robberWoolMinus = activity.findViewById(R.id.robber_discard_woolMinusImg);
         robberDiscardMessage = activity.findViewById(R.id.robber_discard_selectMoreResources);
+        if (robberStageDialog != null) robberStageDialog.dismiss();
+        robberStageDialog = null;
+        renderedRobberStage = CatanRobberSteps.Step.NONE;
+        robberActionPending = false;
         robberDiscardGroup = activity.findViewById(R.id.robber_discard_group);
         robberConfirmDiscard = activity.findViewById(R.id.robber_discard_confirm);
 
