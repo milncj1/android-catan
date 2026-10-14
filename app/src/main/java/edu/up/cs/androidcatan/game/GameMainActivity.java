@@ -612,13 +612,30 @@ View.OnClickListener {
 		// blank No GUI screen. Keep the Easy/Smart computer choices available.
 		if (finalConfig.getSelType(0) != options[0])
 			return "Choose Local Human Player for the first player (you).";
-		for (int i = 1; i < finalConfig.getNumPlayers(); i++) {
-			if (finalConfig.getSelType(i) != options[1]
-					&& finalConfig.getSelType(i) != options[2])
-				return "Every additional player must be a computer opponent.";
-		}
+        for (int i = 1; i < finalConfig.getNumPlayers(); i++) {
+            boolean computer = false;
+            for (int type = 1; type <= 4 && type < options.length; type++) {
+                if (finalConfig.getSelType(i) == options[type]) {
+                    computer = true;
+                    break;
+                }
+            }
+            if (!computer) return "Every additional player must be a computer opponent.";
+        }
 		return launchGame(finalConfig);
 	}
+
+    private int preferredComputerType = 2;
+
+    /** Apply the selected difficulty to all computer rows, old IDs retained. */
+    protected final void configureComputerDifficulty(int playerType) {
+        if (playerType < 1 || playerType > 4) return;
+        preferredComputerType = playerType;
+        for (int i = 1; i < tableRows.size(); i++) {
+            Spinner type = tableRows.get(i).findViewById(R.id.playerTypeSpinner);
+            if (type != null) type.setSelection(playerType);
+        }
+    }
 
     /** New offline options control the same existing per-player setup rows. */
     protected final void configureComputerOpponentRows(int opponents) {
@@ -635,7 +652,7 @@ View.OnClickListener {
             TableRow row = tableRows.get(i);
             Spinner type = row.findViewById(R.id.playerTypeSpinner);
             EditText name = row.findViewById(R.id.playerNameEditText);
-            type.setSelection(2);
+            type.setSelection(preferredComputerType);
             name.setText("Computer " + i);
         }
         if (playerTable != null) playerTable.invalidate();
