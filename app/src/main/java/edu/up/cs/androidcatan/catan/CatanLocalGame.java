@@ -149,6 +149,10 @@ public class CatanLocalGame extends LocalGame {
         lastActiveTick = now;
     }
 
+    public boolean isFinishedMatch() {
+        return state != null && state.getMatchStats().isCompleted();
+    }
+
     private boolean menuExitScheduled;
 
     /**
