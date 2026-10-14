@@ -40,6 +40,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberMoveAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithCustomPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
@@ -831,10 +832,8 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
         // A single responsive trade dialog replaces the rigid 26-view overlay.
         if (button.getId() == R.id.sidebar_button_trade) {
-            if (selectedIntersections.size() > 1) {
-                messageTextView.setText("Select one port intersection, or clear selection for the bank.");
-                return;
-            }
+            // Harbour access is detected automatically. Never require the
+            // player to choose a board intersection just to trade.
             showTradeDialog();
             return;
         }
@@ -2609,70 +2608,114 @@ if(newGame) {
     }
 
     /**
-     * Spinners, labels and buttons sit inside a native, scrollable dialog.
-     * Android sizes it to the landscape window; selections still invoke the
-     * existing bank/port trading logic and engine-level validation.
+     * Build 011: an uncluttered, landscape-safe bank/harbour screen, opened by
+     * the ORIGINAL Trade button. The player never selects a harbour manually.
+     * A future Players tab will share the same entry point.
      */
     private void showTradeDialog() {
-        if (myActivity == null) return;
+        if (myActivity == null || state == null) return;
         final String[] resources = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
-        final boolean viaPort = selectedIntersections.size() == 1;
-
-        LinearLayout contents = new LinearLayout(myActivity);
-        contents.setOrientation(LinearLayout.VERTICAL);
-        int pad = (int) (18 * myActivity.getResources().getDisplayMetrics().density);
-        contents.setPadding(pad, pad / 2, pad, pad / 2);
+        final int pad = (int) (14 * myActivity.getResources().getDisplayMetrics().density);
+        LinearLayout content = new LinearLayout(myActivity);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(pad, pad / 2, pad, pad / 2);
 
         TextView explanation = new TextView(myActivity);
-        explanation.setText(viaPort
-                ? "Port trade: choose what to give and receive. Your selected settlement must own this port."
-                : "Bank trade: give 4 of one resource to receive 1 of another.");
-        explanation.setTextSize(15f);
-        contents.addView(explanation);
+        explanation.setText("Your best bank or owned-harbour rate is applied automatically.");
+        explanation.setTextSize(13f);
+        content.addView(explanation);
 
-        TextView giveLabel = new TextView(myActivity);
-        giveLabel.setText("You give");
-        giveLabel.setPadding(0, pad / 2, 0, 0);
-        contents.addView(giveLabel);
+        if (state.getMarketState().getActiveEvent() != null) {
+            TextView marketNotice = new TextView(myActivity);
+            marketNotice.setText(state.getMarketState().announcement());
+            marketNotice.setTextSize(12f);
+            marketNotice.setPadding(0, pad / 2, 0, pad / 2);
+            content.addView(marketNotice);
+        }
+
+        TextView givingLabel = new TextView(myActivity);
+        givingLabel.setText("You give");
+        givingLabel.setPadding(0, pad / 2, 0, 0);
+        content.addView(givingLabel);
+
         Spinner give = new Spinner(myActivity);
-        give.setAdapter(new ArrayAdapter<String>(myActivity,
-                android.R.layout.simple_spinner_dropdown_item, resources));
-        contents.addView(give);
+        android.widget.ArrayAdapter<String> giveChoices = new android.widget.ArrayAdapter<>(
+                myActivity, android.R.layout.simple_spinner_dropdown_item, resources);
+        give.setAdapter(giveChoices);
+        content.addView(give);
 
-        TextView receiveLabel = new TextView(myActivity);
-        receiveLabel.setText("You receive");
-        receiveLabel.setPadding(0, pad / 2, 0, 0);
-        contents.addView(receiveLabel);
+        TextView receivingLabel = new TextView(myActivity);
+        receivingLabel.setText("You receive");
+        receivingLabel.setPadding(0, pad / 2, 0, 0);
+        content.addView(receivingLabel);
+
         Spinner receive = new Spinner(myActivity);
-        receive.setAdapter(new ArrayAdapter<String>(myActivity,
-                android.R.layout.simple_spinner_dropdown_item, resources));
+        android.widget.ArrayAdapter<String> receiveChoices = new android.widget.ArrayAdapter<>(
+                myActivity, android.R.layout.simple_spinner_dropdown_item, resources);
+        receive.setAdapter(receiveChoices);
         receive.setSelection(1);
-        contents.addView(receive);
+        content.addView(receive);
 
-        ScrollView scrolling = new ScrollView(myActivity);
-        scrolling.setFillViewport(false);
-        scrolling.addView(contents);
+        TextView preview = new TextView(myActivity);
+        preview.setTextSize(13f);
+        preview.setPadding(0, pad / 2, 0, pad / 2);
+        content.addView(preview);
 
-        new AlertDialog.Builder(myActivity)
-                .setTitle(viaPort ? "Trade with port" : "Trade with bank")
-                .setView(scrolling)
-                .setPositiveButton("Trade", (dialog, which) -> {
+        Runnable refresh = () -> {
+            int giving = give.getSelectedItemPosition();
+            int receiving = receive.getSelectedItemPosition();
+            if (giving < 0 || receiving < 0) return;
+            int rate = CatanTradingRules.bestRate(state, playerNum, giving, receiving);
+            int held = state.getPlayerList().get(playerNum).getResourceCards()[giving];
+            if (giving == receiving) preview.setText("Choose two different resources.");
+            else if (rate < 1) preview.setText("This exchange is unavailable at present.");
+            else preview.setText("Give " + rate + " " + resources[giving]
+                    + "  →  Receive 1 " + resources[receiving]
+                    + "     (you hold " + held + " " + resources[giving] + ")"
+                    + (held < rate ? "\nNot enough resources yet." : ""));
+        };
+        android.widget.AdapterView.OnItemSelectedListener listener =
+                new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                    View view, int position, long id) { refresh.run(); }
+        };
+        give.setOnItemSelectedListener(listener);
+        receive.setOnItemSelectedListener(listener);
+        refresh.run();
+
+        ScrollView scroll = new ScrollView(myActivity);
+        scroll.setFillViewport(false);
+        scroll.addView(content);
+
+        final AlertDialog dialog = new AlertDialog.Builder(myActivity)
+                .setTitle("Bank & Harbours")
+                .setView(scroll)
+                .setPositiveButton("Trade", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
                     int giving = give.getSelectedItemPosition();
                     int receiving = receive.getSelectedItemPosition();
-                    boolean accepted = viaPort
-                            ? tryTradeWithPort(giving, receiving)
-                            : tryTradeWithBank(giving, receiving);
-                    if (accepted) {
-                        selectedIntersections.clear();
-                        tradeGiveSelection = -1;
-                        tradeReceiveSelection = -1;
-                    } else {
-                        Toast.makeText(myActivity, "Trade not available. Check the port and resources.",
+                    int rate = CatanTradingRules.bestRate(state, playerNum, giving, receiving);
+                    boolean turn = state.getCurrentPlayerId() == playerNum
+                            && state.isActionPhase() && !state.isSetupPhase()
+                            && !state.isRobberPhase();
+                    if (!turn || rate < 1 || !state.getPlayerList().get(playerNum)
+                            .checkResourceCard(giving, rate)) {
+                        Toast.makeText(myActivity,
+                                turn ? "Trade not available. Check your resources and market."
+                                        : "You can trade only after rolling on your turn.",
                                 Toast.LENGTH_LONG).show();
+                        refresh.run();
+                        return;
                     }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                    game.sendAction(new CatanTradeWithAutoBankAction(
+                            CatanHumanPlayer.this, giving, receiving));
+                    dialog.dismiss();
+                }));
+        dialog.show();
     }
 
     /**
