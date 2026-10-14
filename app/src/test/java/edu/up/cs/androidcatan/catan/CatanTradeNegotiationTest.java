@@ -116,4 +116,23 @@ public final class CatanTradeNegotiationTest {
         assertFalse("Next round rotates away from first three", market.mayComputerOffer(1, 7));
         assertTrue(market.mayComputerOffer(4, 7));
     }
+
+    @Test public void mutingCpuInvitationsLastsOnlyUntilNextCompleteRound() {
+        CatanGameState game = match();
+        CatanMarketState market = game.getMarketState();
+        assertTrue(market.mayComputerOffer(1, 7));
+        market.muteOffersUntilNextRound();
+        assertTrue(market.areOffersMutedThisRound());
+        for (int cpu = 1; cpu <= 6; cpu++)
+            assertFalse(market.mayComputerOffer(cpu, 7));
+        // Ordinary player-initiated trade negotiations must still work.
+        CatanTradeNegotiation manual = offer(game);
+        assertNotNull(manual);
+        CatanGameState copied = new CatanGameState(game);
+        assertTrue(copied.getMarketState().areOffersMutedThisRound());
+        market.onRoundCompleted(game, new java.util.Random(2));
+        assertFalse(market.areOffersMutedThisRound());
+        assertTrue(market.mayComputerOffer(4, 7));
+    }
+
 }
