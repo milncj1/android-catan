@@ -169,50 +169,9 @@ public final class CatanCareerUi {
         dialog(a, "Match Statistics", root);
     }
 
+    /** The shared celebratory result panel works from the board and Career. */
     public static void showRecord(Activity a, CatanCareerRecord record) {
-        LinearLayout root = column(a);
-        String[] names = record.names();
-        title(a, root, "Winner: " + names[record.winner]);
-        line(a, root, formattedDate(record.finishedAt) + " · "
-                + record.island + " · " + (record.players() - 1) + " opponents");
-        line(a, root, record.rounds + " recorded rounds · " + duration(record.activeMillis));
-        if (record.partialStatistics)
-            line(a, root, "Partial statistics: this game began in an older version.");
-        title(a, root, "Final standings");
-        int[] scores = record.finalScores();
-        for (int p = 0; p < names.length; p++)
-            line(a, root, names[p] + " — " + scores[p] + " VP"
-                    + (p == record.winner ? "  ★ Winner" : ""));
-        title(a, root, "Dice distribution");
-        bars(a, root, rollLabels(), diceValues(record.dice()));
-        title(a, root, "Resource production");
-        resourceRows(a, root, record.production(), names);
-        title(a, root, "Trading and building");
-        int[] trades = record.playerTrades(), bank = record.bankTrades();
-        int[] roads = record.roads(), settlers = record.settlements();
-        int[] cities = record.cities(), dev = record.developmentCards();
-        for (int p = 0; p < names.length; p++)
-            line(a, root, names[p] + ": " + trades[p] + " player trades, "
-                    + bank[p] + " bank/harbour, " + roads[p] + " roads, "
-                    + settlers[p] + " settlements, " + cities[p] + " cities, "
-                    + dev[p] + " dev cards");
-        title(a, root, "Public points by round");
-        root.addView(new CatanCareerGraph(a,
-                java.util.Arrays.asList(record.publicScoreHistory()), names),
-                new LinearLayout.LayoutParams(-1, dp(a, 164)));
-        int[][] fullHistory = record.publicScoreHistory();
-        int firstRound = Math.max(0, fullHistory.length - 40);
-        if (firstRound > 0)
-            line(a, root, "Showing the latest 40 of " + fullHistory.length
-                    + " rounds; the graph includes the full match.");
-        for (int round = firstRound; round < fullHistory.length; round++) {
-            int[] score = fullHistory[round];
-            StringBuilder line = new StringBuilder("Round " + (round + 1) + ": ");
-            for (int p = 0; p < score.length; p++)
-                line.append(p > 0 ? " · " : "").append(names[p]).append(" ").append(score[p]);
-            line(a, root, line.toString());
-        }
-        dialog(a, "Completed Match", root);
+        CatanResultUi.show(a, record);
     }
 
     public static void showLatest(Activity a, String id) {
