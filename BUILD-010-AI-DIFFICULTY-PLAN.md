@@ -2,7 +2,7 @@
 
 Date: 14 October 2026
 Development branch: `dev/android-modernisation`
-Status: **Initial code committed; static review successful. No Build 010 APK, GitHub Actions run or owner acceptance.**
+Status: **Build 010 compiled, unit-tested and permanently signed; awaiting Samsung testing and owner acceptance.**
 Known phone baseline: Build 007 confirmed; Builds 008 and 009 compiled/delivered but phone acceptance not recorded.
 Do not touch `master`. Do not create an `apk-build/**` snapshot or trigger CI without owner's explicit approval.
 Never change permanent signing identity, package or serialVersionUID of existing saves.
@@ -63,3 +63,12 @@ After owner requested continued Build 010 development and asked specifically wha
 - **Hard/Expert:** Continue to use their stronger public-information decision evaluator, multi-build turn logic, and the shared bank/robber validation from the engine. Both must be tested for illegal action loops before owner acceptance.
 - Additional pure JUnit regression cases now cover legal advanced-road selection on all 3 islands, useful 4:1 exchanges and valid robber movement avoiding desert/current tile.
 - **11 static source checks passed. This is not a compile/test or phone acceptance result.** No `apk-build/**` branch or CI run triggered for Build 010.
+
+## Owner-approved Build 010 — 14 October 2026
+- Owner said "Go on" following proposal to produce one Build 010 test APK. Snapshot branch `apk-build/010-ai-difficulty` created from dev commit `40168f51bdb069954b4ba6550f30a7237115355e`.
+- [GitHub Actions run 38538283515](https://github.com/milncj1/android-catan/actions/runs/38538283515), run number **13**, first attempt **SUCCESS**. XML validation, `:app:testDebugUnitTest`, `:app:assembleDebug` passed. No re-runs and no Codex usage.
+- Signed locally using original `catan-permanent` PKCS12 certificate; verified SHA256 certificate `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97` matches previous builds.
+- Release file `Catan_Build_010_Permanent_Signed.apk`, 27,243,908 bytes, SHA256 `c87ada8991a77877b81d753dda80f100eb8397f338df3bf585ca544a361e8a3e`. Signed archive ZIP CRC and JAR signature verified.
+- Package `edu.up.cs.androidcatan`, expected `versionCode=13` (GitHub Actions run number; Build 009 versionCode 12). Original save filename, package and serialVersionUID values untouched. Local temporary signing key/password copies deleted; secure Library originals remain.
+- **Not yet Samsung-installed or accepted.** Build 009 was delivered but not owner-confirmed to work; Build 007 is the last explicitly confirmed installed-working baseline. Do not merge into master.
+- Device acceptance: update without uninstall; continue saved match first; verify difficulty selector Easy/Normal/Hard/Expert; test a match with each on 19/30/37 island modes, opening snake placement, development-card draw/play, robber turn, no CPU loops, autosave resume, 10 VP game over. No player may gain extra resources or know secret opponent hands.
