@@ -105,6 +105,18 @@ public class MainActivity extends GameMainActivity {
                 return new CatanSmartComputerPlayer(name);
             }
         });
+        // Append rather than renumber old type IDs: existing saved matches
+        // store type 1 for Easy and type 2 for the original smart opponent.
+        playerTypes.add(new GamePlayerType("Hard Computer") {
+            public GamePlayer createPlayer(String name) {
+                return new CatanSmartComputerPlayer(name, CatanAiDifficulty.HARD);
+            }
+        });
+        playerTypes.add(new GamePlayerType("Expert Computer") {
+            public GamePlayer createPlayer(String name) {
+                return new CatanSmartComputerPlayer(name, CatanAiDifficulty.EXPERT);
+            }
+        });
 
         GameConfig defaultConfig = new GameConfig(playerTypes, 2, 7, "Settlers of Catan", PORT_NUMBER);
         defaultConfig.addPlayer("Human", 0); // player 1: a human player
@@ -136,6 +148,38 @@ public class MainActivity extends GameMainActivity {
                         "4 computers", "5 computers", "6 computers"});
         computerChoices.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         opponents.setAdapter(computerChoices);
+
+        final android.widget.Spinner difficulty =
+                findViewById(edu.up.cs.androidcatan.R.id.new_game_difficulty);
+        final android.widget.TextView difficultyHint =
+                findViewById(edu.up.cs.androidcatan.R.id.new_game_difficulty_hint);
+        if (difficulty != null) {
+            android.widget.ArrayAdapter<String> levels = new android.widget.ArrayAdapter<>(
+                    this, android.R.layout.simple_spinner_item,
+                    new String[]{"Easy", "Normal", "Hard", "Expert"});
+            levels.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            difficulty.setAdapter(levels);
+            difficulty.setSelection(1); // Keep the current smart CPU as default.
+            difficulty.setOnItemSelectedListener(
+                    new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+                @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                                android.view.View view, int position, long id) {
+                    CatanAiDifficulty selected = CatanAiDifficulty.values()[position];
+                    configureComputerDifficulty(selected.playerType);
+                    if (difficultyHint != null) {
+                        String description = position == 0
+                                ? "Easy: forgiving, less predictable random moves"
+                                : position == 1
+                                    ? "Normal: sensible resources and expansion"
+                                    : position == 2
+                                        ? "Hard: resource balance, harbours and longer turns"
+                                        : "Expert: more planning, contested sites and blocking";
+                        difficultyHint.setText(description + " · same resources and dice");
+                    }
+                }
+            });
+        }
 
         int count = currentComputerOpponentRows();
         chosenIsland = suggestedIsland(count);
