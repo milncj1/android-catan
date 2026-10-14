@@ -41,6 +41,23 @@ public final class CatanTradeResponsesInfo extends GameInfo {
     public static CatanTradeResponsesInfo completed() {
         return new CatanTradeResponsesInfo(0, new ArrayList<Response>(), true);
     }
+    /** Adapt engine-approved private replies for the existing comparison panel. */
+    public static CatanTradeResponsesInfo fromTradeInfo(CatanTradeInfo info) {
+        ArrayList<Response> translated = new ArrayList<>();
+        int[] status = info.getStatus();
+        int[][] counterGiven = info.getCounterGiving();
+        int[][] counterWanted = info.getCounterReceiving();
+        if (status != null) for (int id = 0; id < status.length; id++) {
+            if (status[id] == CatanTradeNegotiation.NOT_INVITED) continue;
+            int verdict = status[id] == CatanTradeNegotiation.ACCEPTED ? ACCEPT
+                    : status[id] == CatanTradeNegotiation.COUNTERED ? COUNTER : DECLINE;
+            int[] offered = verdict == COUNTER ? counterGiven[id] : info.getGiving();
+            int[] requested = verdict == COUNTER ? counterWanted[id] : info.getReceiving();
+            translated.add(new Response(id, verdict, offered, requested));
+        }
+        return new CatanTradeResponsesInfo(info.getOfferId(), translated);
+    }
+
     public long getOfferId() { return offerId; }
     public List<Response> getResponses() { return new ArrayList<>(responses); }
     public boolean isConfirmation() { return confirmation; }
