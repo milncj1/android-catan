@@ -148,6 +148,41 @@
             android:textColor="#FF655B46"
             android:layout_marginBottom="4dp" />
 
+        <!-- Actual editable local-player name, independent of hidden legacy rows. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="5dp">
+            <TextView
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:text="YOUR NAME"
+                android:textStyle="bold"
+                android:textSize="11sp"
+                android:textColor="#FF254B3F" />
+            <EditText
+                android:id="@+id/new_game_player_name"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="40dp"
+                android:background="@drawable/start_player_field"
+                android:paddingStart="12dp"
+                android:paddingEnd="10dp"
+                android:text="You"
+                android:hint="Your player name"
+                android:textColor="#FF254B3F"
+                android:textColorHint="#FF777567"
+                android:textSize="14sp"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:maxLength="40"
+                android:inputType="textPersonName"
+                android:imeOptions="actionDone"
+                android:contentDescription="Your player name" />
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
