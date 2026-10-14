@@ -130,10 +130,10 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
         /*-------------------------------CPUs Roll Dice Action--------------------------------------*/
         if (!gs.isSetupPhase() && !gs.isActionPhase() && !gs.isRobberPhase()
                 && gs.getCurrentPlayerId() == playerNum) {
-            sleep(1000);
+            sleep(CatanExperienceSettings.pauseMillis(1000));
             Log.i(TAG, "receiveInfo: RollDiceAction by DumbComputerPlayer " + this.playerNum);
             game.sendAction(new CatanRollDiceAction(this));
-            sleep(500);
+            sleep(CatanExperienceSettings.pauseMillis(500));
             return;
         }
 
