@@ -17,6 +17,10 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
 import edu.up.cs.androidcatan.catan.actions.CatanBuyDevCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
+import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
+import edu.up.cs.androidcatan.catan.actions.CatanUseMonopolyCardAction;
+import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
+import edu.up.cs.androidcatan.catan.actions.CatanUseYearOfPlentyCardAction;
 import edu.up.cs.androidcatan.catan.gamestate.DevelopmentCard;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Building;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.City;
@@ -216,6 +220,50 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
                     if (from < to && gs.getBoard().validRoadPlacement(playerNum, false, from, to))
                         legal.add(new int[]{2, from, to});
         }
+        // Never waste Road Building's second free road by ending the turn.
+        if (gs.getFreeRoadsRemaining() > 0) {
+            ArrayList<int[]> freeRoads = new ArrayList<>();
+            for (int[] move : legal) if (move[0] == 2) freeRoads.add(move);
+            if (!freeRoads.isEmpty()) {
+                int[] chosen = freeRoads.get(random.nextInt(freeRoads.size()));
+                game.sendAction(new CatanBuildRoadAction(this, false, playerNum,
+                        chosen[1], chosen[2]));
+                return;
+            }
+            game.sendAction(new CatanEndTurnAction(this));
+            return;
+        }
+
+        if (!gs.hasPlayedDevelopmentCardThisTurn() && random.nextInt(3) == 0) {
+            ArrayList<Integer> playable = new ArrayList<>();
+            for (Integer card : me.getPlayableDevCards()) {
+                if (card == 0 || card == 3) playable.add(card);
+                else if (card == 2) {
+                    for (int r = 0; r < 5; r++)
+                        if (gs.getBankResourceCount(r) > 0) { playable.add(card); break; }
+                } else if (card == 4 && roadCount < 15) {
+                    for (int[] move : legal)
+                        if (move[0] == 2) { playable.add(card); break; }
+                }
+            }
+            if (!playable.isEmpty()) {
+                int card = playable.get(random.nextInt(playable.size()));
+                if (card == 0) game.sendAction(new CatanUseKnightCardAction(this));
+                else if (card == 3) {
+                    game.sendAction(new CatanUseMonopolyCardAction(this, random.nextInt(5)));
+                } else if (card == 2) {
+                    ArrayList<Integer> available = new ArrayList<>();
+                    for (int r = 0; r < 5; r++)
+                        if (gs.getBankResourceCount(r) > 0) available.add(r);
+                    int resource = available.get(random.nextInt(available.size()));
+                    game.sendAction(new CatanUseYearOfPlentyCardAction(this, resource));
+                } else if (card == 4) {
+                    game.sendAction(new CatanUseRoadBuildingCardAction(this));
+                }
+                return;
+            }
+        }
+
         // Easy occasionally wastes a turn, but usually uses opportunities.
         if (!legal.isEmpty() && random.nextInt(5) != 0) {
             int[] move = legal.get(random.nextInt(legal.size()));
