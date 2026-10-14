@@ -702,6 +702,10 @@ public class Board implements Serializable {
      * randomly assigning them to locations. Also randomly gives Hexagon a chit value.
      */
     private void generateHexagonTiles() {
+        if (getIsland() != CatanBoardTopology.Island.CLASSIC) {
+            generateDynamicHexagonTiles();
+            return;
+        }
         Log.i(TAG, "generateHexagonTiles() called");
 
         //arrays that contain information regarding what each hexagon will contain
@@ -755,6 +759,41 @@ public class Board implements Serializable {
                 Log.e(TAG, "generateHexagonTiles: Resource tile count check failed for resource " + i + ". There are " + resourceCountChecks[i] + " of this resources when there should only be " + resourceTypeCountsCorrect[i] + ".");
             }
         }
+    }
+
+    /**
+     * Larger maps keep the original five resources and number-token
+     * probabilities, expanding the finite tile bag with each island.
+     * Two deserts on both custom island sizes.
+     */
+    private void generateDynamicHexagonTiles() {
+        final boolean grand = getIsland() == CatanBoardTopology.Island.GRAND;
+        // Resources: brick, grain, lumber, ore, wool, desert.
+        int[] quantities = grand
+                ? new int[]{6, 8, 8, 6, 7, 2}
+                : new int[]{5, 6, 6, 5, 6, 2};
+        ArrayList<Integer> resourceBag = new ArrayList<>();
+        for (int i = 0; i < quantities.length; i++)
+            for (int j = 0; j < quantities[i]; j++)
+                resourceBag.add(i);
+        Collections.shuffle(resourceBag);
+
+        ArrayList<Integer> numbers = generateChitList();
+        // Add numbers in balanced pairs; avoid inflating the frequency
+        // of only high-yield tiles on the custom larger boards.
+        int[] extensions = grand
+                ? new int[]{3, 4, 5, 6, 8, 9, 10, 11, 3, 4, 5, 9, 10, 11, 2, 12, 6}
+                : new int[]{3, 4, 5, 6, 8, 9, 10, 11, 3, 10};
+        for (int n : extensions) numbers.add(n);
+        Collections.shuffle(numbers);
+        int numbered = 0, robberHex = -1;
+        for (int i = 0; i < resourceBag.size(); i++) {
+            int resource = resourceBag.get(i);
+            int dice = resource == 5 ? 0 : numbers.get(numbered++);
+            hexagons.add(new Hexagon(resource, dice, i));
+            if (resource == 5 && robberHex < 0) robberHex = i;
+        }
+        robber.setHexagonId(robberHex);
     }
 
     /**
