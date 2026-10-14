@@ -14,6 +14,7 @@ final class CatanTradeNegotiation {
     final int[] giving, receiving;
     private final int[] status;
     private final int[][] counterGiving, counterReceiving;
+    private boolean executed;
 
     CatanTradeNegotiation(long id, CatanGameState game, int proposer,
                           int[] targets, int[] giving, int[] receiving) {
@@ -77,12 +78,21 @@ final class CatanTradeNegotiation {
     }
 
     boolean choose(CatanGameState game, int proposerId, int partner) {
-        if (proposerId != proposer || partner < 0 || !invited(partner)
+        if (executed || proposerId != proposer || partner < 0 || !invited(partner)
                 || !complete() || (status[partner] != ACCEPTED
                 && status[partner] != COUNTERED)) return false;
-        return CatanTradingRules.exchangeBetweenPlayers(game, proposer, partner,
-                status[partner] == COUNTERED ? counterGiving[partner] : giving,
-                status[partner] == COUNTERED ? counterReceiving[partner] : receiving);
+        boolean succeeded = CatanTradingRules.exchangeBetweenPlayers(
+                game, proposer, partner, actualGiving(partner), actualReceiving(partner));
+        if (succeeded) executed = true;
+        return succeeded;
+    }
+
+    int[] actualGiving(int partner) {
+        return status[partner] == COUNTERED ? counterGiving[partner].clone() : giving.clone();
+    }
+
+    int[] actualReceiving(int partner) {
+        return status[partner] == COUNTERED ? counterReceiving[partner].clone() : receiving.clone();
     }
 
     CatanTradeInfo requestInfo() {
