@@ -760,12 +760,28 @@ View.OnClickListener {
 		// The old network tab is hidden; every game is offline.
 		result.setLocal(true);
 
+		// The redesigned Catan setup uses a clearly visible name field.
+		// Legacy table rows stay mounted for backwards-compatible configuration,
+		// but their hidden name inputs must never prevent starting a game.
+		EditText visibleHumanName = findViewById(R.id.new_game_player_name);
+		int playerNumber = 0;
 		// Retrieve the info for each player and add to the config
 		for (TableRow row : this.tableRows) {
-			//player name
-			EditText nameEditor = row
-					.findViewById(R.id.playerNameEditText);
-			String name = nameEditor.getText().toString();
+			EditText nameEditor = row.findViewById(R.id.playerNameEditText);
+			String name = nameEditor == null ? "" : nameEditor.getText().toString().trim();
+			if (playerNumber == 0 && visibleHumanName != null) {
+				name = visibleHumanName.getText().toString().trim();
+				// Never trap the user if an empty field slips through a
+				// keyboard reset, saved setup or orientation change.
+				if (name.isEmpty()) name = "You";
+				// Keep the original framework row in sync for Save setup too.
+				if (nameEditor != null) nameEditor.setText(name);
+			}
+			else if (playerNumber > 0 && name.isEmpty()) {
+				name = "Computer " + playerNumber;
+				if (nameEditor != null) nameEditor.setText(name);
+			}
+			playerNumber++;
 
 			//index of player type
 			Spinner typeSpinner = row
