@@ -2821,6 +2821,11 @@ if(newGame) {
                 applyHudVisibility();
             }
         });
+        Button mainMenu = activity.findViewById(R.id.match_main_menu_button);
+        if (mainMenu != null) mainMenu.setOnClickListener(v -> {
+            if (myActivity instanceof MainActivity)
+                ((MainActivity) myActivity).confirmReturnToMainMenu();
+        });
         Button resetCamera = activity.findViewById(R.id.board_reset_view);
         if (resetCamera != null) resetCamera.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
