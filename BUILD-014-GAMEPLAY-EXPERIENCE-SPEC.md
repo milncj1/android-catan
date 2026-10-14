@@ -157,3 +157,15 @@ Owner asked to continue implementing 014; no additional change of specification.
 - Parsed actual AndroidManifest.xml from both APKs: applicationId `edu.up.cs.androidcatan`, Build 011 versionCode **21**, Build 014 test versionCode **25**, same versionName `1.2-preview`. This candidate is designed for an **in-place Android update over Build 011, without uninstalling/clearing data**. Android on-device acceptance still pending.
 - This is a **standalone QA build of 014** based on 011, **NOT a final integrated 012+014 release**. The final release must incorporate finished 012 when its source is available, choose a higher versionCode than any installed candidate, pass tests and be signed with this original identity.
 - Owner's in-progress saves and local history must be checked on device before stable approval. Never label the QA APK as full Build 012 integration.
+
+## Build 014 QA26 — visible player-name repair, 14 October 2026
+
+- **Reported on Samsung after installing QA25:** start screen displayed "Local player name cannot be empty" when starting a new match; there was no visible name entry, because the original GameMainActivity still scraped the legacy player-row UI hidden behind the redesigned tab/scroll layout.
+- Fix: explicitly add visible **YOUR NAME** field to `game_config_main.xml`, default `You`, user-editable and remembered in local SharedPreferences. The name is authoritative for Start New Game / Save Setup.
+- Make `GameMainActivity.scrapeData()` use the visible name field, normalize blank human names to `You`, and safely supply missing CPU names `Computer 1`, etc. The hidden framework rows are kept for gameplay and legacy setup compatibility; the saved-game Continue flow remains unmodified.
+- Added a pure Java `CatanPlayerNames` helper with dedicated JUnit regression tests for entered, blank and missing names.
+- Automated QA snapshot `apk-build/014-player-name-repair` SHA `764f8d60287d7346f72e88fb95bd779007a2508e`, [GitHub Actions run 38610233531](https://github.com/milncj1/android-catan/actions/runs/38610233531): **SUCCESS** (Android layout validation, unit tests, assembleDebug).
+- Retrieved generated build-number 26 APK from GitHub Actions and locally signed it with the **original permanent signing key**, without uploading credentials to public GitHub.
+- Delivered `Catan_Build_014_Name_Fix_Permanent_Signed.apk`, 27,300,949 bytes, SHA256 `d449952cfb1b4a6f267c1a30149ab60b61ca2d7d9ebb81bb9b24b0fcc26def05`.
+- Signing certificate SHA256 verified unchanged: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`. New APK is versionCode **26**, higher than previous installed QA25.
+- Requires phone acceptance: visible field, Start New Game, Continue existing saved game, saved career data, landscape fit. **Install as update; never uninstall or clear data.** No Build 012 integration yet.
