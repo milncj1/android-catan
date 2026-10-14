@@ -72,6 +72,11 @@ public final class CatanCareerStore {
         if (context == null || game == null) return false;
         try {
             ArrayList<CatanCareerRecord> current = read(context);
+            // A repeated game-over callback must be harmless; the completed
+            // record already exists and must never get a different end time.
+            String matchId = game.getMatchStats().getMatchId();
+            for (CatanCareerRecord saved : current)
+                if (saved.id.equals(matchId)) return true;
             CatanCareerRecord next = CatanCareerRecord.finished(game, names, types, winner);
             ArrayList<CatanCareerRecord> merged = CatanCareerCodec.merge(
                     current, Collections.singletonList(next));
