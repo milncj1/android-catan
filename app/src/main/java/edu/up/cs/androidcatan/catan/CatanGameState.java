@@ -259,7 +259,7 @@ public class CatanGameState extends GameState {
      */
     int getBankResourceCount(int resourceId) {
         if (resourceId < 0 || resourceId >= 5) return 0;
-        int remaining = board.getIsland() == CatanBoardTopology.Island.CLASSIC ? 19 : 24;
+        int remaining = playerList.size() > 4 || board.getIsland() != CatanBoardTopology.Island.CLASSIC ? 24 : 19;
         for (Player player : playerList) {
             remaining -= player.getResourceCards()[resourceId];
         }
