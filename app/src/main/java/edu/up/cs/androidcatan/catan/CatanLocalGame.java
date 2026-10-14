@@ -92,11 +92,43 @@ public class CatanLocalGame extends LocalGame {
     }
 
     @Override protected void onAcceptedMove() {
+        recordAcceptedStats(lastAcceptedCandidate);
         publishAcceptedMove(lastAcceptedCandidate);
         lastRollHandsBefore = null;
         // Resumed CPUs may act before the UI is connected. Keep the original
         // snapshot intact until the human can see the board again.
         if (!resumedFromSave || restoredBoardDisplayed) persistMatch();
+    }
+
+    /**
+     * Audit only authoritative, accepted moves. Never count rejected requests,
+     * duplicate UI callbacks or unaccepted CPU negotiation responses.
+     */
+    private void recordAcceptedStats(GameAction action) {
+        if (action == null || players == null) return;
+        int actor = getPlayerIdx(action.getPlayer());
+        if (actor < 0 || actor >= state.getPlayerList().size()) return;
+        CatanMatchStats stats = state.getMatchStats();
+        if (action instanceof CatanRollDiceAction)
+            stats.recordRoll(state.getCurrentDiceSum(), lastRollHandsBefore, state);
+        else if (action instanceof CatanBuildRoadAction)
+            stats.recordBuild(actor, CatanMatchStats.ROAD);
+        else if (action instanceof CatanBuildSettlementAction)
+            stats.recordBuild(actor, CatanMatchStats.SETTLEMENT);
+        else if (action instanceof CatanBuildCityAction)
+            stats.recordBuild(actor, CatanMatchStats.CITY);
+        else if (action instanceof CatanBuyDevCardAction)
+            stats.recordBuild(actor, CatanMatchStats.DEVELOPMENT);
+        else if (action instanceof CatanTradeChooseAction) {
+            CatanTradeChooseAction choice = (CatanTradeChooseAction) action;
+            if (choice.getSelectedPartner() >= 0 && lastCompletedTradeDescription != null)
+                stats.recordPlayerTrade(actor, choice.getSelectedPartner());
+        } else if (action instanceof CatanTradeWithAutoBankAction
+                || action instanceof CatanTradeWithBankAction
+                || action instanceof CatanTradeWithPortAction
+                || action instanceof CatanTradeWithCustomPortAction)
+            stats.recordBankTrade(actor);
+        if (action instanceof CatanEndTurnAction) stats.recordRound(state);
     }
 
     /** Called after the resumed board and score display have been populated. */
