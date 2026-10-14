@@ -135,6 +135,34 @@ public class CatanCareerCodecTest {
         assertEquals(game.getMatchStats().getMatchId(), restored.getMatchStats().getMatchId());
     }
 
+    @Test public void liveGraphNeverRevealsSecretCpuVictoryPoints() {
+        CatanGameState game = new CatanGameState();
+        game.setSetupPhase(false);
+        game.getPlayerList().get(1).addPrivateVictoryPoints(2);
+        game.getPlayerList().get(1).addVictoryPoints(3);
+        game.getMarketState().onRoundCompleted(game, new Random(2));
+        game.getMatchStats().recordRound(game);
+        ArrayList<int[]> progress = game.getMatchStats().getPublicScoreHistory();
+        assertEquals(1, progress.size());
+        assertEquals("Private development points must remain hidden",
+                3, progress.get(0)[1]);
+        progress.get(0)[1] = 999;
+        assertEquals("Chart snapshots must be defensive copies",
+                3, game.getMatchStats().getPublicScoreHistory().get(0)[1]);
+    }
+
+    @Test public void unfinishedCareerRecordIsNotCreatedUntilWin() {
+        CatanGameState game = new CatanGameState();
+        assertFalse(game.getMatchStats().isCompleted());
+        assertEquals(0, game.getMatchStats().getDiceRolls()[7]);
+        game.getMatchStats().addActiveMillis(3000);
+        game.getMatchStats().markCompleted();
+        game.getMatchStats().recordBuild(0, CatanMatchStats.CITY);
+        assertEquals("No changes to finished ledger", 0,
+                game.getMatchStats().getCities()[0]);
+        assertEquals(3000, game.getMatchStats().getActiveMillis());
+    }
+
     @Test public void legacySaveWithNullStatisticsStartsPartialHistory() throws Exception {
         CatanGameState old = new CatanGameState();
         java.lang.reflect.Field ledger = CatanGameState.class.getDeclaredField("matchStats");
