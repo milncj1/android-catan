@@ -146,3 +146,14 @@ Owner asked to continue implementing 014; no additional change of specification.
 - CI snapshot **apk-build/014-career-regression-qa** at `87ddae01c1cfe482bc8ae340ea565d9f9e6d3212`: [GitHub Actions run 38602833102](https://github.com/milncj1/android-catan/actions/runs/38602833102) **SUCCESS**: Android XML validation, JVM unit tests, and debug APK compilation.
 - All changes stay on `dev/build-014-gameplay-experience` and its ephemeral QA snapshot branch. The repository's `master` branch, installed device app and ongoing Build 012 are untouched. Build 013 was intentionally skipped.
 - **Not signed or installed.** A source compilation is not proof of correct landscape display, full-match stats, signed upgrade, or device behaviour. Final signed release remains gated on integrating completed Build 012 source, checking versionCode/signing identity, and human phone acceptance.
+
+## Standalone Build 014 signed QA candidate — 14 October 2026
+
+- Owner approved proceeding towards integration and installer. Checked all GitHub branches and pull requests: there is no identifiable completed Build 012 source or integration ref. Do NOT represent Build 012 as merged; do not overwrite its ongoing work. Build 013 remains deliberately skipped.
+- Retrieved successful CI snapshot from run [38602833102](https://github.com/milncj1/android-catan/actions/runs/38602833102), build-number **25**, source commit `87ddae01c1cfe482bc8ae340ea565d9f9e6d3212`. No new Actions run or code compilation was needed.
+- Signed downloaded app-debug.apk **locally, outside GitHub**, using the original permanent Catan PKCS#12 signing key from the owner's private Library. The key and password were **never uploaded to public GitHub**.
+- Signed test APK: `Catan_Build_014_Standalone_QA_Permanent_Signed.apk`. SHA256 `561efc709e42ea18870a1f0b8effc36fa058824ea3a0c4e1d099b686f8d12fde`; size **27,300,016** bytes. JAR signature verification passed; ZIP CRC integrity passed.
+- Certificate SHA256 unchanged from owner's existing Build 011 installation: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`.
+- Parsed actual AndroidManifest.xml from both APKs: applicationId `edu.up.cs.androidcatan`, Build 011 versionCode **21**, Build 014 test versionCode **25**, same versionName `1.2-preview`. This candidate is designed for an **in-place Android update over Build 011, without uninstalling/clearing data**. Android on-device acceptance still pending.
+- This is a **standalone QA build of 014** based on 011, **NOT a final integrated 012+014 release**. The final release must incorporate finished 012 when its source is available, choose a higher versionCode than any installed candidate, pass tests and be signed with this original identity.
+- Owner's in-progress saves and local history must be checked on device before stable approval. Never label the QA APK as full Build 012 integration.
