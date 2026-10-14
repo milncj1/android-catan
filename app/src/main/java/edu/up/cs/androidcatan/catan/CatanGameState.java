@@ -92,6 +92,16 @@ public class CatanGameState extends GameState {
         playerList.clear();
         for (int i = 0; i < playerCount; i++) playerList.add(new Player(i));
         robberPlayerListHasDiscarded = new boolean[playerCount];
+        if (playerCount > 4) addNineExpansionDevelopmentCards();
+        if (playerCount > 6) addNineExpansionDevelopmentCards();
+    }
+
+    /** Extra players need additional action cards, without changing old saves. */
+    private void addNineExpansionDevelopmentCards() {
+        for (int i = 0; i < 6; i++) developmentCards.add(0); // Knights
+        developmentCards.add(2); // Year of Plenty
+        developmentCards.add(3); // Monopoly
+        developmentCards.add(4); // Road Building
     }
 
     /** The classic snake draft works for 2 through 7 players. */
