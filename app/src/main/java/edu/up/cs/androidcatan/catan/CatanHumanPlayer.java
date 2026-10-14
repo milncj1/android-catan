@@ -2952,15 +2952,29 @@ if(newGame) {
         String other = allPlayerNames[request.getProposerId()];
         String deal = other + " offers " + tradeBundleDescription(request.getGiving())
                 + "\nYou would give " + tradeBundleDescription(request.getReceiving());
+        LinearLayout content = new LinearLayout(myActivity);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int padding = (int)(14 * myActivity.getResources().getDisplayMetrics().density);
+        content.setPadding(padding, padding / 2, padding, padding / 2);
+        TextView dealText = new TextView(myActivity);
+        dealText.setText(deal);
+        dealText.setTextSize(14f);
+        content.addView(dealText);
+        android.widget.CheckBox mute = new android.widget.CheckBox(myActivity);
+        mute.setText("Mute computer trade offers until next round");
+        mute.setTextSize(12f);
+        content.addView(mute);
         AlertDialog prompt = new AlertDialog.Builder(myActivity)
                 .setTitle(other + " wants to trade")
-                .setMessage(deal)
+                .setView(content)
                 .setPositiveButton("Accept", null)
-                .setNeutralButton("Counter", (dialog, option) -> showHumanTradeCounter(request))
+                .setNeutralButton("Counter", (dialog, option) ->
+                        showHumanTradeCounter(request, mute.isChecked()))
                 .setNegativeButton("Decline", (dialog, option) ->
                         game.sendAction(new CatanTradeReplyAction(
                                 this, request.getOfferId(),
-                                CatanTradeReplyAction.DECLINE, null, null)))
+                                CatanTradeReplyAction.DECLINE, null, null,
+                                mute.isChecked())))
                 .setCancelable(false)
                 .create();
         prompt.setOnShowListener(ignored ->
@@ -2972,14 +2986,15 @@ if(newGame) {
                         return;
                     }
                     game.sendAction(new CatanTradeReplyAction(this, request.getOfferId(),
-                            CatanTradeReplyAction.ACCEPT, null, null));
+                            CatanTradeReplyAction.ACCEPT, null, null,
+                            mute.isChecked()));
                     prompt.dismiss();
                 }));
         prompt.show();
     }
 
     /** One editable counteroffer; quantities are from the COMPUTER's perspective. */
-    private void showHumanTradeCounter(CatanTradeInfo request) {
+    private void showHumanTradeCounter(CatanTradeInfo request, boolean muteThisRound) {
         LinearLayout content = new LinearLayout(myActivity);
         content.setOrientation(LinearLayout.VERTICAL);
         int pad = (int) (10 * myActivity.getResources().getDisplayMetrics().density);
@@ -3009,7 +3024,8 @@ if(newGame) {
                 .setPositiveButton("Send counter", null)
                 .setNegativeButton("Decline", (dialog, option) ->
                         game.sendAction(new CatanTradeReplyAction(this, request.getOfferId(),
-                                CatanTradeReplyAction.DECLINE, null, null)))
+                                CatanTradeReplyAction.DECLINE, null, null,
+                                muteThisRound)))
                 .setCancelable(false)
                 .create();
         counter.setOnShowListener(ignored ->
@@ -3025,7 +3041,8 @@ if(newGame) {
                     return;
                 }
                 game.sendAction(new CatanTradeReplyAction(this, request.getOfferId(),
-                        CatanTradeReplyAction.COUNTER, cpuGives, humanGives));
+                        CatanTradeReplyAction.COUNTER, cpuGives, humanGives,
+                        muteThisRound));
                 counter.dismiss();
             }));
         counter.show();
