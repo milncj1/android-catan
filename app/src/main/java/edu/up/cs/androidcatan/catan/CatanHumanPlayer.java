@@ -2112,10 +2112,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 CatanMatchHistory.append(myActivity, notice.getDescription());
                 if (CatanExperienceFeedback.isImportant(notice.getDescription()))
                     CatanExperienceFeedback.notice(myActivity, notice.getDescription(), true);
-                if (notice.isDiceRoll())
-                    CatanExperienceFeedback.pulse(myActivity, hudLastRoll, 650);
             }
             updateGameplayHud();
+            if (notice.isDiceRoll() && myActivity != null) {
+                String last = CatanMatchHistory.lastRoll(myActivity);
+                int detail = last.indexOf(" — ");
+                if (detail >= 0) last = last.substring(0, detail);
+                CatanExperienceFeedback.dice(myActivity, hudLastRoll, last);
+            }
             return; // A public notice must not clear selected roads or intersections.
         }
         if (this.boardSurfaceView == null) {
