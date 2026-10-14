@@ -91,6 +91,69 @@ public final class CatanNegotiationAI {
                 CatanTradeResponsesInfo.DECLINE, humanGives, humanWants);
     }
 
+    /**
+     * Called only by the CPU on its OWN turn. Proposes a resource needed for
+     * the nearest build in exchange for its OWN surplus cards. No inspection
+     * of the human inventory is possible here.
+     *
+     * Returns {cpuGives, cpuWants}, or null if no sensible offer exists.
+     */
+    public static int[][] proposeOnOwnTurn(CatanGameState game, int cpuId) {
+        if (game == null || game.getCurrentPlayerId() != cpuId
+                || !game.isActionPhase() || game.isRobberPhase()) return null;
+        int[] cards = game.getPlayerList().get(cpuId).getResourceCards();
+        int[][] targets = { Settlement.resourceCost, City.resourceCost,
+                Road.resourceCost, new int[]{0,1,0,1,1} };
+        int[] bestTarget = null;
+        int bestMissing = Integer.MAX_VALUE;
+        for (int[] cost : targets) {
+            int missing = 0;
+            for (int r = 0; r < 5; r++)
+                missing += Math.max(0, cost[r] - cards[r]);
+            if (missing > 0 && missing < bestMissing) {
+                bestMissing = missing;
+                bestTarget = cost;
+            }
+        }
+        if (bestTarget == null || bestMissing > 3) return null;
+        int needed = -1, surplus = -1, largestSpare = 0;
+        for (int r = 0; r < 5; r++) {
+            if (cards[r] < bestTarget[r] && needed < 0) needed = r;
+            int spare = cards[r] - bestTarget[r];
+            if (spare > largestSpare) {
+                largestSpare = spare;
+                surplus = r;
+            }
+        }
+        if (needed < 0 || surplus < 0 || needed == surplus) return null;
+        int[] give = new int[5], want = new int[5];
+        // A 1:1 offer is fair; the AI may offer two surplus cards if it has many.
+        give[surplus] = largestSpare >= 4 ? 2 : 1;
+        want[needed] = 1;
+        return new int[][] {give, want};
+    }
+
+    /** A single CPU reply to a human's counteroffer while CPU remains active. */
+    public static boolean acceptsCounterOnOwnTurn(CatanGameState game, int cpuId,
+            int difficultyType, int[] cpuGives, int[] cpuReceives) {
+        if (!CatanTradingRules.validBundle(cpuGives)
+                || !CatanTradingRules.validBundle(cpuReceives)
+                || !game.getPlayerList().get(cpuId).hasResourceBundle(cpuGives))
+            return false;
+        int[] ownHand = game.getPlayerList().get(cpuId).getResourceCards();
+        double[] values = valueCards(ownHand);
+        double delta = 0;
+        for (int r = 0; r < 5; r++)
+            delta += cpuReceives[r] * values[r] - cpuGives[r] * values[r];
+        double minAdvantage = difficultyType <= 1 ? -0.65
+                : difficultyType == 2 ? -0.10 : difficultyType == 3 ? 0.15 : 0.35;
+        if (personality(cpuId) == Personality.MERCHANT) minAdvantage -= 0.25;
+        if (personality(cpuId) == Personality.HOARDER) minAdvantage += 0.25;
+        if (game.getMarketState().getActiveEvent()
+                == CatanMarketState.Event.TRADING_FAIR) minAdvantage -= 0.20;
+        return delta >= minAdvantage;
+    }
+
     private static double[] valueCards(int[] hand) {
         // Look towards the closest meaningful affordable build. Its missing
         // ingredients are more valuable than resources held in surplus.
