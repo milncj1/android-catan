@@ -21,8 +21,6 @@ import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeOfferAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeReplyAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeChooseAction;
-import edu.up.cs.androidcatan.catan.actions.CatanPlayerTradeAction;
-import java.util.List;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithCustomPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanTradeWithPortAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
@@ -58,12 +56,6 @@ public class CatanLocalGame extends LocalGame {
     private CatanTradeNegotiation pendingTrade;
     private long offerSequence;
     private String lastCompletedTradeDescription;
-    // Offers are deliberately TRANSIENT. A restarted match discards unfinished
-    // negotiations, but completed resource transfers remain in the autosave.
-    private transient CatanTradeResponsesInfo pendingTrade;
-    private transient int pendingTradeActor = -1;
-    private transient long tradeSequence = 0L;
-    private transient String lastCompletedTradeDescription;
 
     // Per-roll snapshots are transient and never added to saved-game data.
     private int[][] lastRollHandsBefore;
@@ -235,10 +227,6 @@ public class CatanLocalGame extends LocalGame {
             int from = ((CatanRobberStealAction) action).getStealingFromPlayerId();
             description = from < 0 ? actor + " found nobody to steal from"
                     : actor + " stole from " + playerNames[from];
-        } else if (action instanceof CatanPlayerTradeAction) {
-            if (((CatanPlayerTradeAction) action).getKind()
-                    == CatanPlayerTradeAction.ACCEPT_RESPONSE)
-                description = lastCompletedTradeDescription;
         } else if (action instanceof CatanTradeChooseAction) {
             description = lastCompletedTradeDescription;
             lastCompletedTradeDescription = null;
@@ -444,9 +432,6 @@ public class CatanLocalGame extends LocalGame {
                 return false;
             if (!state.isSetupPhase() && (!state.isActionPhase() || state.isRobberPhase())) return false;
             Log.d(TAG, "makeMove() Player " + state.getCurrentPlayerId() + " is ending their turn.");
-            // Offers must never survive a change of turn.
-            pendingTrade = null;
-            pendingTradeActor = -1;
 
             // A purchased development card becomes playable next turn.
             // Clear the cards bought by the player whose turn is ENDING,
@@ -709,82 +694,6 @@ public class CatanLocalGame extends LocalGame {
 
             //Steal a random resource from a specified player
             return state.robberSteal(((CatanRobberStealAction) action).getPlayerId(), ((CatanRobberStealAction) action).getStealingFromPlayerId());
-        }
-
-        /*---------------------------------- Player negotiation ------------------------------------*/
-
-        if (action instanceof CatanPlayerTradeAction) {
-            if (!canTradeNow() || players == null) return false;
-            int actor = getPlayerIdx(action.getPlayer());
-            // A CPU cannot impersonate a human proposer via a crafted action.
-            if (actor != state.getCurrentPlayerId() || actor < 0
-                    || !(players[actor] instanceof CatanHumanPlayer)) return false;
-            CatanPlayerTradeAction request = (CatanPlayerTradeAction) action;
-            if (request.getKind() == CatanPlayerTradeAction.REQUEST) {
-                int[] giving = request.getGive(), receiving = request.getWant();
-                if (!CatanTradingRules.validBundle(giving)
-                        || !CatanTradingRules.validBundle(receiving)
-                        || !state.getPlayerList().get(actor).hasResourceBundle(giving))
-                    return false;
-                for (int r = 0; r < 5; r++)
-                    if (giving[r] > 0 && receiving[r] > 0) return false;
-                int target = request.getTarget();
-                if (target != -1 && (target < 0 || target >= players.length
-                        || target == actor || players[target] instanceof CatanHumanPlayer))
-                    return false;
-                ArrayList<CatanTradeResponsesInfo.Response> replies = new ArrayList<>();
-                for (int partner = 0; partner < state.getPlayerList().size(); partner++) {
-                    if (partner == actor || !(players[partner] instanceof edu.up.cs.androidcatan.game.GameComputerPlayer)
-                            || (target != -1 && partner != target)) continue;
-                    int type = autosaveTypes != null && partner < autosaveTypes.length
-                            ? autosaveTypes[partner] : 2;
-                    replies.add(CatanNegotiationAI.evaluate(
-                            state, partner, type, giving, receiving));
-                }
-                if (replies.isEmpty()) return false;
-                pendingTradeActor = actor;
-                pendingTrade = new CatanTradeResponsesInfo(++tradeSequence, replies);
-                // Only the proposing human sees the private responses.
-                players[actor].sendInfo(pendingTrade);
-                return true;
-            }
-            if (request.getKind() == CatanPlayerTradeAction.CANCEL) {
-                if (pendingTrade == null || pendingTradeActor != actor
-                        || pendingTrade.getOfferId() != request.getOfferId())
-                    return false;
-                pendingTrade = null;
-                pendingTradeActor = -1;
-                return true;
-            }
-            if (request.getKind() == CatanPlayerTradeAction.ACCEPT_RESPONSE) {
-                if (pendingTrade == null || pendingTradeActor != actor
-                        || request.getOfferId() != pendingTrade.getOfferId())
-                    return false;
-                CatanTradeResponsesInfo.Response selected = null;
-                for (CatanTradeResponsesInfo.Response response
-                        : pendingTrade.getResponses()) {
-                    if (response.getPlayerId() == request.getTarget()
-                            && response.getVerdict() != CatanTradeResponsesInfo.DECLINE) {
-                        selected = response;
-                        break;
-                    }
-                }
-                if (selected == null) return false;
-                int partner = selected.getPlayerId();
-                int[] giving = selected.getGive(), receiving = selected.getWant();
-                if (!CatanTradingRules.exchangeBetweenPlayers(
-                        state, actor, partner, giving, receiving))
-                    return false;
-                // A broadcast yields exactly one exchange, even if many accept.
-                pendingTrade = null;
-                pendingTradeActor = -1;
-                lastCompletedTradeDescription = playerNames[actor] + " traded with "
-                        + playerNames[partner] + ": " + formatBundle(giving)
-                        + " for " + formatBundle(receiving);
-                players[actor].sendInfo(CatanTradeResponsesInfo.completed());
-                return true;
-            }
-            return false;
         }
 
         /*---------------------------------- Trade Actions ---------------------------------------*/
