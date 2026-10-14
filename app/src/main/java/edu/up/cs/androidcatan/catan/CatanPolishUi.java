@@ -90,6 +90,7 @@ public final class CatanPolishUi {
     /** Created first, populated next, shown only once all controls exist. */
     public static final class Panel {
         public final LinearLayout body, footer;
+        public final ScrollView scroll;
         public final AlertDialog dialog;
         private final LinearLayout shell;
         private final Activity activity;
@@ -119,7 +120,7 @@ public final class CatanPolishUi {
             }
             shell.addView(header, new LinearLayout.LayoutParams(-1, -2));
 
-            ScrollView scroll = new ScrollView(a);
+            scroll = new ScrollView(a);
             scroll.setFillViewport(false);
             scroll.setVerticalScrollBarEnabled(true);
             scroll.setPadding(dp(a, 12), dp(a, 8), dp(a, 12), dp(a, 8));
