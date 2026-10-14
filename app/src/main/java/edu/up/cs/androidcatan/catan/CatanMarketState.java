@@ -36,6 +36,7 @@ public final class CatanMarketState implements Serializable {
     private int selectedResource = -1;
     private boolean[] specialUsed = new boolean[0];
     private int proactiveOffersThisRound;
+    private boolean offersMutedThisRound;
 
     public CatanMarketState() { }
 
@@ -47,6 +48,7 @@ public final class CatanMarketState implements Serializable {
         activeEvent = other.activeEvent;
         lastEvent = other.lastEvent;
         proactiveOffersThisRound = other.proactiveOffersThisRound;
+        offersMutedThisRound = other.offersMutedThisRound;
         selectedResource = other.selectedResource;
         specialUsed = other.specialUsed == null ? new boolean[0]
                 : other.specialUsed.clone();
@@ -87,7 +89,7 @@ public final class CatanMarketState implements Serializable {
     public boolean mayComputerOffer(int cpuId, int totalPlayers) {
         int computers = totalPlayers - 1;
         if (computers < 1 || cpuId < 1 || cpuId > computers
-                || proactiveOffersThisRound >= 3) return false;
+                || proactiveOffersThisRound >= 3 || offersMutedThisRound) return false;
         int starting = (completedRounds * 3) % computers;
         int slots = Math.min(3, computers);
         for (int step = 0; step < slots; step++)
@@ -96,12 +98,15 @@ public final class CatanMarketState implements Serializable {
     }
 
     void recordProactiveOffer() { proactiveOffersThisRound++; }
+    public void muteOffersUntilNextRound() { offersMutedThisRound = true; }
+    public boolean areOffersMutedThisRound() { return offersMutedThisRound; }
     public int getProactiveOffersThisRound() { return proactiveOffersThisRound; }
 
     /** Called exactly once as the last numbered player ends a normal turn. */
     public void onRoundCompleted(CatanGameState match, Random random) {
         completedRounds++;
         proactiveOffersThisRound = 0;
+        offersMutedThisRound = false;
         if (!enabled) return;
         // Expire the previous event even when no new event starts.
         activeEvent = null;
