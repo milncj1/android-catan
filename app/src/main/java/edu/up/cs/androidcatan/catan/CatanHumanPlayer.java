@@ -294,6 +294,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private boolean robberActionPending;
     private View robberFlowPanel;
     private TextView robberFlowStatus;
+    private TextView robberFlowHint;
     private Button robberFlowMoveButton;
     private Group pickResourceGroup = (Group) null;
 
@@ -1252,7 +1253,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             if (now == CatanRobberSteps.Step.WAIT_FOR_DISCARDS) {
                 robberFlowPanel.setVisibility(View.VISIBLE);
                 robberFlowMoveButton.setVisibility(View.GONE);
-                robberFlowStatus.setText("ROBBER  ·  Waiting for discards…");
+                robberFlowStatus.setText("THE ROBBER  •  WAITING");
+                if (robberFlowHint != null)
+                    robberFlowHint.setText("Waiting while other players discard cards.");
                 return;
             }
             if (now == CatanRobberSteps.Step.MOVE_TILE) {
@@ -1262,11 +1265,14 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                         && selectedHexagonId < state.getBoard().getHexagons().size()
                         && selectedHexagonId != state.getBoard().getRobber().getHexagonId();
                 robberFlowMoveButton.setEnabled(valid && !robberActionPending);
-                robberFlowStatus.setText(robberActionPending
-                        ? "ROBBER  ·  Moving…"
-                        : valid ? "ROBBER  ·  2/3  Selected hex " + (selectedHexagonId + 1)
-                        : "ROBBER  ·  2/3  Tap a different hexagon");
-                robberFlowMoveButton.setText(valid ? "Move robber here" : "Select hexagon first");
+                robberFlowStatus.setText("THE ROBBER  •  STEP 2 OF 3");
+                if (robberFlowHint != null)
+                    robberFlowHint.setText(robberActionPending
+                            ? "Moving the robber…"
+                            : valid ? "Hex " + (selectedHexagonId + 1)
+                                    + " selected. Confirm the destination below."
+                            : "Tap a different hexagon on the island.");
+                robberFlowMoveButton.setText(valid ? "Move robber here" : "Choose a hexagon");
                 return;
             }
             if (now == CatanRobberSteps.Step.PICK_VICTIM) {
@@ -2538,6 +2544,7 @@ if(newGame) {
         robberChooseHexGroup = activity.findViewById(R.id.robber_choosehex_menu);
         robberFlowPanel = activity.findViewById(R.id.robber_flow_panel);
         robberFlowStatus = activity.findViewById(R.id.robber_flow_status);
+        robberFlowHint = activity.findViewById(R.id.robber_flow_hint);
         robberFlowMoveButton = activity.findViewById(R.id.robber_flow_move_button);
         if (robberFlowMoveButton != null) robberFlowMoveButton.setOnClickListener(v -> {
             if (state == null || robberActionPending
