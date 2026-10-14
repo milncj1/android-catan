@@ -13,16 +13,24 @@ public final class CatanTradeReplyAction extends GameAction {
     private final long offerId;
     private final int response;
     private final int[] counterGiving, counterReceiving;
+    private final boolean muteOffersThisRound;
     public CatanTradeReplyAction(GamePlayer player, long offerId, int response,
                                  int[] counterGiving, int[] counterReceiving) {
+        this(player, offerId, response, counterGiving, counterReceiving, false);
+    }
+    public CatanTradeReplyAction(GamePlayer player, long offerId, int response,
+                                 int[] counterGiving, int[] counterReceiving,
+                                 boolean muteOffersThisRound) {
         super(player);
         this.offerId = offerId;
         this.response = response;
         this.counterGiving = counterGiving == null ? null : counterGiving.clone();
         this.counterReceiving = counterReceiving == null ? null : counterReceiving.clone();
+        this.muteOffersThisRound = muteOffersThisRound;
     }
     public long getOfferId() { return offerId; }
     public int getResponse() { return response; }
+    public boolean muteOffersThisRound() { return muteOffersThisRound; }
     public int[] getCounterGiving() {
         return counterGiving == null ? null : counterGiving.clone();
     }
