@@ -36,6 +36,10 @@ public class CatanGameState extends GameState {
     // Optional market data is nullable for Build 010 and earlier serialized saves.
     // Never change CatanGameState.serialVersionUID.
     private CatanMarketState marketState;
+    // Waiting for a human's response must never survive an app restart.
+    private transient boolean waitingForCpuTradeReply;
+    private transient boolean cpuOfferedThisTurn;
+
     // Only the live game engine owns a pending trade. A saved/reloaded match
     // intentionally cancels it; no stale trade can be completed after restart.
     private transient boolean tradePending;
@@ -146,6 +150,8 @@ public class CatanGameState extends GameState {
         this.developmentCards.addAll(cgs.getDevelopmentCards());
         this.marketState = cgs.marketState == null ? null
                 : new CatanMarketState(cgs.marketState);
+        this.waitingForCpuTradeReply = cgs.waitingForCpuTradeReply;
+        this.cpuOfferedThisTurn = cgs.cpuOfferedThisTurn;
         this.tradePending = cgs.tradePending;
         this.currentPlayerId = cgs.currentPlayerId;
         this.setupPhaseTurnCounter = cgs.setupPhaseTurnCounter;
@@ -615,6 +621,15 @@ public class CatanGameState extends GameState {
 
     public boolean isTradePending() { return tradePending; }
     void setTradePending(boolean pending) { this.tradePending = pending; }
+
+    public boolean isWaitingForCpuTradeReply() {
+        return waitingForCpuTradeReply;
+    }
+    public void setWaitingForCpuTradeReply(boolean value) {
+        waitingForCpuTradeReply = value;
+    }
+    public boolean hasCpuOfferedThisTurn() { return cpuOfferedThisTurn; }
+    public void setCpuOfferedThisTurn(boolean value) { cpuOfferedThisTurn = value; }
 
     /** A null state means a legacy save with normal Catan trading. */
     public CatanMarketState getMarketState() {
