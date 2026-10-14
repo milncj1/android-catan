@@ -36,6 +36,8 @@ public class CatanGameState extends GameState {
     // Optional market data is nullable for Build 010 and earlier serialized saves.
     // Never change CatanGameState.serialVersionUID.
     private CatanMarketState marketState;
+    // New optional Build 014 field: never change the legacy serial UID.
+    private CatanMatchStats matchStats;
     // Waiting for a human's response must never survive an app restart.
     private transient boolean waitingForCpuTradeReply;
     // Persist which CPU has already approached the human this turn.
@@ -90,6 +92,7 @@ public class CatanGameState extends GameState {
         this.playerList.add(new Player(1));
         this.playerList.add(new Player(2));
         this.playerList.add(new Player(3));
+        this.matchStats = new CatanMatchStats(4, false, 0);
 
         Log.i(TAG, board.toString());
     } // end CatanGameState constructor
@@ -107,6 +110,7 @@ public class CatanGameState extends GameState {
         robberPlayerListHasDiscarded = new boolean[playerCount];
         if (playerCount > 4) addNineExpansionDevelopmentCards();
         if (playerCount > 6) addNineExpansionDevelopmentCards();
+        matchStats = new CatanMatchStats(playerCount, false, 0);
     }
 
     /** Extra players need additional action cards, without changing old saves. */
@@ -152,6 +156,8 @@ public class CatanGameState extends GameState {
         this.developmentCards.addAll(cgs.getDevelopmentCards());
         this.marketState = cgs.marketState == null ? null
                 : new CatanMarketState(cgs.marketState);
+        this.matchStats = cgs.matchStats == null ? null
+                : new CatanMatchStats(cgs.matchStats);
         this.waitingForCpuTradeReply = cgs.waitingForCpuTradeReply;
         this.cpuOfferedThisTurn = cgs.cpuOfferedThisTurn;
         this.tradePending = cgs.tradePending;
@@ -637,6 +643,14 @@ public class CatanGameState extends GameState {
     public CatanMarketState getMarketState() {
         if (marketState == null) marketState = new CatanMarketState();
         return marketState;
+    }
+
+    /** Existing saves without statistics remain playable; tracking begins on resume. */
+    public CatanMatchStats getMatchStats() {
+        if (matchStats == null)
+            matchStats = new CatanMatchStats(playerList.size(), true,
+                    getMarketState().getCompletedRounds());
+        return matchStats;
     }
 
     /** Called for a NEW match before saving or starting CPU turns. */
