@@ -335,6 +335,24 @@ public class MainActivity extends GameMainActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        if (activeCatan != null) {
+            confirmReturnToMainMenu();
+        } else {
+            finish();
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, android.view.KeyEvent event) {
+        if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+            onBackPressed();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
     protected void onPause() {
         if (activeCatan != null) activeCatan.onAppPaused();
         super.onPause();
