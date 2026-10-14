@@ -2989,9 +2989,11 @@ if(newGame) {
             counter.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 if (!CatanTradingRules.validBundle(cpuGives)
                         || !CatanTradingRules.validBundle(humanGives)
+                        || CatanTradingRules.overlaps(cpuGives, humanGives)
                         || !state.getPlayerList().get(playerNum)
                                 .hasResourceBundle(humanGives)) {
-                    Toast.makeText(myActivity, "Choose an exchange you can afford.",
+                    Toast.makeText(myActivity,
+                            "Choose cards you can afford; do not give and receive the same type.",
                             Toast.LENGTH_LONG).show();
                     return;
                 }
