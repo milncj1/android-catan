@@ -83,7 +83,20 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     private int intersectionOfSettlementSetupTurn;
     private float lastTouchDownXY[] = new float[2];
     private boolean debugMode = false; // debug mode
-    private boolean isMenuOpen = false; // if a menu is currently open
+    /**
+     * Never keep a sticky menu flag: rolling a seven can auto-discard without
+     * going through the old close-menu click handler. Calculate from views.
+     */
+    private boolean boardInputBlocked() {
+        return !CatanBoardTapGuard.acceptsTap(
+                state != null && playerNum == state.getCurrentPlayerId(),
+                robberDiscardGroup != null
+                        && robberDiscardGroup.getVisibility() == View.VISIBLE,
+                tradeGroup != null && tradeGroup.getVisibility() == View.VISIBLE,
+                pickResourceGroup != null
+                        && pickResourceGroup.getVisibility() == View.VISIBLE);
+    }
+
 
     private boolean readyToDraw = false; // is the game ready to draw
 
@@ -989,6 +1002,16 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
     // One touch sequence must never both pan and accidentally place a building.
     private float boardTouchX, boardTouchY, boardDownX, boardDownY, boardPinchSpan;
     private boolean boardGestureMoved;
+    /** Accept natural finger jitter, not only perfectly stationary taps. */
+    private float tapSlopSquared() {
+        float density = myActivity == null ? 1f
+                : myActivity.getResources().getDisplayMetrics().density;
+        float touchSlop = myActivity == null ? 12f :
+                android.view.ViewConfiguration.get(myActivity).getScaledTouchSlop();
+        float tolerance = Math.max(touchSlop, 12f * density);
+        return tolerance * tolerance;
+    }
+
     private View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -1023,7 +1046,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                     float dy = event.getY() - boardTouchY;
                     float totalDx = event.getX() - boardDownX;
                     float totalDy = event.getY() - boardDownY;
-                    if (boardGestureMoved || totalDx * totalDx + totalDy * totalDy > 144f) {
+                    if (boardGestureMoved || totalDx * totalDx + totalDy * totalDy > tapSlopSquared()) {
                         boardGestureMoved = true;
                         boardSurfaceView.panBy(dx, dy);
                     }
@@ -1043,8 +1066,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 return true;
             }
             if (action == MotionEvent.ACTION_UP) {
-                if (!boardGestureMoved && !isMenuOpen && state != null
-                        && playerNum == state.getCurrentPlayerId()) {
+                if (!boardGestureMoved && !boardInputBlocked()) {
                     lastTouchDownXY[0] = boardSurfaceView.toBoardX(event.getX());
                     lastTouchDownXY[1] = boardSurfaceView.toBoardY(event.getY());
                     v.performClick();
@@ -1067,9 +1089,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 View decorView = myActivity.getWindow().getDecorView();
                 decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
             }
-            if (isMenuOpen) return;
-            if (state == null) return;
-            if (playerNum != state.getCurrentPlayerId()) return;
+            if (boardInputBlocked()) return;
 
             boolean touchedIntersection = false;
             boolean touchedHexagon = false;
@@ -1694,6 +1714,15 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         diceImageLeft.setBackgroundResource(diceImageIds[state.getDice().getDiceValues()[0] - 1]);
         diceImageRight.setBackgroundResource(diceImageIds[state.getDice().getDiceValues()[1] - 1]);
 
+        // A player who did not need to discard, or has already discarded,
+        // must never have an invisible/stale discard dialog blocking the board.
+        if (robberDiscardGroup != null
+                && (!state.isRobberPhase()
+                    || state.getRobberPlayerListHasDiscarded()[playerNum]))
+            robberDiscardGroup.setVisibility(View.GONE);
+        if (robberChooseHexGroup != null && !state.isRobberPhase())
+            robberChooseHexGroup.setVisibility(View.GONE);
+
         // if it is the robber phase
         if (this.state.getRobberPhase()) {
 
@@ -1719,10 +1748,12 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 Log.d(TAG, "updateTextViews: Has not discarded cards");
                 robberDiscardMessage.setText(String.format(myActivity.getString(R.string.select_n_cards_to_discard), state.getPlayerList().get(this.playerNum).getTotalResourceCardCount() / 2));
                 robberDiscardGroup.setVisibility(View.VISIBLE);
-                isMenuOpen = true;
                 messageTextView.setText(R.string.select_half);
             }
 
+            // Once the engine has acknowledged an automatic/manual discard,
+            // remove the blocking overlay before selecting the robber hex.
+            // The old sticky flag used to trap all future intersection taps.
             //TextView for when HumanPlayer's turn
             //Move Robber
             else if (state.getCurrentPlayerId() == playerNum && state.allPlayersHaveDiscarded() && !state.getHasMovedRobber()) {
@@ -3525,13 +3556,13 @@ if(newGame) {
      */
     private void toggleGroupVisibility(Group group) {
         if (group.getVisibility() == View.GONE) {
-            this.isMenuOpen = true;
             group.setVisibility(View.VISIBLE);
             fitPopupOnScreen(group);
         } else {
-            this.isMenuOpen = false;
             group.setVisibility(View.GONE);
         }
+        // boardInputBlocked() reads current visibility, so there is no flag
+        // that can survive a cancelled trade or the robber-discard sequence.
     }
 
     private void toggleGroupVisibilityGONE(Group group) {
@@ -3584,6 +3615,9 @@ if(newGame) {
     private void hideAllMenusAtEndOfTurn() {
         developmentGroup.setVisibility(View.GONE);
         tradeGroup.setVisibility(View.GONE);
+        if (pickResourceGroup != null) pickResourceGroup.setVisibility(View.GONE);
+        if (robberDiscardGroup != null) robberDiscardGroup.setVisibility(View.GONE);
+        if (robberChooseHexGroup != null) robberChooseHexGroup.setVisibility(View.GONE);
     }
 
     /**
