@@ -1,5 +1,5 @@
 # Catan Android — Build 014: Gameplay Experience
-**Status:** DESIGN FROZEN — owner approved, 14 October 2026. PREPARATION ONLY; implementation has not begun.
+**Status:** DESIGN FROZEN — source implementation and automated validation completed, 14 October 2026. FINAL INTEGRATION AND PHONE ACCEPTANCE PENDING.
 
 ## Purpose
 Make the existing offline Android Catan game feel like a polished, lively board game without modifying classic Catan rules, weakening computer decision-making, cluttering landscape gameplay, or jeopardising saved games. Build 014 follows the trading/market work in 011, the ongoing 012 work, and the owner-reported completed 013 work.
@@ -96,3 +96,26 @@ Make the existing offline Android Catan game feel like a polished, lively board 
 
 ## Change control
 Any new rules, substantial extra features, analytics expansion, achievements, networking, cloud sync, or a full visual redesign require explicit owner discussion/approval. This file freezes the approved scope; implementation/acceptance outcomes will be recorded separately.
+
+## Build 014 source implementation checkpoint — 14 October 2026
+
+**Implemented (on isolated dev/build-014-gameplay-experience branch):**
+- CatanMatchStats authoritative accepted-move ledger for dice, resources, player and bank trades, construction, development purchases and public point history; optional nullable field in CatanGameState preserving the original serial UID and Continue Game schema. Partial histories indicated for resumed pre-014 saves.
+- Active gameplay duration pauses when Android backgrounds the match; CPU turns while active are counted.
+- CatanCareerRecord, CatanCareerCodec, CatanCareerStore: local atomic completed match archives, duplicate-safe gameover handling, safe versioned CRC-checked backup format, explicit preview, Smart Merge only, conflict rejection and non-destructive import.
+- CatanCareerUi: in-game statistics; end-match result, dice and resources charts; lifetime records, streaks, win rates, average/fastest times, best trade/score and filtering by opponent configuration and island; individual deletion.
+- CatanExperienceSettings: Relaxed / Normal / Fast presentation-only pause scaling, animations switch and independently toggled audio (all music and sound effects OFF by default); preserves AI strategy.
+- CatanExperienceFeedback: nonblocking short event/turn/resource messages, transient landscape banner, decorative dice faces settled on authoritative engine result.
+- Programmatic setup and in-game entry points, native Android export/import picker, and JUnit regression tests for ledger copies, older saves, backup integrity and merge.
+- **No changes to master, Build 012 or Build 013. No original signing credentials were uploaded.**
+
+**Automated validation:** Two justified GitHub Actions snapshot builds:
+- [Run 38592299235](https://github.com/milncj1/android-catan/actions/runs/38592299235), source SHA aeb15086e6a8feadbbce44a0be3c6937b1080cf1 — SUCCESS.
+- [Run 38593222963](https://github.com/milncj1/android-catan/actions/runs/38593222963), source SHA 23cf211ecbea9184f46794c2fc6f4f3b7e6b4963 — SUCCESS, including Android XML, complete JVM test suite and :app:assembleDebug.
+- CI output is a **debug/unsigned-for-delivery artifact**, not a permanently signed upgrade APK. Do not install it over an existing original-key-signed app.
+
+**Release blockers and remaining manual QA:**
+1. User says Build 012 is ongoing and Build 013 is done. No actual 012/013 code branches, commits, or files were found in this repository or Catan Library as of this checkpoint. Obtain their real implementation refs; incorporate both with conflict review, not by deleting/replacing them. Build 014 was intentionally created from 011 only to avoid interfering with the other work.
+2. Verify on Samsung in landscape: dialogs, imported backup, saved-game compatibility, statistics after pause/restart, dice/resource and computer trading behaviour, CPU speed modes, sound-off initial startup, market events, victory summary and prolonged matches.
+3. More sophisticated on-board placement/achievement animations and differentiated offline sound effects require a final presentation pass; current implemented feedback is decorative dice, pulses, notices and optional system sound cues. Do not overclaim these as fully device-polished.
+4. Produce a final APK with a versionCode higher than the owner's installed Builds 012/013, signed **outside public GitHub** with the original permanent signing certificate. Never recommend uninstall or clearing data. Obtain owner confirmation before release/master merge.
