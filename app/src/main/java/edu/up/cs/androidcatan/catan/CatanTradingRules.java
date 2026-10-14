@@ -110,7 +110,7 @@ public final class CatanTradingRules {
                 || game.isRobberPhase() || activePlayer != game.getCurrentPlayerId()
                 || partnerId < 0 || partnerId >= game.getPlayerList().size()
                 || activePlayer == partnerId || !validBundle(giving)
-                || !validBundle(receiving)) return false;
+                || !validBundle(receiving) || overlaps(giving, receiving)) return false;
         Player actor = game.getPlayerList().get(activePlayer);
         Player partner = game.getPlayerList().get(partnerId);
         if (!actor.hasResourceBundle(giving) || !partner.hasResourceBundle(receiving))
@@ -124,6 +124,19 @@ public final class CatanTradingRules {
             partner.addResourceCard(resource, giving[resource]);
         }
         return true;
+    }
+
+    /**
+     * Catan does not allow giving and receiving the same resource type in one
+     * player trade. Apply it to ORIGINAL and COUNTER offers, not just the UI.
+     */
+    public static boolean overlaps(int[] giving, int[] receiving) {
+        if (giving == null || receiving == null
+                || giving.length != RESOURCES || receiving.length != RESOURCES)
+            return true;
+        for (int r = 0; r < RESOURCES; r++)
+            if (giving[r] > 0 && receiving[r] > 0) return true;
+        return false;
     }
 
     public static boolean validBundle(int[] bundle) {
