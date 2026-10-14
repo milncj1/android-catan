@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import edu.up.cs.androidcatan.catan.gamestate.Board;
+import edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology;
 import edu.up.cs.androidcatan.catan.gamestate.Dice;
 import edu.up.cs.androidcatan.catan.gamestate.Hexagon;
 import edu.up.cs.androidcatan.catan.gamestate.buildings.Building;
@@ -79,6 +80,29 @@ public class CatanGameState extends GameState {
 
         Log.i(TAG, board.toString());
     } // end CatanGameState constructor
+
+    /** Start a configurable local game without changing legacy saved-game IDs. */
+    public CatanGameState(int playerCount, CatanBoardTopology.Island shape) {
+        this();
+        if (playerCount < 2 || playerCount > 7)
+            throw new IllegalArgumentException("Supported total players: 2 through 7");
+        if (shape == null) throw new IllegalArgumentException("Choose an island");
+        if (shape != CatanBoardTopology.Island.CLASSIC)
+            board = new Board(shape);
+        playerList.clear();
+        for (int i = 0; i < playerCount; i++) playerList.add(new Player(i));
+        robberPlayerListHasDiscarded = new boolean[playerCount];
+    }
+
+    /** The classic snake draft works for 2 through 7 players. */
+    public int getOpeningPlacementCount() { return playerList.size() * 2; }
+
+    public int getOpeningPlayer(int step) {
+        int count = playerList.size();
+        if (step < 0 || step >= count * 2)
+            throw new IllegalArgumentException("Invalid opening placement " + step);
+        return step < count ? step : count * 2 - 1 - step;
+    }
 
     /**
      * CatanGameState deep copy constructor
@@ -170,7 +194,7 @@ public class CatanGameState extends GameState {
      * @return If id is valid.
      */
     private boolean valPlId(int playerId) {
-        return playerId > -1 && playerId < 4;
+        return playerId > -1 && playerId < playerList.size();
     }
 
     /**
@@ -225,7 +249,7 @@ public class CatanGameState extends GameState {
      */
     int getBankResourceCount(int resourceId) {
         if (resourceId < 0 || resourceId >= 5) return 0;
-        int remaining = 19;
+        int remaining = board.getIsland() == CatanBoardTopology.Island.CLASSIC ? 19 : 24;
         for (Player player : playerList) {
             remaining -= player.getResourceCards()[resourceId];
         }
@@ -237,7 +261,7 @@ public class CatanGameState extends GameState {
 
         // Collect all claims BEFORE paying anyone. When the supply is short,
         // nobody gets that resource unless just one player would receive it.
-        int[][] claims = new int[5][4];
+        int[][] claims = new int[5][playerList.size()];
         for (Integer hexId : board.getHexagonsFromChitValue(diceSum)) {
             if (hexId == board.getRobber().getHexagonId()) continue;
             Hexagon hex = board.getHexagonFromId(hexId);
@@ -248,7 +272,7 @@ public class CatanGameState extends GameState {
                 Building building = board.getBuildingAtIntersection(intersection);
                 if (building != null) {
                     int owner = building.getOwnerId();
-                    if (owner >= 0 && owner < 4)
+                    if (owner >= 0 && owner < playerList.size())
                         claims[resource][owner] += building.getVictoryPoints();
                 }
             }
@@ -257,14 +281,14 @@ public class CatanGameState extends GameState {
             int totalDemand = 0;
             int receivingPlayers = 0;
             int onlyPlayer = -1;
-            for (int player = 0; player < 4; player++) {
+            for (int player = 0; player < playerList.size(); player++) {
                 int demand = claims[resource][player];
                 totalDemand += demand;
                 if (demand > 0) { receivingPlayers++; onlyPlayer = player; }
             }
             int available = getBankResourceCount(resource);
             if (totalDemand <= available) {
-                for (int player = 0; player < 4; player++)
+                for (int player = 0; player < playerList.size(); player++)
                     if (claims[resource][player] > 0)
                         playerList.get(player).addResourceCard(resource, claims[resource][player]);
             } else if (receivingPlayers == 1 && available > 0) {
@@ -515,7 +539,7 @@ public class CatanGameState extends GameState {
         for (Building building : board.getBuildings()) {
             if (building != null) buildingCount++;
         }
-        if (board.getRoads().size() < 8 || buildingCount < 8) {
+        if (board.getRoads().size() < getOpeningPlacementCount() || buildingCount < getOpeningPlacementCount()) {
             Log.d(TAG, "updateSetupPhase() returned: " + true);
             return true;
         }
