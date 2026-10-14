@@ -633,8 +633,9 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 this.robberDiscardedResources = state.getRobberDiscardedResources();
                 robberDiscardedResources = new int[]{0, 0, 0, 0, 0};
 
-                //Make discard menu disappear
-                toggleGroupVisibility(robberDiscardGroup);
+                // Always CLOSE after a confirmed discard. Toggling here
+                // can reopen the panel if an engine update closed it first.
+                robberDiscardGroup.setVisibility(View.GONE);
                 return;
             }
 
