@@ -48,12 +48,12 @@
          menus remain inflated but are never shown. -->
     <LinearLayout
         android:id="@+id/robber_flow_panel"
-        android:layout_width="330dp"
+        android:layout_width="322dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="9dp"
         android:elevation="14dp"
-        android:background="@drawable/score_panel_bg"
+        android:background="@drawable/robber_flow_bg"
         android:visibility="gone"
         android:clickable="true"
         app:layout_constraintStart_toStartOf="@+id/board"
@@ -64,12 +64,22 @@
             android:id="@+id/robber_flow_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ROBBER  ·  2/3  Tap a hexagon"
+            android:text="THE ROBBER  •  STEP 2 OF 3"
             android:textStyle="bold"
-            android:textColor="#FFFFE7AA"
+            android:textColor="#FFFFE0A2"
             android:textSize="14sp" />
+        <TextView
+            android:id="@+id/robber_flow_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Tap a hexagon to choose where the robber moves"
+            android:textColor="#FFF2EBDD"
+            android:textSize="12sp" />
         <Button
             android:id="@+id/robber_flow_move_button"
+            android:background="@drawable/sidebar_button"
+            android:textColor="#FFFFE0A2"
             android:layout_width="match_parent"
             android:layout_height="42dp"
             android:layout_marginTop="5dp"
