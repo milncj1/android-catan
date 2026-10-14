@@ -35,6 +35,7 @@ public final class CatanMarketState implements Serializable {
     private Event lastEvent;
     private int selectedResource = -1;
     private boolean[] specialUsed = new boolean[0];
+    private int proactiveOffersThisRound;
 
     public CatanMarketState() { }
 
@@ -45,6 +46,7 @@ public final class CatanMarketState implements Serializable {
         activeFromRound = other.activeFromRound;
         activeEvent = other.activeEvent;
         lastEvent = other.lastEvent;
+        proactiveOffersThisRound = other.proactiveOffersThisRound;
         selectedResource = other.selectedResource;
         specialUsed = other.specialUsed == null ? new boolean[0]
                 : other.specialUsed.clone();
@@ -77,9 +79,29 @@ public final class CatanMarketState implements Serializable {
                 && playerId < specialUsed.length) specialUsed[playerId] = true;
     }
 
+    /**
+     * Balanced frequency: up to three CPU-to-human interruptions per round.
+     * Rotate which opponents have priority, so the first three cannot always
+     * use the whole allowance in 4–6-opponent matches.
+     */
+    public boolean mayComputerOffer(int cpuId, int totalPlayers) {
+        int computers = totalPlayers - 1;
+        if (computers < 1 || cpuId < 1 || cpuId > computers
+                || proactiveOffersThisRound >= 3) return false;
+        int starting = (completedRounds * 3) % computers;
+        int slots = Math.min(3, computers);
+        for (int step = 0; step < slots; step++)
+            if (cpuId - 1 == (starting + step) % computers) return true;
+        return false;
+    }
+
+    void recordProactiveOffer() { proactiveOffersThisRound++; }
+    public int getProactiveOffersThisRound() { return proactiveOffersThisRound; }
+
     /** Called exactly once as the last numbered player ends a normal turn. */
     public void onRoundCompleted(CatanGameState match, Random random) {
         completedRounds++;
+        proactiveOffersThisRound = 0;
         if (!enabled) return;
         // Expire the previous event even when no new event starts.
         activeEvent = null;
