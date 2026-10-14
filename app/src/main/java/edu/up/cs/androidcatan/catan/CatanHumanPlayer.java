@@ -1992,6 +1992,52 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         showLargestArmyTrophy(state.getCurrentLargestArmyPlayerId());
     } // updateTextViews END
 
+    /**
+     * Display the one most recent confirmed construction or robber action.
+     * Compare copied authoritative states rather than responding to unapproved
+     * button taps, so rejected actions never animate.
+     */
+    private void showBoardProgress(CatanGameState before, CatanGameState after) {
+        if (before == null || after == null || boardSurfaceView == null
+                || myActivity == null
+                || !CatanExperienceSettings.animations(myActivity)) return;
+        edu.up.cs.androidcatan.catan.gamestate.buildings.Building[] earlier =
+                before.getBoard().getBuildings();
+        edu.up.cs.androidcatan.catan.gamestate.buildings.Building[] updated =
+                after.getBoard().getBuildings();
+        for (int junction = 0; junction < Math.min(earlier.length, updated.length); junction++) {
+            if (updated[junction] == null) continue;
+            boolean newBuilding = earlier[junction] == null;
+            boolean cityUpgrade = updated[junction] instanceof City
+                    && !(earlier[junction] instanceof City);
+            if (newBuilding || cityUpgrade) {
+                boardSurfaceView.flashIntersection(junction);
+                return;
+            }
+        }
+        if (after.getBoard().getRoads().size() > before.getBoard().getRoads().size()) {
+            for (Road road : after.getBoard().getRoads()) {
+                boolean found = false;
+                for (Road previous : before.getBoard().getRoads()) {
+                    if (previous.getIntersectionAId() == road.getIntersectionAId()
+                            && previous.getIntersectionBId() == road.getIntersectionBId()
+                            && previous.getOwnerId() == road.getOwnerId()) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    boardSurfaceView.flashRoad(road.getIntersectionAId(),
+                            road.getIntersectionBId());
+                    return;
+                }
+            }
+        }
+        if (before.getBoard().getRobber().getHexagonId()
+                != after.getBoard().getRobber().getHexagonId())
+            boardSurfaceView.flashHex(after.getBoard().getRobber().getHexagonId());
+    }
+
     /** Show exactly how the human's own resource hand changed after a move. */
     private void captureOwnResourceChanges() {
         int[] next = state.getPlayerList().get(playerNum).getResourceCards();
@@ -2129,6 +2175,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
         if (info instanceof CatanGameState) {
 
             CatanGameState next = new CatanGameState((CatanGameState) info);
+            CatanGameState previousState = state;
             int previousTurn = state == null ? -1 : state.getCurrentPlayerId();
             CatanMarketState.Event previousEvent = state == null ? null
                     : state.getMarketState().getActiveEvent();
@@ -2181,6 +2228,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             fitPopupOnScreen(developmentGroup);
             fitPopupOnScreen(pickResourceGroup);
             drawGraphics();
+            showBoardProgress(previousState, next);
             if (buildConfirmation != null) {
                 messageTextView.setText(buildConfirmation);
                 Toast.makeText(myActivity, buildConfirmation, Toast.LENGTH_SHORT).show();
