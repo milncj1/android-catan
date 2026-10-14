@@ -66,6 +66,17 @@ public class CatanCareerCodecTest {
         assertEquals(2, CatanCareerCodec.merge(first, Arrays.asList(a, b)).size());
     }
 
+    @Test public void conflictingIdsInsideBackupAreRejectedAtDecode() throws Exception {
+        byte[] inconsistent = CatanCareerCodec.encode(Arrays.asList(
+                example("match-aabbcc", 0), example("match-aabbcc", 1)));
+        try {
+            CatanCareerCodec.decode(inconsistent);
+            fail("Conflicting duplicate IDs within a backup must be rejected.");
+        } catch (IOException expected) {
+            assertTrue(expected.getMessage().contains("conflicting match IDs"));
+        }
+    }
+
     @Test public void conflictingMatchIdRejectsWholeImport() throws Exception {
         CatanCareerRecord a = example("match-aabbcc", 0);
         CatanCareerRecord conflicting = example("match-aabbcc", 1);
