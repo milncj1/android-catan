@@ -1,6 +1,7 @@
 package edu.up.cs.androidcatan.catan;
 
 import java.util.ArrayList;
+import edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology;
 
 import edu.up.cs.androidcatan.game.GameMainActivity;
 import edu.up.cs.androidcatan.game.GamePlayer;
@@ -23,6 +24,9 @@ public class MainActivity extends GameMainActivity {
 
     private CatanSaveStore.Snapshot pendingResume;
     private boolean resumeSessionPending;
+    private CatanBoardTopology.Island chosenIsland = CatanBoardTopology.Island.CLASSIC;
+    private boolean suppressBoardSelection;
+    private boolean manuallyChosenBoard;
 
     @Override
     protected boolean hasSavedMatch() {
@@ -39,7 +43,7 @@ public class MainActivity extends GameMainActivity {
         result.setLocal(true);
         String[] names = saved.getNames();
         int[] types = saved.getTypes();
-        for (int index = 0; index < 4; index++) {
+        for (int index = 0; index < names.length; index++) {
             result.addPlayer(names[index], types[index]);
         }
         pendingResume = saved;
@@ -56,7 +60,7 @@ public class MainActivity extends GameMainActivity {
     protected void prepareLocalMatch(LocalGame localGame, GameConfig options) {
         if (!(localGame instanceof CatanLocalGame)) return;
         CatanLocalGame catan = (CatanLocalGame) localGame;
-        int[] types = new int[4];
+        int[] types = new int[options.getNumPlayers()];
         GamePlayerType[] available = options.getAvailTypes();
         for (int i = 0; i < types.length; i++) {
             String label = options.getSelType(i).getTypeName();
@@ -67,6 +71,11 @@ public class MainActivity extends GameMainActivity {
                     break;
                 }
             }
+        }
+        if (pendingResume == null) {
+            // The game instance exists already but no player threads are running yet.
+            // This replaces its default state only for a NEW game.
+            catan.setState(new CatanGameState(options.getNumPlayers(), chosenIsland));
         }
         catan.configureAutosave(getApplicationContext(), types);
         // createLocalGame() has already installed the restored position.
@@ -97,7 +106,7 @@ public class MainActivity extends GameMainActivity {
             }
         });
 
-        GameConfig defaultConfig = new GameConfig(playerTypes, 4, 4, "Settlers of Catan", PORT_NUMBER);
+        GameConfig defaultConfig = new GameConfig(playerTypes, 2, 7, "Settlers of Catan", PORT_NUMBER);
         defaultConfig.addPlayer("Human", 0); // player 1: a human player
         defaultConfig.addPlayer("Computer 1", 2); // offline smart computer opponent
         defaultConfig.addPlayer("Computer 2", 2); // offline smart computer opponent
@@ -105,6 +114,79 @@ public class MainActivity extends GameMainActivity {
         defaultConfig.setRemoteData("Remote Human Player", "", 0);
 
         return defaultConfig;
+    }
+
+
+    @Override
+    protected void initStarterGui() {
+        super.initStarterGui();
+        final android.widget.Spinner island = findViewById(edu.up.cs.androidcatan.R.id.new_game_island);
+        final android.widget.Spinner opponents = findViewById(edu.up.cs.androidcatan.R.id.new_game_opponents);
+        final android.widget.TextView hint = findViewById(edu.up.cs.androidcatan.R.id.new_game_island_hint);
+        if (island == null || opponents == null) return;
+
+        android.widget.ArrayAdapter<String> islandChoices = new android.widget.ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item,
+                new String[]{"Classic · 19", "Expanded · 30", "Grand · 37"});
+        islandChoices.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        island.setAdapter(islandChoices);
+        android.widget.ArrayAdapter<String> computerChoices = new android.widget.ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item,
+                new String[]{"1 computer", "2 computers", "3 computers",
+                        "4 computers", "5 computers", "6 computers"});
+        computerChoices.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        opponents.setAdapter(computerChoices);
+
+        int count = currentComputerOpponentRows();
+        chosenIsland = suggestedIsland(count);
+        suppressBoardSelection = true;
+        island.setSelection(chosenIsland.ordinal());
+        suppressBoardSelection = false;
+        opponents.setSelection(count - 1);
+
+        island.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                        android.view.View view, int position, long id) {
+                chosenIsland = CatanBoardTopology.Island.values()[position];
+                if (!suppressBoardSelection) manuallyChosenBoard = true;
+                updateIslandHint(hint, opponents.getSelectedItemPosition() + 1);
+            }
+        });
+        opponents.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                        android.view.View view, int position, long id) {
+                int count = position + 1;
+                configureComputerOpponentRows(count);
+                if (!manuallyChosenBoard) {
+                    suppressBoardSelection = true;
+                    chosenIsland = suggestedIsland(count);
+                    island.setSelection(chosenIsland.ordinal());
+                    suppressBoardSelection = false;
+                }
+                updateIslandHint(hint, count);
+            }
+        });
+        updateIslandHint(hint, count);
+    }
+
+    private CatanBoardTopology.Island suggestedIsland(int computerCount) {
+        return computerCount >= 6 ? CatanBoardTopology.Island.GRAND
+                : computerCount >= 4 ? CatanBoardTopology.Island.EXPANDED
+                    : CatanBoardTopology.Island.CLASSIC;
+    }
+
+    private void updateIslandHint(android.widget.TextView view, int opponents) {
+        if (view == null) return;
+        String status = chosenIsland == CatanBoardTopology.Island.CLASSIC
+                ? "Official 3–4-player island; 2 or 5+ players are house rules"
+                : chosenIsland == CatanBoardTopology.Island.EXPANDED
+                    ? "Official 5–6-player island; fewer players give extra space"
+                    : "Custom Grand island for up to 7 total players";
+        view.setText(chosenIsland.getTitle() + " · "
+                + chosenIsland.getRowLengths().length + " rows · "
+                + chosenIsland.getHexCount() + " tiles · " + status);
     }
 
     @Override
