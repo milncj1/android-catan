@@ -46,3 +46,11 @@ Use `CatanAiDifficulty.fromPlayerType()` for descriptive difficulty mapping.
 - Verify mixed-difficulty play and game saving on actual device, not just compile checks.
 - Trading among computers/with human is still reserved for Build 011; do not claim Hard/Expert can negotiate yet.
 - Difficulty strength needs practical balancing over matches, not a guarantee Expert will always win.
+
+## Further development review — 14 October 2026
+- Added `CatanAiPlanner.java` to guide Hard/Expert settlements, roads, robber targets, bank trades and Monopoly choices using public information, not opponents' secret resource holdings.
+- Connected advanced CPU players to multi-action turn planning and limited road construction to 15 pieces, including free-road action handling.
+- Corrected the original 2018 network-player fallback: the final player type was treated as a remote participant. With Expert as the last type, this wrongly disabled its player-name field. All local AI name fields now remain editable and nonblank names are validated.
+- Removed an accidental duplicate difficulty spinner from the XML; exactly one selection control and help label remain.
+- Additional 11 static source compatibility checks passed: one spinner, four levels, historic type indices, save validation, CPU modes and strategic choices.
+- **No Android compile/test build triggered for Build 010.** On-device strength and turn reliability still unverified.
