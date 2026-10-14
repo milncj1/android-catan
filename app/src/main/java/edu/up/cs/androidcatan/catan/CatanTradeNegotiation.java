@@ -22,6 +22,7 @@ final class CatanTradeNegotiation {
                 || game.isSetupPhase() || game.isRobberPhase() || !game.isActionPhase()
                 || !CatanTradingRules.validBundle(giving)
                 || !CatanTradingRules.validBundle(receiving)
+                || CatanTradingRules.overlaps(giving, receiving)
                 || targets == null || targets.length == 0
                 || proposer < 0 || proposer >= game.getPlayerList().size()
                 || !game.getPlayerList().get(proposer).hasResourceBundle(giving))
@@ -69,6 +70,7 @@ final class CatanTradeNegotiation {
         }
         if (response != COUNTERED || !CatanTradingRules.validBundle(revisedGiving)
                 || !CatanTradingRules.validBundle(revisedReceiving)
+                || CatanTradingRules.overlaps(revisedGiving, revisedReceiving)
                 || !game.getPlayerList().get(partner).hasResourceBundle(revisedReceiving))
             return false;
         status[partner] = COUNTERED;
