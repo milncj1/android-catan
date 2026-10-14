@@ -70,7 +70,7 @@ public final class CatanSaveStore {
             for (int i = 0; i < players; i++) {
                 if (names[i] == null || names[i].trim().isEmpty()
                         || names[i].length() > 120) return false;
-                if (i > 0 && types[i] != 1 && types[i] != 2) return false;
+                if (i > 0 && (types[i] < 1 || types[i] > 4)) return false;
             }
             return true;
         }
