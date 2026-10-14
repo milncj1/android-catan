@@ -151,7 +151,17 @@ public class CatanLocalGame extends LocalGame {
             Log.w(TAG, "Resumed game ended before GUI restoration; keeping original save");
             return;
         }
-        if (autosaveContext != null) CatanSaveStore.clear(autosaveContext);
+        // Archive before deleting the active save. If storage fails the
+        // finished match remains on disk rather than losing career history.
+        if (autosaveContext != null) {
+            if (!CatanCareerStore.archive(autosaveContext, state,
+                    playerNames, autosaveTypes, state.getCurrentPlayerId())) {
+                Log.e(TAG, "Career archiving failed; preserving last saved game");
+                return;
+            }
+            state.getMatchStats().markCompleted();
+            CatanSaveStore.clear(autosaveContext);
+        }
     }
 
     /**
