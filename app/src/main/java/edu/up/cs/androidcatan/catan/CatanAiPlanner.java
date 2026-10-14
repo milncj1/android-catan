@@ -215,7 +215,9 @@ public final class CatanAiPlanner {
             for (int giving = 0; giving < 5; giving++) {
                 if (giving == needed) continue;
                 // Never trade away resources needed to complete this build.
-                if (cards[giving] - cost[giving] >= 4)
+                int exchangeRate = CatanTradingRules.bestRate(
+                        game, playerId, giving, needed);
+                if (exchangeRate > 0 && cards[giving] - cost[giving] >= exchangeRate)
                     return new int[]{giving, needed};
             }
         }
