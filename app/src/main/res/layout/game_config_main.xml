@@ -179,6 +179,35 @@
             android:textSize="10sp"
             android:textColor="#FF655B46"
             android:layout_marginBottom="5dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="3dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="AI DIFFICULTY"
+                android:textStyle="bold"
+                android:textSize="11sp"
+                android:textColor="#FF254B3F" />
+            <Spinner
+                android:id="@+id/new_game_difficulty"
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:layout_height="38dp" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/new_game_difficulty_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Normal · fair strategic opponents"
+            android:textSize="10sp"
+            android:textColor="#FF655B46"
+            android:layout_marginBottom="5dp" />
+
         <TextView android:id="@+id/new_game_island_hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
