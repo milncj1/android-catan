@@ -74,15 +74,21 @@ public final class CatanCareerGraph extends View {
                     Math.min(p, HexagonGrid.playerColors.length - 1)]);
             paint.setStrokeWidth(dp(2.5f));
             paint.setStrokeCap(Paint.Cap.ROUND);
-            for (int r = 1; r < rounds.length; r++) {
-                if (p >= rounds[r].length || p >= rounds[r-1].length) continue;
-                float x1 = plot.left + (r - 1f) * plot.width() / (rounds.length - 1);
-                float x2 = plot.left + r * plot.width() / (rounds.length - 1);
-                float y1 = plot.bottom - Math.min(high, rounds[r-1][p]) *
-                        plot.height() / high;
-                float y2 = plot.bottom - Math.min(high, rounds[r][p]) *
-                        plot.height() / high;
-                canvas.drawLine(x1, y1, x2, y2, paint);
+            // Keep rendering responsive in unusually long matches. Original
+            // round-by-round data remains untouched in the career record.
+            int step = Math.max(1, (rounds.length - 1 + 399) / 400);
+            for (int prior = 0; prior < rounds.length - 1; ) {
+                int r = Math.min(rounds.length - 1, prior + step);
+                if (p < rounds[r].length && p < rounds[prior].length) {
+                    float x1 = plot.left + prior * plot.width() / (rounds.length - 1);
+                    float x2 = plot.left + r * plot.width() / (rounds.length - 1);
+                    float y1 = plot.bottom - Math.min(high, rounds[prior][p]) *
+                            plot.height() / high;
+                    float y2 = plot.bottom - Math.min(high, rounds[r][p]) *
+                            plot.height() / high;
+                    canvas.drawLine(x1, y1, x2, y2, paint);
+                }
+                prior = r;
             }
         }
         paint.setStyle(Paint.Style.FILL);
