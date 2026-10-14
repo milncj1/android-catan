@@ -769,16 +769,13 @@ View.OnClickListener {
 		for (TableRow row : this.tableRows) {
 			EditText nameEditor = row.findViewById(R.id.playerNameEditText);
 			String name = nameEditor == null ? "" : nameEditor.getText().toString().trim();
-			if (playerNumber == 0 && visibleHumanName != null) {
-				name = visibleHumanName.getText().toString().trim();
-				// Never trap the user if an empty field slips through a
-				// keyboard reset, saved setup or orientation change.
-				if (name.isEmpty()) name = "You";
-				// Keep the original framework row in sync for Save setup too.
+			if (playerNumber == 0) {
+				// The visible field is authoritative for a new offline game.
+				name = CatanPlayerNames.human(visibleHumanName == null
+						? name : visibleHumanName.getText().toString());
 				if (nameEditor != null) nameEditor.setText(name);
-			}
-			else if (playerNumber > 0 && name.isEmpty()) {
-				name = "Computer " + playerNumber;
+			} else {
+				name = CatanPlayerNames.computer(name, playerNumber);
 				if (nameEditor != null) nameEditor.setText(name);
 			}
 			playerNumber++;
