@@ -140,25 +140,34 @@
             android:letterSpacing="0.04"
             android:textColor="#FF254B3F" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Choose your island and computer opponents"
-            android:textSize="12sp"
-            android:textColor="#FF655B46"
-            android:layout_marginBottom="4dp" />
 
+
+        <!-- All options share the available vertical space. Keep actions below fixed. -->
+        <ScrollView
+            android:id="@+id/new_game_options_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="false"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false"
+            android:overScrollMode="ifContentScrolls">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="3dp">
         <!-- Clear, prominent, tap-to-edit human name field in landscape. -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="50dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/start_name_emphasis"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="9dp">
+            android:layout_marginBottom="5dp">
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_weight="1"
@@ -182,7 +191,7 @@
                 android:id="@+id/new_game_player_name"
                 android:layout_width="0dp"
                 android:layout_weight="1.15"
-                android:layout_height="42dp"
+                android:layout_height="38dp"
                 android:background="@drawable/start_player_field"
                 android:paddingStart="12dp"
                 android:paddingEnd="10dp"
@@ -279,18 +288,17 @@
             android:textSize="10sp"
             android:layout_marginBottom="4dp" />
 
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fillViewport="false"
-            android:scrollbars="vertical"
-            android:fadeScrollbars="true">
-            <include
-                layout="@layout/game_config_tabhost"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+            </LinearLayout>
         </ScrollView>
+
+        <!-- Legacy configuration views must remain mounted for GameMainActivity,
+             but never occupy or steal space from visible game choices. -->
+        <include
+            layout="@layout/game_config_tabhost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
 
         <Button
             android:id="@+id/continueGameButton"
