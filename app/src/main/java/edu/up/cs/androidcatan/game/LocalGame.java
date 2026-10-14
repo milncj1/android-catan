@@ -369,6 +369,26 @@ public abstract class LocalGame implements Game, Tickable {
 		myHandler.sendMessage(msg);
 	}
 	
+	/**
+	 * Called ONLY after game-specific state has been safely persisted and the
+	 * last action completed on the local game loop. Never stop mid-action.
+	 * Stops the old CPU loops before launching a new main-menu Activity.
+	 */
+	protected final void stopWorkersForMenu() {
+		running = false;
+		gameStage = GameStage.GAME_OVER;
+		if (players != null) {
+			for (GamePlayer player : players)
+				if (player instanceof GameComputerPlayer)
+					((GameComputerPlayer) player).stopForMenu();
+		}
+		Handler handler = myHandler;
+		if (handler != null) {
+			handler.removeCallbacksAndMessages(null);
+			handler.getLooper().quit();
+		}
+	}
+
 	/** Post a restoration confirmation to the same serialized game loop as moves. */
 	protected final void postToGameThread(Runnable runnable) {
 		Handler handler = myHandler;
