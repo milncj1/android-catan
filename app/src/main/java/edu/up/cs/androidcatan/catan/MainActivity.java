@@ -24,6 +24,7 @@ public class MainActivity extends GameMainActivity {
 
     private CatanSaveStore.Snapshot pendingResume;
     private CatanLocalGame activeCatan;
+    private boolean menuNavigationPending;
     private boolean resumeSessionPending;
     private CatanBoardTopology.Island chosenIsland = CatanBoardTopology.Island.CLASSIC;
     private boolean suppressBoardSelection;
