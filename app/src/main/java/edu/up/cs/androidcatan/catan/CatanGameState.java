@@ -36,6 +36,9 @@ public class CatanGameState extends GameState {
     // Optional market data is nullable for Build 010 and earlier serialized saves.
     // Never change CatanGameState.serialVersionUID.
     private CatanMarketState marketState;
+    // Only the live game engine owns a pending trade. A saved/reloaded match
+    // intentionally cancels it; no stale trade can be completed after restart.
+    private transient boolean tradePending;
 
     private int currentPlayerId; // id of player who is the current playing player
     private int currentDiceSum; // the sum of the dice at this very moment
@@ -143,6 +146,7 @@ public class CatanGameState extends GameState {
         this.developmentCards.addAll(cgs.getDevelopmentCards());
         this.marketState = cgs.marketState == null ? null
                 : new CatanMarketState(cgs.marketState);
+        this.tradePending = cgs.tradePending;
         this.currentPlayerId = cgs.currentPlayerId;
         this.setupPhaseTurnCounter = cgs.setupPhaseTurnCounter;
         this.currentSetupSettlement = cgs.currentSetupSettlement;
@@ -608,6 +612,9 @@ public class CatanGameState extends GameState {
     public void setCurrentDiceSum(int currentDiceSum) {
         this.currentDiceSum = currentDiceSum;
     }
+
+    public boolean isTradePending() { return tradePending; }
+    void setTradePending(boolean pending) { this.tradePending = pending; }
 
     /** A null state means a legacy save with normal Catan trading. */
     public CatanMarketState getMarketState() {
