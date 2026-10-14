@@ -331,14 +331,29 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
             // Initiate one useful player trade on this CPU's turn, at most.
             // Do not interrupt free-road placement or exceed the per-round cap.
-            if (!gs.hasCpuOfferedThisTurn()
-                    && gs.getMarketState().mayComputerOffer(
-                            playerNum, gs.getPlayerList().size())) {
+            if (!gs.hasCpuOfferedThisTurn()) {
                 int[][] proposal = CatanNegotiationAI.proposeOnOwnTurn(gs, playerNum);
                 if (proposal != null) {
-                    game.sendAction(new CatanTradeOfferAction(this,
-                            new int[]{0}, proposal[0], proposal[1]));
-                    return;
+                    int need = 0;
+                    for (int r = 0; r < 5; r++)
+                        if (proposal[1][r] > 0) { need = r; break; }
+                    boolean mayInviteHuman = gs.getMarketState()
+                            .mayComputerOffer(playerNum, gs.getPlayerList().size());
+                    // Occasionally choose a CPU rival even when the human is
+                    // eligible. Those quiet exchanges don't interrupt play.
+                    boolean preferHuman = mayInviteHuman
+                            && (gs.getPlayerList().size() == 2
+                                || (gs.getMarketState().getCompletedRounds()
+                                    + playerNum) % 3 != 0);
+                    int partner = preferHuman ? 0
+                            : CatanNegotiationAI.bestComputerTradingPartner(
+                                    gs, playerNum, need);
+                    if (partner < 0 && mayInviteHuman) partner = 0;
+                    if (partner >= 0) {
+                        game.sendAction(new CatanTradeOfferAction(this,
+                                new int[]{partner}, proposal[0], proposal[1]));
+                        return;
+                    }
                 }
             }
 
