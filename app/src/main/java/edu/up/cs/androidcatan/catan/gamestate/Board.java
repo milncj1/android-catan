@@ -1299,6 +1299,68 @@ public class Board implements Serializable {
         }
     }
 
+
+    /** Build a matching hex/intersection/road graph from shared corners. */
+    private void initialiseGeneratedGraph(CatanBoardTopology.Island shape) {
+        CatanBoardTopology generated = new CatanBoardTopology(shape);
+        int h = generated.getHexes().size(), v = generated.getVertices().size();
+        hGraph = new boolean[h][h];
+        buildings = new Building[v];
+        roadMatrix = new Road[v][v];
+        roads.clear();
+        intersectionAdjacencyList.clear();
+        intToHexIdMap.clear();
+        hexToIntIdMap.clear();
+        hexagonIdRings.clear();
+        intersectionIdRings.clear();
+        for (int i = 0; i < v; i++) {
+            intersectionAdjacencyList.add(new ArrayList<Integer>(
+                    generated.getVertexNeighbours().get(i)));
+            intToHexIdMap.add(new ArrayList<Integer>());
+        }
+        for (CatanBoardTopology.Hex tile : generated.getHexes()) {
+            ArrayList<Integer> corners = new ArrayList<>();
+            for (int vertex : tile.getCorners()) {
+                corners.add(vertex);
+                intToHexIdMap.get(vertex).add(tile.id);
+            }
+            hexToIntIdMap.add(corners);
+        }
+        for (int i = 0; i < h; i++)
+            for (Integer neighbour : generated.getHexNeighbours().get(i))
+                hGraph[i][neighbour] = true;
+        generateRoadMatrix();
+    }
+
+    private void generateExpandedPorts() {
+        CatanBoardTopology map = new CatanBoardTopology(getIsland());
+        ArrayList<CatanBoardTopology.Edge> coast = new ArrayList<>();
+        for (Integer id : map.getCoastalEdges())
+            coast.add(map.getEdges().get(id));
+        Collections.sort(coast, new java.util.Comparator<CatanBoardTopology.Edge>() {
+            @Override public int compare(CatanBoardTopology.Edge a, CatanBoardTopology.Edge b) {
+                return Double.compare(coastalAngle(map, a), coastalAngle(map, b));
+            }
+        });
+        int count = getIsland() == CatanBoardTopology.Island.EXPANDED ? 11 : 13;
+        ArrayList<Integer> types = new ArrayList<>();
+        for (int type = 0; type < 5; type++) types.add(type);
+        while (types.size() < count) types.add(-1);
+        Collections.shuffle(types);
+        for (int i = 0; i < count; i++) {
+            CatanBoardTopology.Edge edge = coast.get(
+                    ((int) Math.floor((i + .5) * coast.size() / count)) % coast.size());
+            int type = types.get(i);
+            portList.add(new Port(edge.from, edge.to, type < 0 ? 3 : 2, type));
+        }
+    }
+
+    private static double coastalAngle(CatanBoardTopology map, CatanBoardTopology.Edge edge) {
+        CatanBoardTopology.Vertex a = map.getVertices().get(edge.from);
+        CatanBoardTopology.Vertex b = map.getVertices().get(edge.to);
+        return Math.atan2(a.y + b.y, a.x + b.x);
+    }
+
     /* ----- generic getter methods ----- */
 
     public ArrayList<ArrayList<Integer>> getIntersectionAdjacencyList() {
