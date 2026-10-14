@@ -149,6 +149,20 @@ public abstract class GameComputerPlayer implements GamePlayer, Tickable {
 	}
 	
 	/**
+	 * Stop the old CPU worker when a player returns to the main menu.
+	 * Otherwise old computer turns could continue behind a newly started game.
+	 * This affects lifecycle only; never changes AI strategy or turn rules.
+	 */
+	public final void stopForMenu() {
+		running = false;
+		Handler h = myHandler;
+		if (h != null) {
+			h.removeCallbacksAndMessages(null);
+			h.getLooper().quit();
+		}
+	}
+
+	/**
 	 * Callback-method implemented in the subclass whenever updated
 	 * state is received.
 	 * 
