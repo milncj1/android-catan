@@ -1214,6 +1214,15 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 }
                 robberActionPending = false;
                 renderedRobberStage = now;
+                if (now == CatanRobberSteps.Step.MOVE_TILE) {
+                    // A previous robber turn must never preselect a stale hex.
+                    selectedHexagonId = -1;
+                    if (boardSurfaceView != null
+                            && boardSurfaceView.getGrid() != null) {
+                        boardSurfaceView.getGrid().setHighlightedHexagon(-1);
+                        boardSurfaceView.invalidate();
+                    }
+                }
             }
             // The original image-based robber controls are retained only for
             // XML/game-save compatibility. They must never appear again.
