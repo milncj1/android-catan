@@ -284,6 +284,26 @@ public class MainActivity extends GameMainActivity {
                 + chosenIsland.getHexCount() + " tiles · " + status);
     }
 
+    /** Save the ongoing game before leaving; completed matches are archived. */
+    public void confirmReturnToMainMenu() {
+        if (menuNavigationPending) return;
+        if (activeCatan == null) {
+            restartAtMainMenu();
+            return;
+        }
+        if (activeCatan.isFinishedMatch()) {
+            safelyReturnToMenu();
+            return;
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Return to Main Menu?")
+                .setMessage("Your match will be saved. Use Continue saved game to return.")
+                .setNegativeButton("Keep playing", null)
+                .setPositiveButton("Save & Main Menu",
+                        (dialog, which) -> safelyReturnToMenu())
+                .show();
+    }
+
     @Override
     protected void onPause() {
         if (activeCatan != null) activeCatan.onAppPaused();
