@@ -105,15 +105,5 @@ final class CatanTradeNegotiation {
                 giving, receiving, status, counterGiving, counterReceiving, "");
     }
 
-    int[] completedGivingFor(int partner) {
-        if (!invited(partner)) return null;
-        return (status[partner] == COUNTERED ? counterGiving[partner] : giving).clone();
-    }
-
-    int[] completedReceivingFor(int partner) {
-        if (!invited(partner)) return null;
-        return (status[partner] == COUNTERED ? counterReceiving[partner] : receiving).clone();
-    }
-
     int[] getStatus() { return status.clone(); }
 }
