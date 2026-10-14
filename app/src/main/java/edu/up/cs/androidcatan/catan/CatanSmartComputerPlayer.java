@@ -457,44 +457,13 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 }
             }
 
-            /*****Looks to trade so they can potentially build a road******/
-            if (brickCount >= 5 && lumberCount == 0) {
-                Log.d(TAG, "receiveInfo: Brick count: " + brickCount + " and lumberCount: " + lumberCount + " caused a trade");
-                game.sendAction(new CatanTradeWithBankAction(this, 0, 2));
+            /*****Normal makes a basic, legal bank trade towards a build.*****/
+            int[] normalTrade = CatanAiPlanner.bestBankTrade(gs, this.playerNum, false);
+            if (normalTrade != null) {
+                game.sendAction(new CatanTradeWithBankAction(this,
+                        normalTrade[0], normalTrade[1]));
                 game.sendAction(new CatanEndTurnAction(this));
-                sleep(350);
                 return;
-            }
-            if (lumberCount >= 5 && brickCount == 0) {
-                Log.d(TAG, "receiveInfo: Lumber count: " + lumberCount + " and brickCount: " + brickCount + " caused a trade");
-                game.sendAction(new CatanTradeWithBankAction(this, 2, 0));
-                game.sendAction(new CatanEndTurnAction(this));
-                sleep(350);
-                return;
-            }
-
-            if (grainCount >= 4) {
-                if (!gs.getPlayerList().get(this.playerNum).hasResourceBundle(Road.resourceCost) && !gs.getPlayerList().get(this.playerNum).hasResourceBundle(Settlement.resourceCost) && !gs.getPlayerList().get(this.playerNum).hasResourceBundle(City.resourceCost)) {
-                    Log.d(TAG, "receiveInfo: Trade happening: player + " + this.playerNum + "traded grain for brick");
-                    game.sendAction(new CatanTradeWithBankAction(this, 1, playerLeastResource(gs)));
-                    Log.d(TAG, "receiveInfo: CatanTradeWithBankAction sent");
-                    game.sendAction(new CatanEndTurnAction(this));
-                    sleep(350);
-                    Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
-                    return;
-                }
-            }
-
-            if (woolCount >= 4) {
-                if (!gs.getPlayerList().get(this.playerNum).hasResourceBundle(Road.resourceCost) && !gs.getPlayerList().get(this.playerNum).hasResourceBundle(Settlement.resourceCost) && !gs.getPlayerList().get(this.playerNum).hasResourceBundle(City.resourceCost)) {
-                    Log.d(TAG, "receiveInfo: Trade happening: wool for brick");
-                    game.sendAction(new CatanTradeWithBankAction(this, 4, playerLeastResource(gs)));
-                    Log.d(TAG, "receiveInfo: CatanTradeWithBankAction sent");
-                    game.sendAction(new CatanEndTurnAction(this));
-                    sleep(350);
-                    Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
-                    return;
-                }
             }
 
             /******Looks to extend towards the next useful settlement*****/
