@@ -385,16 +385,6 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 }
             }
 
-            /******Looks to buy a dev card*******/
-            if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(DevelopmentCard.resourceCost) && gs.hasDevelopmentCardsAvailable()) {
-                Log.d(TAG, "receiveInfo: Player " + this.playerNum + " purchased dev card");
-                game.sendAction(new CatanBuyDevCardAction(this));
-                Log.d(TAG, "receiveInfo: CatanBuyDevCardAction sent");
-                if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
-                sleep(350);
-                return;
-            }
-
             /*****Looks to use a dev card*******/
             if (!gs.hasPlayedDevelopmentCardThisTurn()
                     && !gs.getPlayerList().get(this.playerNum).getPlayableDevCards().isEmpty()) {
@@ -455,6 +445,16 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                         return;
                     }
                 }
+            }
+
+            /******Looks to buy a dev card*******/
+            if (gs.getPlayerList().get(this.playerNum).hasResourceBundle(DevelopmentCard.resourceCost) && gs.hasDevelopmentCardsAvailable()) {
+                Log.d(TAG, "receiveInfo: Player " + this.playerNum + " purchased dev card");
+                game.sendAction(new CatanBuyDevCardAction(this));
+                Log.d(TAG, "receiveInfo: CatanBuyDevCardAction sent");
+                if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
+                sleep(350);
+                return;
             }
 
             /*****Normal makes a basic, legal bank trade towards a build.*****/
