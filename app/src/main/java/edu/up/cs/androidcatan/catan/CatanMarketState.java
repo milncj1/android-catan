@@ -125,16 +125,21 @@ public final class CatanMarketState implements Serializable {
                 && selectedResource == resource;
     }
 
+    private static String resourceName(int resource) {
+        String[] names = {"Brick", "Grain", "Lumber", "Ore", "Wool"};
+        return resource >= 0 && resource < names.length ? names[resource] : "Unknown";
+    }
+
     public String announcement() {
         if (getActiveEvent() == null) return "";
         switch (activeEvent) {
             case MARKET_DAY: return "Market Day! One 3:1 bank trade per player this round.";
             case HARBOUR_FESTIVAL: return "Harbour Festival! Harbour owners get one 2:1 trade with any resource.";
-            case MERCHANT_CARAVAN: return "Merchant Caravan! One 2:1 trade with resource "
-                    + selectedResource + " per player.";
+            case MERCHANT_CARAVAN: return "Merchant Caravan! Each player gets one 2:1 trade giving "
+                    + resourceName(selectedResource) + ".";
             case TRADING_FAIR: return "Trading Fair! Rivals are more open to negotiations this round.";
-            case MERCHANT_SHORTAGE: return "Merchant Shortage! Resource "
-                    + selectedResource + " cannot be received from the bank or harbours this round.";
+            case MERCHANT_SHORTAGE: return "Merchant Shortage! " + resourceName(selectedResource)
+                    + " cannot be received from the bank or harbours this round.";
             default: return "";
         }
     }
