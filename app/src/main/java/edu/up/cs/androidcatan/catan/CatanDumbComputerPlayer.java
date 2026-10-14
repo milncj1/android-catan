@@ -241,9 +241,11 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
                 else if (card == 2) {
                     for (int r = 0; r < 5; r++)
                         if (gs.getBankResourceCount(r) > 0) { playable.add(card); break; }
-                } else if (card == 4 && roadCount < 15) {
-                    for (int[] move : legal)
-                        if (move[0] == 2) { playable.add(card); break; }
+                } else if (card == 4 && roadCount < 15
+                        && CatanAiPlanner.bestRoad(gs, playerNum, false) != null) {
+                    // A Road Building card is free: it must also work when
+                    // the player cannot afford to buy ordinary roads.
+                    playable.add(card);
                 }
             }
             if (!playable.isEmpty()) {
