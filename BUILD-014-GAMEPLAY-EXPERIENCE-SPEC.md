@@ -169,3 +169,19 @@ Owner asked to continue implementing 014; no additional change of specification.
 - Delivered `Catan_Build_014_Name_Fix_Permanent_Signed.apk`, 27,300,949 bytes, SHA256 `d449952cfb1b4a6f267c1a30149ab60b61ca2d7d9ebb81bb9b24b0fcc26def05`.
 - Signing certificate SHA256 verified unchanged: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`. New APK is versionCode **26**, higher than previous installed QA25.
 - Requires phone acceptance: visible field, Start New Game, Continue existing saved game, saved career data, landscape fit. **Install as update; never uninstall or clear data.** No Build 012 integration yet.
+
+## Build 014 QA27 — name prominence + board-selection repair (14 October 2026)
+
+**User phone report (after signed QA26):** New Game player-name entry was not obvious enough; after several rounds the game could no longer select a board intersection.
+
+**Root cause found in source:** `CatanHumanPlayer` previously used a mutable `isMenuOpen` flag to reject every board tap. That flag could remain true after a robber/discard transition, an automatic no-card discard, or a trade menu closed by ending a turn. The previous 12-pixel drag threshold also misclassified small finger movements on high-density devices.
+
+**QA27 fixes:**
+- On the New Game card, place the existing editable player name inside a gold-outlined, numbered **"1. YOUR PLAYER NAME"** strip, with "Tap the box to edit →", bolder larger input, and select-all-on-focus. Existing name persistence and blank-name fallback retained.
+- Replace sticky `isMenuOpen` with `CatanBoardTapGuard` using **current human turn + actual visibility** of discard, trade and resource-picker modal panels. Leave robber move/steal tile and junction selection enabled.
+- Dismiss discard overlay whenever the authoritative game reports discard complete, or the robber phase has ended. Close robber/trade and related panels at turn end. Discard-confirm button now explicitly closes its panel instead of toggling and potentially reopening it in a race.
+- Increase tap/drag separation threshold to `max(Android scaled touch slop, 12dp)`, so normal finger jitter does not accidentally pan rather than select.
+- Add pure JVM regression cases covering after-seven automatic discard, trade/menu closure, CPU turns and allowing robber placement/steal board taps.
+- **Verified** GitHub Actions [run 38612311374](https://github.com/milncj1/android-catan/actions/runs/38612311374) (source snapshot `97a7ed730632ee4d59f37393d74370b32275e9e1`): status **SUCCESS**, including Android XML validation, JVM unit tests and `assembleDebug`; build number/versionCode **27**.
+- Retrieved the CI APK and signed **outside GitHub** with the owner's original private Catan permanent PKCS12 key. Output `Catan_Build_014_Intersection_Fix_Permanent_Signed.apk`, size **27,302,120 bytes**, SHA256 `c90be92abe6a6537736c00080b19f6caf8c5da65be52d196392555fff4e4eb2e`. JAR signature and ZIP CRC validated; matching original signing certificate SHA256 `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97` confirmed. Temporary extracted signing secrets were deleted after signing.
+- This APK is an in-place QA update (no uninstall / no clear data). **Device test still required**: enter/edit name, resume existing match, take several turns through seven/robber/trading, tap and select intersections, zoom/pan, verify no regression. No Build 012 merge performed.
