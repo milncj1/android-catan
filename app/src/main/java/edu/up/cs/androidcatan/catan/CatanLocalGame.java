@@ -348,6 +348,10 @@ public class CatanLocalGame extends LocalGame {
                 if (response < 0 || !pendingTrade.respond(state, actingPlayer, response,
                         reply.getCounterGiving(), reply.getCounterReceiving()))
                     return false;
+                // Only the actual human player can mute invitations. A CPU
+                // cannot disable the owner's offers with a forged reply.
+                if (actingPlayer == 0 && reply.muteOffersThisRound())
+                    state.getMarketState().muteOffersUntilNextRound();
                 if (pendingTrade.complete())
                     players[pendingTrade.proposer].sendInfo(pendingTrade.resultsInfo());
                 return true;
