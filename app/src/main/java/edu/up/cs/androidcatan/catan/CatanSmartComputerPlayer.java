@@ -14,7 +14,7 @@ import edu.up.cs.androidcatan.catan.actions.CatanRobberDiscardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberMoveAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRobberStealAction;
 import edu.up.cs.androidcatan.catan.actions.CatanRollDiceAction;
-import edu.up.cs.androidcatan.catan.actions.CatanTradeWithBankAction;
+import edu.up.cs.androidcatan.catan.actions.CatanTradeWithAutoBankAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseKnightCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseMonopolyCardAction;
 import edu.up.cs.androidcatan.catan.actions.CatanUseRoadBuildingCardAction;
@@ -460,7 +460,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
             /*****Normal makes a basic, legal bank trade towards a build.*****/
             int[] normalTrade = CatanAiPlanner.bestBankTrade(gs, this.playerNum, false);
             if (normalTrade != null) {
-                game.sendAction(new CatanTradeWithBankAction(this,
+                game.sendAction(new CatanTradeWithAutoBankAction(this,
                         normalTrade[0], normalTrade[1]));
                 game.sendAction(new CatanEndTurnAction(this));
                 return;
@@ -564,7 +564,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
         // A targeted bank trade can unlock a specific next build.
         int[] trade = CatanAiPlanner.bestBankTrade(gs, playerNum, expert);
         if (trade != null) {
-            game.sendAction(new CatanTradeWithBankAction(this, trade[0], trade[1]));
+            game.sendAction(new CatanTradeWithAutoBankAction(this, trade[0], trade[1]));
             return true;
         }
 
