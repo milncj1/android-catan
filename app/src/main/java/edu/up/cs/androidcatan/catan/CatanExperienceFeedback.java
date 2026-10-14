@@ -45,6 +45,41 @@ public final class CatanExperienceFeedback {
         });
     }
 
+    /**
+     * Decorative dice tumble. The result is supplied by the accepted game
+     * event; these changing faces NEVER roll or influence the engine.
+     * Tokens prevent stale CPU animations from overwriting newer results.
+     */
+    public static void dice(Activity activity, TextView display, String result) {
+        if (activity == null || display == null || result == null) return;
+        if (!CatanExperienceSettings.animations(activity)) {
+            pulse(activity, display, 160);
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            if (activity.isFinishing()) return;
+            final Object token = new Object();
+            display.setTag(token);
+            final int duration = CatanExperienceSettings.animationMillis(activity, 650);
+            final String[] faces = {"⚃ ⚅", "⚁ ⚄", "⚂ ⚀"};
+            Handler handler = new Handler(Looper.getMainLooper());
+            for (int n = 0; n < faces.length; n++) {
+                final int frame = n;
+                handler.postDelayed(() -> {
+                    if (display.getTag() == token) display.setText(faces[frame]);
+                }, (duration * n) / 4L);
+            }
+            handler.postDelayed(() -> {
+                if (display.getTag() == token) {
+                    display.setText(result);
+                    pulse(activity, display, 220);
+                }
+            }, duration);
+            if (CatanExperienceSettings.soundEffects(activity))
+                display.playSoundEffect(SoundEffectConstants.CLICK);
+        });
+    }
+
     /** Small polish effect on an already-updated score, roll or control. */
     public static void pulse(Activity activity, View view, int normalDuration) {
         if (activity == null || view == null
