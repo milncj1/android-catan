@@ -136,3 +136,13 @@ Owner asked to continue implementing 014; no additional change of specification.
 - Final visual-polish validation [GitHub Actions run 38601596231](https://github.com/milncj1/android-catan/actions/runs/38601596231), snapshot apk-build/014-visual-polish-qa @ 5a076179e4176a07a4b540d3fbed1f5d68c3f0a7: **SUCCESS** (Android XML, JVM unit suite, assembleDebug). No signed delivery APK produced; source branch remains separate from owner-installed APK.
 - Only remaining pre-release integration dependency is final Build 012 source. Build 013 was explicitly skipped by the owner. Avoid inventing a missing 013 branch or requiring it.
 - Phone/owner acceptance remains mandatory, particularly landscape layout, end-game archival, import/export and sound/speed behaviour. Do not merge into master or release as production until 012 code is reconciled and tested.
+
+## Build 014 extended career QA and safeguards — 14 October 2026
+
+- Implemented date filters for personal career: All dates, Last 30 days, Last 90 days and This year. Existing board size, CPU difficulty and player-count filters remain in place.
+- For very long matches, limit the visible round-by-round text history to the latest 40 entries while retaining *all* data in the stored record. Chart rendering samples long histories to bound rendering cost.
+- When decoding offline career backups, validate internal IDs and reject contradictory same-ID records before showing the Smart Merge preview. Added JUnit regression for this case. Duplicate identical match records remain safe to skip during merge.
+- Dice reveal can now be skipped with a tap on the dice display; authoritative engine results are unchanged.
+- CI snapshot **apk-build/014-career-regression-qa** at `87ddae01c1cfe482bc8ae340ea565d9f9e6d3212`: [GitHub Actions run 38602833102](https://github.com/milncj1/android-catan/actions/runs/38602833102) **SUCCESS**: Android XML validation, JVM unit tests, and debug APK compilation.
+- All changes stay on `dev/build-014-gameplay-experience` and its ephemeral QA snapshot branch. The repository's `master` branch, installed device app and ongoing Build 012 are untouched. Build 013 was intentionally skipped.
+- **Not signed or installed.** A source compilation is not proof of correct landscape display, full-match stats, signed upgrade, or device behaviour. Final signed release remains gated on integrating completed Build 012 source, checking versionCode/signing identity, and human phone acceptance.
