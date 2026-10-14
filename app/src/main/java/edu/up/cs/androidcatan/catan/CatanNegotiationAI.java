@@ -149,9 +149,13 @@ public final class CatanNegotiationAI {
                 edu.up.cs.androidcatan.catan.gamestate.buildings.Building house =
                         game.getBoard().getBuildings()[vertex];
                 if (house == null || house.getOwnerId() != cpu) continue;
-                for (Integer hexId : game.getBoard().getIntToHexIdMap().get(vertex)) {
+                java.util.List<Integer> surrounding =
+                        game.getBoard().getIntToHexIdMap().get(vertex);
+                if (surrounding == null) continue; // Expansion-board edge.
+                for (Integer hexId : surrounding) {
                     edu.up.cs.androidcatan.catan.gamestate.Hexagon hex =
                             game.getBoard().getHexagonFromId(hexId);
+                    if (hex == null) continue;
                     if (hex.getResourceId() == resourceNeeded
                             && hex.getChitValue() >= 0 && hex.getChitValue() < pips.length)
                         score += pips[hex.getChitValue()]
