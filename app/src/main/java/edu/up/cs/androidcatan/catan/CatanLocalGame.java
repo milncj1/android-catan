@@ -400,7 +400,7 @@ public class CatanLocalGame extends LocalGame {
             state.getBoard().addBuilding(point, new Settlement(owner));
             if (state.isSetupPhase()) {
                 state.setCurrentSetupSettlement(point);
-                if (state.getSetupPhaseTurnCounter() > 3) {
+                if (state.getSetupPhaseTurnCounter() >= state.getPlayerList().size()) {
                     for (Integer hexagon : state.getBoard().getIntToHexIdMap().get(point)) {
                         int resource = state.getBoard().getHexagonFromId(hexagon).getResourceId();
                         if (resource >= 0 && resource < 5 && state.getBankResourceCount(resource) > 0)
