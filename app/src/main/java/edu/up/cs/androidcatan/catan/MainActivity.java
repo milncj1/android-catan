@@ -140,6 +140,28 @@ public class MainActivity extends GameMainActivity {
     protected void initStarterGui() {
         CatanExperienceSettings.load(this);
         super.initStarterGui();
+
+        // Keep the one visible human name field populated and remembered.
+        // The legacy hidden player row is still used by the game framework.
+        final android.widget.EditText playerName =
+                findViewById(edu.up.cs.androidcatan.R.id.new_game_player_name);
+        if (playerName != null) {
+            final android.content.SharedPreferences setup = getSharedPreferences(
+                    "catan_014_setup", MODE_PRIVATE);
+            String remembered = setup.getString("human_name", "You");
+            playerName.setText(remembered == null || remembered.trim().isEmpty()
+                    ? "You" : remembered);
+            playerName.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start,
+                        int count, int after) { }
+                @Override public void onTextChanged(CharSequence s, int start,
+                        int before, int count) { }
+                @Override public void afterTextChanged(android.text.Editable name) {
+                    setup.edit().putString("human_name",
+                            name.toString().trim()).apply();
+                }
+            });
+        }
         android.view.View career = findViewById(edu.up.cs.androidcatan.R.id.start_career_button);
         if (career != null) career.setOnClickListener(v -> CatanCareerUi.showCareer(this));
         android.view.View settings = findViewById(
