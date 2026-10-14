@@ -304,6 +304,36 @@ public class MainActivity extends GameMainActivity {
                 .show();
     }
 
+    private void safelyReturnToMenu() {
+        if (menuNavigationPending) return;
+        CatanLocalGame current = activeCatan;
+        if (current == null) { restartAtMainMenu(); return; }
+        menuNavigationPending = true;
+        current.returnToMainMenu(
+                () -> runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    activeCatan = null;
+                    restartAtMainMenu();
+                }),
+                () -> runOnUiThread(() -> {
+                    menuNavigationPending = false;
+                    if (isFinishing() || isDestroyed()) return;
+                    new android.app.AlertDialog.Builder(this)
+                            .setTitle("Game not saved")
+                            .setMessage("The match is still open. Try again; "
+                                    + "your earlier saved data has been preserved.")
+                            .setPositiveButton("OK", null).show();
+                }));
+    }
+
+    private void restartAtMainMenu() {
+        android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
     @Override
     protected void onPause() {
         if (activeCatan != null) activeCatan.onAppPaused();
