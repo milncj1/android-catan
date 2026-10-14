@@ -54,3 +54,12 @@ Use `CatanAiDifficulty.fromPlayerType()` for descriptive difficulty mapping.
 - Removed an accidental duplicate difficulty spinner from the XML; exactly one selection control and help label remain.
 - Additional 11 static source compatibility checks passed: one spinner, four levels, historic type indices, save validation, CPU modes and strategic choices.
 - **No Android compile/test build triggered for Build 010.** On-device strength and turn reliability still unverified.
+
+## Easy and Normal reliability refinement — 14 October 2026
+After owner requested continued Build 010 development and asked specifically what happens to Easy/Normal:
+- **Easy:** Replaced the original duplicated random build branches with one legal-move selector. It now chooses randomly among affordable cities, settlements, and valid connected roads; uses no non-existent road endpoints; occasionally passes by design rather than stalling on rejected moves.
+- Easy avoids the desert and occupied robber tile when moving the robber; can buy random development cards, play valid action cards (Knight, Monopoly, Year of Plenty, Road Building), construct both granted free roads, and occasionally make a legal 4:1 bank trade if no immediate build is possible. No extra resources, dice adjustment or private hand peeking.
+- **Normal:** Retained the pre-existing strategic settlement/road heuristics and its single planned action per turn; improved bank trades by choosing a missing resource for a particular affordable build, avoiding same-resource/empty-bank trades. Its existing playable development cards are now considered BEFORE another new card purchase.
+- **Hard/Expert:** Continue to use their stronger public-information decision evaluator, multi-build turn logic, and the shared bank/robber validation from the engine. Both must be tested for illegal action loops before owner acceptance.
+- Additional pure JUnit regression cases now cover legal advanced-road selection on all 3 islands, useful 4:1 exchanges and valid robber movement avoiding desert/current tile.
+- **11 static source checks passed. This is not a compile/test or phone acceptance result.** No `apk-build/**` branch or CI run triggered for Build 010.
