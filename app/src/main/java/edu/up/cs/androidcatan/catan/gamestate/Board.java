@@ -51,6 +51,8 @@ public class Board implements Serializable {
 
     /*  hGraph and iGraph are 2d arrays that hold adjacency information for hexagons and intersections. */
     private boolean[][] hGraph = new boolean[19][19];
+    // Null in old saved matches means CLASSIC; do not change serialVersionUID.
+    private CatanBoardTopology.Island island;
 
     // Maps relating hex to intersection and intersection to hex ids
     private ArrayList<ArrayList<Integer>> hexToIntIdMap = new ArrayList<>(); // rows: hex id - col: int ids
@@ -108,6 +110,21 @@ public class Board implements Serializable {
         generatePorts(); // create port objects
     } // end Board constructor
 
+    /** Optional new map. Legacy Board() continues using its original IDs. */
+    public Board(CatanBoardTopology.Island requested) {
+        this();
+        if (requested != null && requested != CatanBoardTopology.Island.CLASSIC) {
+            this.island = requested;
+            initialiseGeneratedGraph(requested);
+            do { hexagons.clear(); generateHexagonTiles(); } while (!checkChitRule());
+            generatePorts();
+        }
+    }
+
+    public CatanBoardTopology.Island getIsland() {
+        return island == null ? CatanBoardTopology.Island.CLASSIC : island;
+    }
+
     /**
      * @param b - board to copy
      */
@@ -120,13 +137,18 @@ public class Board implements Serializable {
             Log.e(TAG, "Board: board is null in board copy constructor");
             return;
         }
-        populateHexagonIds(); // populate ids
-        populateIntersectionIds();
-        generateHexagonGraph();
-        generateIntToHexMap();
-        generateHexToIntMap();
+        this.island = b.island;
+        if (getIsland() == CatanBoardTopology.Island.CLASSIC) {
+            populateHexagonIds();
+            populateIntersectionIds();
+            generateHexagonGraph();
+            generateIntToHexMap();
+            generateHexToIntMap();
+            generateNewIntersectionGraphManually();
+        } else {
+            initialiseGeneratedGraph(getIsland());
+        }
         this.setRobber(new Robber(b.getRobber())); // class
-        generateNewIntersectionGraphManually();
         this.setHighlightedHexagonId(b.highlightedHexagonId);
         this.setHighlightedIntersectionId(b.highlightedIntersectionId);
         // Reconstruct a separate road matrix from the copied roads.
@@ -171,7 +193,7 @@ public class Board implements Serializable {
         Log.d(TAG, "validBuildingLocation() called with: playerId = [" + playerId + "], isSetupPhase = [" + isSetupPhase + "], intersectionId = [" + intersectionId + "]");
 
         // check if the player id is within bounds
-        if (playerId < 0 || playerId > 3) {
+        if (playerId < 0 || playerId > 6) {
             Log.e(TAG, "validBuildingLocation: returned " + false + " because playerId is not in range(" + playerId + ")");
             return false;
         }
@@ -226,7 +248,7 @@ public class Board implements Serializable {
         }
 
         // check if the player id is within bounds
-        if (playerId < 0 || playerId > 3) {
+        if (playerId < 0 || playerId > 6) {
             Log.e(TAG, "validCityLocation: returned " + false + " because playerId is not in range(" + playerId + ")");
             return false;
         }
@@ -344,7 +366,7 @@ public class Board implements Serializable {
         Log.d(TAG, "validRoadPlacement() called with: playerId = [" + playerId + "], isSetupPhase = [" + isSetupPhase + "], a = [" + a + "], b = [" + b + "]");
 
         // Validate indexes before accessing the adjacency list or road matrix.
-        if (playerId < 0 || playerId > 3 || a < 0 || b < 0
+        if (playerId < 0 || playerId > 6 || a < 0 || b < 0
                 || a >= intersectionAdjacencyList.size() || b >= intersectionAdjacencyList.size()
                 || a == b) return false;
         // check if intersections are adjacent
@@ -464,7 +486,7 @@ public class Board implements Serializable {
     public boolean moveRobber(int hexagonId) {
         Log.d(TAG, "moveRobber() called with: hexagonId = [" + hexagonId + "]");
         // check if moving to same hexagon
-        if (hexagonId < 0 || hexagonId > 18) return false;
+        if (hexagonId < 0 || hexagonId >= hexagons.size()) return false;
 
         if (hexagonId == this.robber.getHexagonId()) return false;
 
@@ -482,7 +504,7 @@ public class Board implements Serializable {
      */
     public boolean addBuilding(int intersectionId, Building building) {
         Log.d(TAG, "addBuilding() called with: intersectionId = [" + intersectionId + "], building = [" + building + "]");
-        if (intersectionId < 0 || intersectionId > 53) {
+        if (intersectionId < 0 || intersectionId >= buildings.length) {
             Log.e(TAG, "addBuilding: IntersectionId is invalid and not within bounds");
             return false;
         }
@@ -545,9 +567,9 @@ public class Board implements Serializable {
         Log.d(TAG, "getAdjacentHexagons() called with: hexagonId = [" + hexagonId + "]");
         ArrayList<Integer> adjacentHexagons = new ArrayList<>(6);
 
-        if (hexagonId < 0 || hexagonId > 18) return adjacentHexagons;
+        if (hexagonId < 0 || hexagonId >= hexagons.size()) return adjacentHexagons;
 
-        for (int i = 0; i < 19; i++) {
+        for (int i = 0; i < hexagons.size(); i++) {
             if (adjacentHexagons.size() > 6) {
                 Log.d(TAG, "getAdjacentHexagons: ERROR got more than 6 adjacent hexagons");
                 break;
@@ -851,7 +873,7 @@ public class Board implements Serializable {
      * @return whether there is a building at that given intersection
      */
     public boolean hasBuilding(int intersectionId) {
-        if (intersectionId < 0 || intersectionId > 53) return false;
+        if (intersectionId < 0 || intersectionId >= buildings.length) return false;
         return this.buildings[intersectionId] != null;
     }
 
@@ -1238,8 +1260,8 @@ public class Board implements Serializable {
      * generates an intersection adjacency matrix for the roads
      */
     private void generateRoadMatrix() {
-        for (int i = 0; i < 54; i++) {
-            for (int j = 0; j < 54; j++) {
+        for (int i = 0; i < roadMatrix.length; i++) {
+            for (int j = 0; j < roadMatrix[i].length; j++) {
                 roadMatrix[i][j] = new Road(-1, i, j);
             }
         }
@@ -1255,6 +1277,10 @@ public class Board implements Serializable {
      */
     private void generatePorts() {
         portList.clear();
+        if (getIsland() != CatanBoardTopology.Island.CLASSIC) {
+            generateExpandedPorts();
+            return;
+        }
         // The coastal positions stay fixed. The nine port types are shuffled
         // once for a new game: one 2:1 port per resource and four 3:1 ports.
         int[][] coast = {
