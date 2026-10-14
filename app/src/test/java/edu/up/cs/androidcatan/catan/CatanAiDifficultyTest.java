@@ -3,6 +3,7 @@ package edu.up.cs.androidcatan.catan;
 import org.junit.Test;
 import edu.up.cs.androidcatan.catan.gamestate.CatanBoardTopology;
 import edu.up.cs.androidcatan.catan.gamestate.Board;
+import edu.up.cs.androidcatan.catan.gamestate.buildings.Settlement;
 
 import static org.junit.Assert.*;
 
@@ -60,4 +61,48 @@ public class CatanAiDifficultyTest {
             }
         }
     }
+    @Test public void bothAdvancedLevelsChooseOnlyConnectedUnoccupiedRoads() {
+        for (CatanBoardTopology.Island island : CatanBoardTopology.Island.values()) {
+            CatanGameState match = new CatanGameState(4, island);
+            Board board = match.getBoard();
+            board.addBuilding(0, new Settlement(1));
+            for (boolean expert : new boolean[]{false, true}) {
+                int[] choice = CatanAiPlanner.bestRoad(match, 1, expert);
+                assertNotNull("An initial settlement has at least one road", choice);
+                assertEquals(2, choice.length);
+                assertTrue("Advanced AI road must be legal",
+                        board.validRoadPlacement(1, false, choice[0], choice[1]));
+            }
+        }
+    }
+
+    @Test public void bankTradesAimToCompleteAnActualBuild() {
+        CatanGameState match = new CatanGameState();
+        Player computer = match.getPlayerList().get(1);
+        computer.addResourceCard(0, 1); // brick
+        computer.addResourceCard(1, 1); // grain
+        computer.addResourceCard(4, 5); // surplus wool
+        for (boolean expert : new boolean[]{false, true}) {
+            int[] choice = CatanAiPlanner.bestBankTrade(match, 1, expert);
+            assertNotNull("A 4:1 exchange can buy missing lumber", choice);
+            assertEquals("Give spare wool", 4, choice[0]);
+            assertEquals("Receive missing lumber", 2, choice[1]);
+        }
+    }
+
+    @Test public void advancedRobberNeverTargetsDesertOrCurrentTile() {
+        for (CatanBoardTopology.Island island : CatanBoardTopology.Island.values()) {
+            CatanGameState match = new CatanGameState(4, island);
+            Board board = match.getBoard();
+            for (boolean expert : new boolean[]{false, true}) {
+                int target = CatanAiPlanner.chooseRobberHex(match, 1, expert);
+                assertTrue("Robber destination always exists", target >= 0
+                        && target < board.getHexagons().size());
+                assertNotEquals("Robber must move", board.getRobber().getHexagonId(), target);
+                assertNotEquals("Robber must avoid desert", 5,
+                        board.getHexagonFromId(target).getResourceId());
+            }
+        }
+    }
+
 }
