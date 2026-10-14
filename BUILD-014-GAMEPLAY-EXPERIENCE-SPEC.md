@@ -217,3 +217,22 @@ Owner asked to continue implementing 014; no additional change of specification.
 - Signed locally outside GitHub, original permanent PKCS#12 credentials kept private and working copies deleted. Delivered `Catan_Build_014_Robber_Redesign_Permanent_Signed.apk` (**Build/Version code 29**), 27,307,935 bytes, SHA256 `91cdafdc3d3a1dc585afbec005dc7419cedbad1cf167babdfae6747514a9da1d`. ZIP CRC and JAR signature verified. Certificate SHA256 matches previous signed Catan releases: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`.
 - APK may be installed in place over QA28; never uninstall or clear data. **Human Samsung landscape testing still required.** Specifically test human roll of seven with 8+ cards, seven with <=7, CPU-rolled seven requiring human discard, Knight card, tile selection after zoom/pan, choosing one of several legal opponents, no eligible opponent, interrupt/resume during discard and after moving, and normal board/intersection taps after the robber completes.
 - Build 012 remains separate and ongoing; Build 013 was deliberately skipped. Do not call this an integrated Build 012+014 release.
+
+## Build 014 QA30 — return to Main Menu during and after a match (14 October 2026)
+
+**Owner report:** In Build 29 it was difficult/impossible to return to the landing page, both during a match and after the Completed Match screen.
+
+**Root cause:** Legacy GameMainActivity intercepted Android Back and offered a hard app quit (even called `System.exit(0)`) instead of returning to the configuration screen. The in-board "Menu" button opened Help rather than the main menu; the completed-match popup had only "Close". Abrupt activity exits risked leaving CPU worker loopers alive.
+
+**Fixes on isolated `dev/build-014-gameplay-experience` branch:**
+- New always-visible **Main Menu** button on the game board beside Fit map; renamed misleading old sidebar Menu to **Help**.
+- `MainActivity.confirmReturnToMainMenu()`: while playing, confirmation explicitly explains saved progress and Continue saved game. On a finished match, returns home without an unnecessary interruption.
+- Serialized, safe `CatanLocalGame.returnToMainMenu()`: waits for already accepted game actions to complete, persists rules and match statistics atomically (or preserves untouched original resume snapshot until displayed), refuses to navigate if save fails. Never clears the Continue Game snapshot on early exit. Completed games remain in the separate Catan career archive.
+- `LocalGame.stopWorkersForMenu()` and `GameComputerPlayer.stopForMenu()` stop old game and CPU handler loops before restarting a fresh start-screen Activity, preventing background AI/match mutation after leaving.
+- Android Back during gameplay now follows the same confirmation/save route instead of calling the legacy exit-app handler.
+- Completed Match popup has a dedicated **Main Menu** action. Robber discard and victim dialogs also expose Main Menu, so uncancellable step dialogs cannot trap the player.
+- Added `CatanMainMenuNavigationTest` to confirm separate visible Main Menu and Help controls.
+- QA snapshot `apk-build/014-main-menu-navigation-qa` @ `d45d0eba75fda18b9a03738d141e58731e683da7`: [GitHub Actions run 38625537745](https://github.com/milncj1/android-catan/actions/runs/38625537745) **SUCCESS**, including Android resource/layout validation, local JVM unit suite and debug APK compilation.
+- Signed locally outside GitHub using the same permanent signing key as Build 011 and Build 29; `Catan_Build_014_Main_Menu_Fix_Permanent_Signed.apk` (27,310,641 bytes), SHA256 `43ac6f08f85332a1d543aff343222e1851c492550c75d7d5b98200403f6c9c4c`. ZIP CRC and JAR signature valid. Verified exact certificate SHA256 unchanged: `0E:07:4B:64:AA:6E:AB:48:EC:BD:19:0C:2C:F6:90:C9:8F:E2:A4:EA:92:B9:F0:75:98:E6:53:62:FB:EF:59:97`.
+- **Still requires Samsung device test.** Test Save & Main Menu mid-turn, after a CPU move, during robber discard/steal, after completing a match, Android Back, Continue saved game, and ensure no old match continues in background.
+- Requested aesthetic improvements to Completed Match and Robber screens remain a separate polish task; navigation functionality only was changed in QA30. Build 012 remains separate and unmodified. Build 013 deliberately skipped.
