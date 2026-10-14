@@ -47,9 +47,15 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
     boolean foundBuilding;
     ArrayList<Integer> buildingsBuiltOnThisTurn = new ArrayList<>();
     private int lastSettlementIntersectionId = -1;
+    private final CatanAiDifficulty difficulty;
 
     CatanSmartComputerPlayer(String name) {
+        this(name, CatanAiDifficulty.NORMAL);
+    }
+
+    CatanSmartComputerPlayer(String name, CatanAiDifficulty difficulty) {
         super(name);
+        this.difficulty = difficulty == null ? CatanAiDifficulty.NORMAL : difficulty;
     }
 
     /**
@@ -111,7 +117,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 double bestValue = Double.NEGATIVE_INFINITY;
                 for (int vertex = 0; vertex < gs.getBoard().getBuildings().length; vertex++) {
                     if (!gs.getBoard().validBuildingLocation(playerNum, true, vertex)) continue;
-                    double value = CatanStrategy.scoreIntersection(gs, vertex, playerNum)
+                    double value = CatanStrategy.scoreIntersection(gs, vertex, playerNum, difficulty)
                             + random.nextDouble() * 0.1;
                     if (value > bestValue) {
                         best = vertex;
@@ -129,7 +135,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(placedSettlement)) {
                     if (!gs.getBoard().validRoadPlacement(playerNum, true,
                             placedSettlement, to, placedSettlement)) continue;
-                    double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum)
+                    double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum, difficulty)
                             + random.nextDouble() * 0.1;
                     if (score > bestValue) {
                         bestValue = score;
@@ -317,7 +323,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 double bestSiteScore = Double.NEGATIVE_INFINITY;
                 for (Integer candidate : getPlayerRoadIntersection(getPlayerRoads(gs))) {
                     if (!gs.getBoard().validBuildingLocation(this.playerNum, false, candidate)) continue;
-                    double score = CatanStrategy.scoreIntersection(gs, candidate, this.playerNum);
+                    double score = CatanStrategy.scoreIntersection(gs, candidate, this.playerNum, difficulty);
                     if (score > bestSiteScore) {
                         bestSiteScore = score;
                         bestSite = candidate;
@@ -325,7 +331,9 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 }
                 if (bestSite >= 0) {
                     game.sendAction(new CatanBuildSettlementAction(this, false, this.playerNum, bestSite));
-                    game.sendAction(new CatanEndTurnAction(this));
+                    // Advanced players can build again if they still have resources.
+                    // The authoritative game callback decides what is legal next.
+                    if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
                     sleep(350);
                     return;
                 }
@@ -339,7 +347,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 for (int n = 0; n < gs.getBoard().getBuildings().length; n++) {
                     Building building = gs.getBoard().getBuildings()[n];
                     if (!(building instanceof Settlement) || building.getOwnerId() != this.playerNum) continue;
-                    double score = CatanStrategy.scoreIntersection(gs, n, this.playerNum);
+                    double score = CatanStrategy.scoreIntersection(gs, n, this.playerNum, difficulty);
                     if (score > bestCityScore) {
                         bestCityScore = score;
                         bestCitySite = n;
@@ -347,7 +355,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 }
                 if (bestCitySite >= 0) {
                     game.sendAction(new CatanBuildCityAction(this, false, this.playerNum, bestCitySite));
-                    game.sendAction(new CatanEndTurnAction(this));
+                    if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
                     sleep(350);
                     return;
                 }
@@ -358,9 +366,8 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                 Log.d(TAG, "receiveInfo: Player " + this.playerNum + " purchased dev card");
                 game.sendAction(new CatanBuyDevCardAction(this));
                 Log.d(TAG, "receiveInfo: CatanBuyDevCardAction sent");
-                game.sendAction(new CatanEndTurnAction(this));
+                if (!difficulty.looksAhead()) game.sendAction(new CatanEndTurnAction(this));
                 sleep(350);
-                Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                 return;
             }
 
@@ -408,7 +415,8 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     //if they have a monopoly card
                     if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 3) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using monopoly card");
-                        game.sendAction(new CatanUseMonopolyCardAction(this, playerLeastResource(gs))); //change chosenResource
+                        game.sendAction(new CatanUseMonopolyCardAction(this, difficulty.looksAhead()
+                                ? mostProductiveOpponentResource(gs) : playerLeastResource(gs))); //change chosenResource
                         game.sendAction(new CatanEndTurnAction(this));
                         sleep(350);
                         Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
@@ -493,7 +501,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
         for (Integer from : getPlayerRoadIntersection(getPlayerRoads(gs))) {
             for (Integer to : gs.getBoard().getIntersectionAdjacencyList().get(from)) {
                 if (!gs.getBoard().validRoadPlacement(playerNum, false, from, to)) continue;
-                double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum)
+                double score = CatanStrategy.scoreRoadDestination(gs, to, playerNum, difficulty)
                         + random.nextDouble() * 0.2;
                 if (score > bestScore) {
                     bestScore = score;
@@ -613,6 +621,31 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
 
         Log.d(TAG, "checkIntersectionResource() returned: " + false);
         return false;
+    }
+
+    /**
+     * Choose Monopoly using only visible buildings and their production
+     * probabilities. The CPU must not peek at hidden opponent hands.
+     */
+    private int mostProductiveOpponentResource(CatanGameState gs) {
+        double[] demand = new double[5];
+        for (int point = 0; point < gs.getBoard().getBuildings().length; point++) {
+            Building b = gs.getBoard().getBuildings()[point];
+            if (b == null || b.getOwnerId() == playerNum) continue;
+            for (Integer hexId : gs.getBoard().getIntToHexIdMap().get(point)) {
+                Hexagon h = gs.getBoard().getHexagonFromId(hexId);
+                int resource = h.getResourceId();
+                int number = h.getChitValue();
+                if (resource < 0 || resource >= 5 || number < 2 || number > 12 || number == 7)
+                    continue;
+                double pips = 6 - Math.abs(7 - number);
+                demand[resource] += pips * b.getVictoryPoints();
+            }
+        }
+        int best = 0;
+        for (int resource = 1; resource < 5; resource++)
+            if (demand[resource] > demand[best]) best = resource;
+        return best;
     }
 
     private int playerLeastResource(CatanGameState gs) {
