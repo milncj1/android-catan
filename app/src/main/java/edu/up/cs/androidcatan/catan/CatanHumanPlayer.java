@@ -936,11 +936,13 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
              Code Line: 850
              */
 
-                menuMusic.setLooping(false);
-                menuMusic.setVolume(1f, 1f);
-                menuMusic.seekTo(0);
-                generalMusic.setVolume(0, 0);
-                menuMusic.start();
+                if (CatanExperienceSettings.music(myActivity)) {
+                    menuMusic.setLooping(false);
+                    menuMusic.setVolume(1f, 1f);
+                    menuMusic.seekTo(0);
+                    generalMusic.setVolume(0, 0);
+                    menuMusic.start();
+                }
         }
 
         //Help Menu Buttons
@@ -968,8 +970,12 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
                 toggleGroupVisibilityAllowTapping(helpMenuGroups[i]);
                 if(i == 0)
                 {
-                    menuMusic.pause();
-                    generalMusic.setVolume(1,1);
+                    if (menuMusic != null && menuMusic.isPlaying())
+                        menuMusic.pause();
+                    if (generalMusic != null)
+                        generalMusic.setVolume(
+                                CatanExperienceSettings.music(myActivity) ? 1f : 0f,
+                                CatanExperienceSettings.music(myActivity) ? 1f : 0f);
                 }
                 break;
             }
@@ -2196,6 +2202,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
 
 
         myActivity = activity; // remember the activity
+        CatanExperienceSettings.load(activity);
         initialStateDisplayed = false;
 
         activity.setContentView(R.layout.catan_main_activity); // Load the layout resource for our GUI
@@ -2213,8 +2220,13 @@ if(newGame) {
         menuMusic = MediaPlayer.create(myActivity .getApplicationContext(),R.raw.settlers_of_catan_official_theme_song);
         generalMusic = MediaPlayer.create(myActivity.getApplicationContext(), R.raw.the_score_of_catan_full_song);
         generalMusic.setLooping(true);
-        generalMusic.setVolume(1, 1);
-        generalMusic.start();newGame = false;
+        generalMusic.setVolume(0, 0);
+        // Never make an unsolicited sound on initial launch.
+        if (CatanExperienceSettings.music(myActivity)) {
+            generalMusic.setVolume(1, 1);
+            generalMusic.start();
+        }
+        newGame = false;
         }
 
         if (readyToDraw) {
@@ -2571,6 +2583,14 @@ if(newGame) {
                 new View.OnClickListener() {
                     @Override public void onClick(View v) { showGameplayHistory(); }
                 });
+        Button statistics = activity.findViewById(R.id.hud_stats_button);
+        if (statistics != null) statistics.setOnClickListener(view -> {
+            if (state != null) CatanCareerUi.showCurrent(
+                    myActivity, new CatanGameState(state), getAllPlayerNames());
+        });
+        Button experience = activity.findViewById(R.id.hud_experience_button);
+        if (experience != null) experience.setOnClickListener(view ->
+                CatanExperienceSettings.show(myActivity, this::updateExperienceAudio));
         // if we have state update the GUI based on the state
         if (this.state != null) receiveInfo(state);
         applyControlRailLayout();
@@ -2996,6 +3016,20 @@ if(newGame) {
         prompt.show();
     }
 
+    /** User-controlled audio remains silent by default and changes live. */
+    private void updateExperienceAudio() {
+        if (myActivity == null || generalMusic == null) return;
+        try {
+            boolean enabled = CatanExperienceSettings.music(myActivity);
+            generalMusic.setVolume(enabled ? 1f : 0f, enabled ? 1f : 0f);
+            if (enabled && !generalMusic.isPlaying()) generalMusic.start();
+            if (!enabled && generalMusic.isPlaying()) generalMusic.pause();
+            if (!enabled && menuMusic != null && menuMusic.isPlaying()) menuMusic.pause();
+        } catch (IllegalStateException ignored) {
+            // The current activity may be reinitialising its old media player.
+        }
+    }
+
     /** One editable counteroffer; quantities are from the COMPUTER's perspective. */
     private void showHumanTradeCounter(CatanTradeInfo request, boolean muteThisRound) {
         LinearLayout content = new LinearLayout(myActivity);
@@ -3303,13 +3337,18 @@ if(newGame) {
      */
     protected void gameIsOver(String message) {
         Log.d(TAG, "gameIsOver() called with: message = [" + message + "]");
-        for (int i = 0; i < state.getPlayerList().size(); i++) {
-            int lr = (this.state.getCurrentLongestRoadPlayerId() == i) ? 2 : 0;
-            int la = (this.state.getCurrentLargestArmyPlayerId() == i) ? 2 : 0;
-            if (this.state.getPlayerList().get(i).getVictoryPointsPrivate() + la + lr + this.state.getPlayerList().get(i).getVictoryPoints() > 9) {
-                super.gameIsOver(getAllPlayerNames()[i] + " wins!");
-                game.sendAction(new GameOverAckAction(this));
-            }
+        // Engine archives the result immediately after announcing victory.
+        // Delay the visual summary briefly so the atomic career write finishes.
+        if (myActivity != null && state != null) {
+            final String matchId = state.getMatchStats().getMatchId();
+            myActivity.runOnUiThread(() ->
+                new android.os.Handler(android.os.Looper.getMainLooper())
+                    .postDelayed(() -> {
+                        if (myActivity != null && !myActivity.isFinishing())
+                            CatanCareerUi.showLatest(myActivity, matchId);
+                    }, 650));
+        } else {
+            super.gameIsOver(message);
         }
     } // gameIsOver END
 
