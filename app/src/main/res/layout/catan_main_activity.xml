@@ -43,6 +43,42 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
 
+    <!-- Build 014 robber guidance: one compact status/action bar, board still
+         fully interactive outside this small panel. Old image-based robber
+         menus remain inflated but are never shown. -->
+    <LinearLayout
+        android:id="@+id/robber_flow_panel"
+        android:layout_width="330dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="9dp"
+        android:elevation="14dp"
+        android:background="@drawable/score_panel_bg"
+        android:visibility="gone"
+        android:clickable="true"
+        app:layout_constraintStart_toStartOf="@+id/board"
+        app:layout_constraintEnd_toEndOf="@+id/board"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:id="@+id/robber_flow_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ROBBER  ·  2/3  Tap a hexagon"
+            android:textStyle="bold"
+            android:textColor="#FFFFE7AA"
+            android:textSize="14sp" />
+        <Button
+            android:id="@+id/robber_flow_move_button"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_marginTop="5dp"
+            android:text="Move robber"
+            android:textAllCaps="false"
+            android:enabled="false"
+            android:textSize="14sp" />
+    </LinearLayout>
+
     <android.support.constraint.Group
         android:id="@+id/group_trade_menu"
         android:layout_width="wrap_content"
