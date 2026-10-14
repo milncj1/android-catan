@@ -318,7 +318,7 @@ View.OnClickListener {
 			players[i] = gpt.createPlayer(name); // create the player
 
 			// check that the player name is legal
-			if (name.length() <= 0 && gpt != availTypes[availTypes.length-1]) {
+			if (name.length() <= 0) {
 				// disallow an empty player name, unless it's a dummy (proxy) player
 				return "Local player name cannot be empty.";
 			}
@@ -430,7 +430,7 @@ View.OnClickListener {
 
 			// set up our spinner so that when its last element ("Network Player") is selected,
 			// the corresponding EditText (the player name) is disabled.
-			typeSpinner.setOnItemSelectedListener(new SpinnerListListener(playerName, availTypes.length-1));
+			typeSpinner.setOnItemSelectedListener(new SpinnerListListener(playerName, -1));
 			
 		}// for
 		
@@ -720,7 +720,7 @@ View.OnClickListener {
 		// link player name field and spinner
 		TextView playerName = row
 				.findViewById(R.id.playerNameEditText);
-		typeSpinner.setOnItemSelectedListener(new SpinnerListListener(playerName, availTypes.length-1));
+		typeSpinner.setOnItemSelectedListener(new SpinnerListListener(playerName, -1));
 		typeSpinner.setSelection(0);
 
 		ArrayAdapter<CharSequence> adapter2 = new ArrayAdapter<CharSequence>(
