@@ -48,6 +48,7 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
     ArrayList<Integer> buildingsBuiltOnThisTurn = new ArrayList<>();
     private int lastSettlementIntersectionId = -1;
     private final CatanAiDifficulty difficulty;
+    private CatanGameState lastTradeSnapshot;
 
     CatanSmartComputerPlayer(String name) {
         this(name, CatanAiDifficulty.NORMAL);
@@ -68,7 +69,14 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
         Log.i(TAG, "receiveInfo() of player " + this.playerNum + " called.");
 
         //Make sure we are dealing with Catan game
+        if (info instanceof CatanTradeInfo) {
+            CatanTradeAi.onTradeInfo((CatanTradeInfo) info, lastTradeSnapshot,
+                    this, game, playerNum, difficulty);
+            return;
+        }
         if (!(info instanceof CatanGameState)) return;
+        lastTradeSnapshot = (CatanGameState) info;
+        if (lastTradeSnapshot.isTradePending()) return;
         CatanGameState gs = (CatanGameState) info;
         Log.d(TAG, "receiveInfo: game state current player: " + gs.getCurrentPlayerId() + " this.playerNum: " + this.playerNum);
 
