@@ -446,7 +446,7 @@ public class CatanLocalGame extends LocalGame {
             }
         }
         Log.d(TAG, "makeMove() called with: action = [" + action + "]");
-        Log.d(TAG, "makeMove: state: " + state.toString());
+        // Never stringify the full private state (hands/deck) for every action.
         // In a running app, identify the actual registered player object.
         // Standalone rules tests call makeMove before LocalGame.start() binds
         // any players; their simulated actor is the current turn owner.
