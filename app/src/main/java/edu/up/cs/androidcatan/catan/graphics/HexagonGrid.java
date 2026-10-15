@@ -137,7 +137,7 @@ public class HexagonGrid extends BoardSurfaceView {
      * @param canvas Canvas to draw on.
      */
     public void drawRoads(Canvas canvas) {
-        Log.i(TAG, "drawRoads() called");
+        // Rendering is called repeatedly while panning/zooming; no per-frame logging.
 
         Paint roadPaint = new Paint(); // paint for drawing the roads
         roadPaint.setStyle(Paint.Style.STROKE);
