@@ -53,7 +53,10 @@ public class HexagonGrid extends BoardSurfaceView {
 
     private Board board;
     private IntersectionDrawable[] intersections = new IntersectionDrawable[54]; // list of IntersectionDrawable objects
-    ArrayList<HexagonDrawable> drawingHexagons = new ArrayList<>(); // list of HexagonDrawable objects
+    ArrayList<HexagonDrawable> drawingHexagons = new ArrayList<>(); // cached until board/robber/selection changes
+    private Board drawableBoard;
+    private int drawableRobberHex = -1;
+    private int drawableHighlightedHex = -2;
 
     private int highlightedHexagon = -1;
 
@@ -102,7 +105,13 @@ public class HexagonGrid extends BoardSurfaceView {
      * @param canvas Canvas to draw on.
      */
     public void drawGameBoard(Canvas canvas) {
-        generateDrawableHexagons(x, y, size); // get hexes
+        // Pan, pinch, animations and redraws use the same game coordinates.
+        // Regenerate tiles only when the authoritative board, robber or tile
+        // highlight changes; never allocate an entire island every frame.
+        if (drawingHexagons.isEmpty() || drawableBoard != board
+                || drawableRobberHex != board.getRobber().getHexagonId()
+                || drawableHighlightedHex != highlightedHexagon)
+            generateDrawableHexagons(x, y, size);
 
         drawBorder(canvas);
 
@@ -118,7 +127,8 @@ public class HexagonGrid extends BoardSurfaceView {
             intersection.drawIntersection(canvas, this.debugMode);
         } // draw each intersection
 
-        this.invalidate();
+        // This helper is not the on-screen View; the owning
+        // BoardSurfaceView schedules redraws as needed.
     }
 
     /**
@@ -284,6 +294,9 @@ public class HexagonGrid extends BoardSurfaceView {
      * @param size Size of the hexagons.
      */
     public void generateDrawableHexagons(int x, int y, int size) {
+        drawableBoard = board;
+        drawableRobberHex = board.getRobber().getHexagonId();
+        drawableHighlightedHex = highlightedHexagon;
         if (board.getIsland() != CatanBoardTopology.Island.CLASSIC) {
             CatanBoardTopology graph = new CatanBoardTopology(board.getIsland());
             int tileSize = dynamicHexSize();
@@ -438,6 +451,8 @@ public class HexagonGrid extends BoardSurfaceView {
 
     public void setBoard(Board board) {
         this.board = board;
+        drawableBoard = null;
+        drawingHexagons.clear();
     }
 
     public IntersectionDrawable[] getIntersections() {
@@ -453,6 +468,8 @@ public class HexagonGrid extends BoardSurfaceView {
     }
 
     public void setHighlightedHexagon(int highlightedHexagon) {
+        // Cached tile contains the selected-border flag: the next drawing
+        // pass rebuilds it only when the selection actually changes.
         this.highlightedHexagon = highlightedHexagon;
     }
 
