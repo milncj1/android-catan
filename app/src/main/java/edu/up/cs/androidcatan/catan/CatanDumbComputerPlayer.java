@@ -362,49 +362,6 @@ public class CatanDumbComputerPlayer extends GameComputerPlayer implements Seria
      * @param gs    the current game state
      * @return either true or false depending if moving the robber was valid
      */
-    private boolean tryMoveRobber(int hexId, CatanGameState gs) {
-        Log.d(TAG, "tryMoveRobber() called with: hexId = [" + hexId + "], gs = [" + gs + "]");
-
-        //Robber already moved
-        if (gs.getHasMovedRobber()) {
-            Log.d(TAG, "tryMoveRobber() returned: " + false + " because the robber has already been moved.");
-            return false;
-        }
-
-        //Hex not selected
-        if (hexId == -1) {
-            Log.d(TAG, "tryMoveRobber: Invalid hex ID from CPU");
-            return false;
-        }
-
-        //HexId not different from Robber's current position
-        if (hexId == gs.getBoard().getRobber().getHexagonId()) {
-            Log.d(TAG, "tryMoveRobber: Same hexId as robber");
-            return false;
-        }
-
-        //Robber cannot be moved to desert tile
-        if (gs.getBoard().getHexagons().get(hexId).getResourceId() == 5) {
-            Log.d(TAG, "tryMoveRobber: Desert tile selected; invalid.");
-            return false;
-        }
-
-        ArrayList<Integer> intersections = gs.getBoard().getHexToIntIdMap().get(hexId);
-
-        //Make sure hex has enemy buildings adjacent to it; if not, then it's not a valid hex
-        for (Integer intersection : intersections) {
-            if (gs.getBoard().getBuildings()[intersection] != null) {
-                if (gs.getBoard().getBuildings()[intersection].getOwnerId() != playerNum) {
-                    CatanRobberMoveAction action = new CatanRobberMoveAction(this, playerNum, hexId);
-                    game.sendAction(action);
-                    gs.setHasMovedRobber(true);
-                    return true;
-                }
-            }
-        }
-        Log.d(TAG, "tryMoveRobber: returned " + false);
-        return false;
-    }
 
     /**
      * looks through the list of buildings that have been built then find which ones are own by
