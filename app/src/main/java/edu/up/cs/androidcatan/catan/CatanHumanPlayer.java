@@ -2371,7 +2371,7 @@ public class CatanHumanPlayer extends GameHumanPlayer implements OnClickListener
             captureOwnResourceChanges();
             // set resource count TextViews to the players resource inventory amounts
             Log.i(TAG, "receiveInfo: player list: " + ((CatanGameState) info).getPlayerList());
-            Log.i(TAG, "receiveInfo: info.toString " + state.toString());
+            // Full state logging exposed opponent private hands and cost CPU.
 
             if (state.isRobberPhase()) {
                 Log.i(TAG, "receiveInfo: it is the robber phase");
