@@ -931,13 +931,10 @@ public class CatanLocalGame extends LocalGame {
      */
     @Override
     protected void sendUpdatedStateTo(GamePlayer p) {
-        Log.d(TAG, "sendUpdatedStateTo() called with: p = [" + p + "]");
-        Log.i(TAG, "sendUpdatedStateTo: state.toSting():" + this.state.toString());
-        Log.i(TAG, "sendUpdatedStateTo: board.toString(): " + this.state.getBoard().toString());
-        CatanGameState copy = new CatanGameState(state);
-        Log.i(TAG, "sendUpdatedStateTo: board.toString(): " + copy.getBoard().toString());
-
-        p.sendInfo(copy);
+        // Private hands and the full board must not be dumped into Logcat,
+        // and composing those strings was costly on every turn/action.
+        // Keep independent copies for the existing game/player contract.
+        p.sendInfo(new CatanGameState(state));
     }
 
     /**
