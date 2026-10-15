@@ -822,9 +822,6 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
      * @param intersection to check how many roads it has coming off of it
      * @return true if road intersection is less than 24, false otherwise
      */
-    private boolean checkSetupPhaseIntersection(int intersection) {
-        return intersection <= 23;
-    }
 } // CatanSmartComputerPlayer class END
 
 
