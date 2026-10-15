@@ -37,6 +37,11 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
     protected int color;
     private boolean highlight;
     protected int resourceId;
+    // The terrain artwork and geometry belong to the tile, not to each
+    // redraw frame. Keep them alive until HexagonGrid changes the board.
+    private transient Drawable terrainDecoration;
+    private transient Drawable resourceDecoration;
+    private transient Drawable robberDecoration;
 
     // instance variables concerning game logic
     protected int hexagonId;
@@ -81,6 +86,10 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
         this.hexagonId = hexagonId;
         this.highlight = highlight;
         this.resourceId = resourceId;
+        // Construct the exact same geometry once. Selection and zoom use
+        // these points, which stay in fixed board coordinates.
+        this.points = calculateHexagonPoints(x, y, size);
+        this.hexagonPath = createHexagonPath(this.points);
     }
 
     // constructors needed by android
@@ -101,8 +110,9 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
      * Roads, settlements and touch hit testing continue to use the same points.
      */
     public void drawHexagon(Canvas canvas, boolean debugMode) {
-        points = calculateHexagonPoints(this.x, this.y, this.size);
-        Path hexagonPath = createHexagonPath(points);
+        if (points == null) points = calculateHexagonPoints(x, y, size);
+        if (hexagonPath == null) hexagonPath = createHexagonPath(points);
+        Path cachedPath = hexagonPath;
 
         final int[] light = {0xFFD99471, 0xFFF8D56B, 0xFF6FA66B,
                              0xFFA8AEB4, 0xFF9ACD7F, 0xFFE8CB91};
@@ -114,31 +124,33 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
         shadow.setColor(0x660C2D2F);
         canvas.save();
         canvas.translate(5f, 9f);
-        canvas.drawPath(hexagonPath, shadow);
+        canvas.drawPath(cachedPath, shadow);
         canvas.restore();
 
         Paint ground = new Paint(Paint.ANTI_ALIAS_FLAG);
         ground.setShader(new LinearGradient(x - size, y - size,
                 x + size, y + size, light[terrain], dark[terrain],
                 Shader.TileMode.CLAMP));
-        canvas.drawPath(hexagonPath, ground);
+        canvas.drawPath(cachedPath, ground);
 
         Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
         edge.setStyle(Paint.Style.STROKE);
         edge.setStrokeWidth(9f);
         edge.setStrokeJoin(Paint.Join.ROUND);
         edge.setColor(0xFFEBD9A9);
-        canvas.drawPath(hexagonPath, edge);
+        canvas.drawPath(cachedPath, edge);
         edge.setStrokeWidth(3f);
         edge.setColor(0x884C3927);
-        canvas.drawPath(hexagonPath, edge);
+        canvas.drawPath(cachedPath, edge);
 
         // Kenney CC0 miniature scenery, scattered deterministically so
         // terrain does not rearrange itself every time the screen redraws.
-        Drawable decoration = context.getDrawable(terrainArt[terrain]);
+        if (terrainDecoration == null)
+            terrainDecoration = getContext().getDrawable(terrainArt[terrain]);
+        Drawable decoration = terrainDecoration;
         if (decoration != null) {
             canvas.save();
-            canvas.clipPath(hexagonPath);
+            canvas.clipPath(cachedPath);
             for (int i = 0; i < 4; i++) {
                 int dx = ((hexagonId * 37 + i * 71) % 178) - 89;
                 int dy = ((hexagonId * 23 + i * 43) % 92) - 77;
@@ -157,7 +169,7 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
             selected.setStyle(Paint.Style.STROKE);
             selected.setStrokeJoin(Paint.Join.ROUND);
             selected.setStrokeWidth(16f);
-            canvas.drawPath(hexagonPath, selected);
+            canvas.drawPath(cachedPath, selected);
         }
 
         if (!isDesert) {
@@ -194,7 +206,9 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
             emblem.setColor(0xFF4D3F2F);
             canvas.drawCircle(x, y - 90f, 62f, emblem);
 
-            Drawable resource = context.getDrawable(resourceDrawables[terrain]);
+            if (resourceDecoration == null)
+                resourceDecoration = getContext().getDrawable(resourceDrawables[terrain]);
+            Drawable resource = resourceDecoration;
             if (resource != null) {
                 // 88px symbol is more than twice as large as the old 36px one.
                 resource.setBounds(x - 44, y - 134, x + 44, y - 46);
@@ -213,7 +227,9 @@ public class HexagonDrawable extends BoardSurfaceView implements Serializable {
         }
 
         if (isRobber) {
-            Drawable robber = context.getDrawable(R.drawable.robber);
+            if (robberDecoration == null)
+                robberDecoration = getContext().getDrawable(R.drawable.robber);
+            Drawable robber = robberDecoration;
             if (robber != null) {
                 robber.setBounds(x - 65, y - 103, x + 65, y + 27);
                 robber.draw(canvas);
