@@ -434,11 +434,11 @@ public class CatanSmartComputerPlayer extends GameComputerPlayer {
                     //if they have a knight card
                     if (gs.getPlayerList().get(this.playerNum).getPlayableDevCards().get(n) == 0) {
                         Log.d(TAG, "receiveInfo: Player " + this.playerNum + " using knight card");
+                        // A Knight opens the mandatory robber phase. Do not
+                        // queue End Turn now: the engine must first process
+                        // discards, robber movement and an eligible steal.
+                        // The next authoritative state callback resumes this CPU.
                         game.sendAction(new CatanUseKnightCardAction(this));
-                        Log.d(TAG, "receiveInfo: CatanUseKnightCardAction sent");
-                        game.sendAction(new CatanEndTurnAction(this));
-                        sleep(CatanExperienceSettings.pauseMillis(350));
-                        Log.d(TAG, "receiveInfo: CatanEndTurnAction sent");
                         return;
                     }
 
