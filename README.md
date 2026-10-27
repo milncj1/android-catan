@@ -1,3 +1,27 @@
+# Android Catan — experimental fork
+
+> **Unofficial, independently maintained source-code fork.** Not affiliated with, sponsored, approved or licensed by CATAN GmbH or CATAN Studio. There is **no official public APK release** from this fork.
+
+## What this repository contains
+
+This repository builds on the Android board-game implementation originally developed by **Alex Weininger, Andrew Lang, Daniel Borg and Niraj Mali**. Its original authors and code licence are preserved below and in [LICENSE](LICENSE).
+
+Recent maintenance work in this fork includes usability improvements, board interactions, computer-opponent behaviour, custom trading behaviour, game-end presentation and robber flow. See [development notes](DEVELOPMENT.md), [Build 014 gameplay notes](BUILD-014-GAMEPLAY-EXPERIENCE-SPEC.md) and [the rules review](CLASSIC-CATAN-RULES-AUDIT.md) for details. The software and its custom variants should not be represented as a certified or official implementation of CATAN rules.
+
+## Important third-party rights notice
+
+The MIT licence in this repository covers original software code only to the extent that its contributors have the rights to grant that licence. It does **not** grant a licence to use someone else's trademarks, game artwork, protected text or other copyrighted material.
+
+**CATAN** and associated intellectual property belong to their respective rights holders. CATAN's [official intellectual-property guidelines](https://www.catan.com/guidelines-dealing-intellectual-property-catan) explain that publication of derivative works generally requires the rights holders' permission even where no money is charged. Before this project is promoted as a downloadable game or its game-specific assets are redistributed, obtain appropriate permission or make and review an independently original replacement.
+
+Do not treat the presence of a GitHub build workflow or an existing publicly accessible source repository as proof of third-party distribution permission. External users should not regard a self-compiled build as an official CATAN product.
+
+## Historical project README and credits
+
+The following original project description and contributor credits are preserved for reference.
+
+---
+
 # Settlers of Catan on Android
 
 Famous Settlers of Catan board game made into a an Android app. This app supports single player, and local multiplayer. In single player mode you can play against computers of varying difficulty. And with local mulitplayer, you can play with up to 4 players in a single game.
